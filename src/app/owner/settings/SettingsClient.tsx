@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Database } from '@/types/database';
 import { updateShop } from '@/actions/shop';
 import { signOut } from '@/actions/auth';
@@ -8,10 +8,11 @@ import { useRouter } from 'next/navigation';
 import { 
   Store, Phone, MapPin, Image as ImageIcon, Save, 
   Check, LogOut, Sparkles, ExternalLink, Palette, 
-  UploadCloud, AlertCircle, RefreshCw 
+  UploadCloud, AlertCircle, RefreshCw, Lock 
 } from 'lucide-react';
 import { compressImage } from '@/lib/image-compressor';
 import { createClient } from '@/lib/supabase/client';
+import { useStaffMode } from '@/lib/useStaffMode';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 
@@ -38,6 +39,14 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const [error, setError] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const { customPin, updatePin } = useStaffMode();
+  const [staffPin, setStaffPin] = useState(customPin || '1234');
+  const [pinSavedNotice, setPinSavedNotice] = useState(false);
+
+  useEffect(() => {
+    if (customPin) setStaffPin(customPin);
+  }, [customPin]);
 
   // Curated banner presets
   const bannerPresets = [
@@ -474,6 +483,58 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 <p className="text-xs text-espresso-500 leading-snug">{t.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* CASHIER STAFF PIN SETTINGS */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-ivory-200 shadow-card space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-ivory-200">
+            <span className="p-1.5 rounded-lg bg-rose-100 text-rose-800">
+              <Lock className="w-4 h-4" />
+            </span>
+            <div>
+              <h2 className="font-serif font-bold text-lg text-espresso-950">
+                Cashier Staff Security PIN
+              </h2>
+              <p className="text-xs text-espresso-500">
+                Protect sensitive sales revenue, customers list, and billing plans when staff operate the counter.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold text-espresso-700 block">Current 4-Digit Owner PIN</span>
+              <span className="text-xs text-espresso-500">Staff must enter this PIN to exit Billing Counter mode.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                maxLength={4}
+                value={staffPin}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  setStaffPin(val);
+                }}
+                className="w-24 px-3 py-2 text-center font-mono font-bold text-lg rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-ivory-50"
+                placeholder="1234"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (staffPin.length === 4) {
+                    updatePin(staffPin);
+                    setPinSavedNotice(true);
+                    setTimeout(() => setPinSavedNotice(false), 2500);
+                  } else {
+                    alert('PIN must be exactly 4 digits');
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-espresso-950 text-white text-xs font-bold hover:bg-espresso-900 transition-all active:scale-95"
+              >
+                {pinSavedNotice ? 'Saved!' : 'Update PIN'}
+              </button>
+            </div>
           </div>
         </div>
 

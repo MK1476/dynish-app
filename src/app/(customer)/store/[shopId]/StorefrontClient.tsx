@@ -307,6 +307,16 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       </div>
 
+      {/* Powered By Dynish Footer */}
+      <footer className="mt-8 mb-24 text-center py-6 border-t border-ivory-200">
+        <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white border border-ivory-200 shadow-2xs">
+          <img src="/dynish-logo.png" alt="Dynish" className="w-5 h-5 object-contain" />
+          <span className="text-[11px] font-semibold text-espresso-600">
+            Powered by <strong className="font-bold text-espresso-950">Dynish</strong> • Fast Storefront & Instant Counter
+          </span>
+        </div>
+      </footer>
+
       {/* Modals & Wishlist Drawer */}
       <ProductDetailModal
         product={selectedProduct}

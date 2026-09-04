@@ -6,9 +6,10 @@ import { searchCustomers, getCustomerByPhone, recordBill } from '@/actions/billi
 import confetti from 'canvas-confetti';
 import { 
   Phone, User, Calendar, CreditCard, Gift, Check, ArrowRight, 
-  MessageCircle, Copy, CheckCircle2, Zap, X, Award, Sparkles 
+  MessageCircle, Copy, CheckCircle2, Zap, X, Award, Sparkles, Printer, Bluetooth 
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
+import { formatPlainTextReceipt, printViaBluetooth, type ReceiptData } from '@/lib/thermal-printer';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type OfferRow = Database['public']['Tables']['offers']['Row'];
@@ -45,6 +46,43 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     waUrl: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
+  const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const [btError, setBtError] = useState<string | null>(null);
+
+  const getReceiptData = (): ReceiptData | null => {
+    if (!completedDetails) return null;
+    return {
+      shopName: shop.name,
+      shopAddress: shop.address,
+      shopPhone: shop.phone,
+      billId: `INV-${Date.now().toString().slice(-6)}`,
+      customerPhone: completedDetails.phone,
+      amount: completedDetails.amount || 0,
+      discountApplied: 0,
+      finalAmount: completedDetails.amount || 0,
+      loyaltyOfferText: completedDetails.nextOffer || undefined,
+      timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }),
+    };
+  };
+
+  const handleBrowserPrint = () => {
+    window.print();
+  };
+
+  const handleBluetoothPrint = async () => {
+    const data = getReceiptData();
+    if (!data) return;
+    setIsBtPrinting(true);
+    setBtError(null);
+    const res = await printViaBluetooth(data);
+    setIsBtPrinting(false);
+    if (!res.success) {
+      setBtError(res.error || 'Bluetooth printer connection failed.');
+    } else {
+      alert('Receipt sent to Bluetooth thermal printer successfully!');
+    }
+  };
 
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -501,7 +539,16 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                 <span>Open WhatsApp & Send Receipt</span>
               </a>
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsThermalModalOpen(true)}
+                  className="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-espresso-950 text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-transform active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Slip</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -509,25 +556,114 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="w-1/2 py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-800 text-xs font-semibold border border-ivory-300 flex items-center justify-center gap-1.5"
+                  className="py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-800 text-xs font-semibold border border-ivory-300 flex items-center justify-center gap-1.5"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{copied ? 'Copied!' : 'Copy Text'}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="w-1/2 py-2.5 rounded-xl bg-espresso-950 hover:bg-espresso-900 text-white text-xs font-semibold"
-                >
-                  Next Customer &gt;
-                </button>
               </div>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="w-full py-2.5 rounded-xl bg-espresso-950 hover:bg-espresso-900 text-white text-xs font-semibold"
+              >
+                Next Customer &gt;
+              </button>
             </div>
 
           </div>
         </div>
       )}
+
+      {/* THERMAL RECEIPT MODAL */}
+      {isThermalModalOpen && completedDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-espresso-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-5 sm:p-6 shadow-2xl border border-ivory-300 relative animate-scale-in max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-ivory-200">
+              <div className="flex items-center gap-2">
+                <Printer className="w-5 h-5 text-brand-600" />
+                <h3 className="font-serif font-bold text-lg text-espresso-950">Thermal Slip</h3>
+              </div>
+              <button 
+                onClick={() => setIsThermalModalOpen(false)}
+                className="p-1 rounded-lg text-espresso-400 hover:text-espresso-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error banner if bluetooth fails */}
+            {btError && (
+              <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {btError}
+              </div>
+            )}
+
+            {/* Live Monospace Slip Preview */}
+            <div 
+              id="thermal-slip-print"
+              className="bg-ivory-50 p-4 rounded-xl border border-dashed border-ivory-400 font-mono text-[11px] leading-tight text-espresso-950 whitespace-pre shadow-inner mb-4 overflow-x-auto"
+            >
+              {getReceiptData() ? formatPlainTextReceipt(getReceiptData()!, 32) : ''}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleBrowserPrint}
+                className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print via Browser (58mm / 80mm)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBluetoothPrint}
+                disabled={isBtPrinting}
+                className="w-full py-2.5 rounded-xl bg-white hover:bg-ivory-50 text-indigo-700 border border-indigo-300 font-bold text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
+              >
+                <Bluetooth className={`w-4 h-4 ${isBtPrinting ? 'animate-pulse' : ''}`} />
+                <span>{isBtPrinting ? 'Connecting Bluetooth...' : 'Pair & Print via Bluetooth'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsThermalModalOpen(false)}
+                className="w-full py-2 text-center text-xs text-espresso-500 hover:text-espresso-800 font-medium"
+              >
+                Back to Counter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* THERMAL PRINT STYLES */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #thermal-slip-print, #thermal-slip-print * {
+            visibility: visible;
+          }
+          #thermal-slip-print {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 58mm;
+            margin: 0;
+            padding: 2mm;
+            background: white !important;
+            border: none !important;
+            font-family: monospace !important;
+            font-size: 11px !important;
+            color: black !important;
+          }
+        }
+      `}</style>
 
     </div>
   );

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { sendOtp, verifyOtp } from '@/actions/auth';
 import { useRouter } from 'next/navigation';
 import { Phone, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,11 +53,9 @@ export default function LoginPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-ivory-200 shadow-2xl space-y-6 animate-scale-in">
         
         {/* Brand Header */}
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500 text-espresso-950 flex items-center justify-center mx-auto mb-3 shadow-md font-serif font-black text-2xl">
-            D
-          </div>
-          <h1 className="font-serif text-2xl font-bold text-espresso-950">
+        <div className="flex flex-col items-center justify-center text-center">
+          <BrandLogo size="lg" subtext="Merchant Operating System" className="justify-center mb-2" />
+          <h1 className="font-serif text-2xl font-bold text-espresso-950 mt-2">
             Shop Owner Portal
           </h1>
           <p className="text-xs text-espresso-500 mt-1">

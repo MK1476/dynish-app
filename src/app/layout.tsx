@@ -16,11 +16,17 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Dynish — Boutique Catalog & Smart Retention Billing',
-  description: 'Ultra-fast shop catalog & customer retention billing platform for local small businesses.',
+  title: 'Dynish — Ultra-Fast Counter Billing & Digital Storefront',
+  description: '5-second WhatsApp counter billing, instant customer retention, and digital catalog storefront.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/dynish-logo.png',
+    shortcut: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Dynish',
   },
 };
@@ -31,7 +37,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#1a1412',
+  themeColor: '#D97706',
 };
 
 export default function RootLayout({

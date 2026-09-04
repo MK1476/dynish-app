@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createShop } from '@/actions/shop';
 import { useRouter } from 'next/navigation';
 import { Store, ArrowRight, Sparkles, MapPin, Phone, Palette } from 'lucide-react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -58,6 +59,7 @@ export default function OnboardingPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-ivory-200 shadow-2xl space-y-6 animate-scale-in">
         
         <div>
+          <BrandLogo size="md" subtext="Merchant Onboarding" className="mb-4" />
           <div className="flex items-center gap-2 mb-1">
             <span className="p-1.5 rounded-lg bg-brand-100 text-brand-800">
               <Store className="w-5 h-5" />

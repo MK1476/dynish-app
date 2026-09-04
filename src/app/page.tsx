@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Store, Zap, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 
 export default async function HomePage() {
   const admin = createAdminClient();
@@ -17,15 +18,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-between p-4 sm:p-8 max-w-5xl mx-auto">
       {/* Top Header */}
       <header className="flex items-center justify-between py-4 border-b border-ivory-200">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-brand-500 text-espresso-950 font-serif font-black text-xl flex items-center justify-center shadow-md">
-            D
-          </div>
-          <div>
-            <span className="font-serif font-bold text-xl text-espresso-950 block leading-none">Dynish</span>
-            <span className="text-[10px] text-espresso-500 font-semibold tracking-wider uppercase">Boutique Retention MVP</span>
-          </div>
-        </div>
+        <BrandLogo size="md" subtext="5s Counter & Storefront" />
 
         <div className="flex items-center gap-2">
           <Link

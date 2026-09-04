@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import type { Database } from '@/types/database';
 import { 
   TrendingUp, Users, Receipt, Repeat, Calendar, 
-  ExternalLink, Zap, ArrowRight, MessageCircle, ChevronDown 
+  ExternalLink, Zap, ArrowRight, MessageCircle, ChevronDown, QrCode 
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 import Link from 'next/link';
@@ -134,6 +134,41 @@ export const DashboardClient: React.FC<DashboardProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* QUICK ACTIONS BANNER: Counter Standee & Fast Billing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Link
+          href="/owner/standee"
+          className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-brand-500/10 to-amber-50 border border-amber-300/80 flex items-center justify-between hover:border-amber-400 transition-all shadow-2xs group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-espresso-950 flex items-center justify-center shadow-xs">
+              <QrCode className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-espresso-950 block">Print Counter QR Standee</span>
+              <span className="text-[10px] text-espresso-500">A4 / A5 acrylic stand for desk & counter</span>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-brand-800 group-hover:translate-x-0.5 transition-transform">&gt;</span>
+        </Link>
+
+        <Link
+          href="/owner/billing"
+          className="p-3.5 rounded-2xl bg-white border border-ivory-300 flex items-center justify-between hover:border-brand-300 transition-all shadow-2xs group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shadow-xs">
+              <Zap className="w-5 h-5 fill-current" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-espresso-950 block">High-Speed Counter Billing</span>
+              <span className="text-[10px] text-espresso-500">Record bill & print 58mm slip in &lt;5s</span>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-espresso-600 group-hover:translate-x-0.5 transition-transform">&gt;</span>
+        </Link>
       </div>
 
       {/* METRIC CARDS GRID */}
