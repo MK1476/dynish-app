@@ -4,9 +4,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateWhatsAppBillMessage, generateWhatsAppUrl } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/types/database';
+import { logger } from '@/lib/logger';
 
 export type CustomerRow = Database['public']['Tables']['customers']['Row'];
 export type TransactionRow = Database['public']['Tables']['transactions']['Row'];
+
+export interface CustomerWithOffer extends CustomerRow {
+  lastOfferAwarded?: string | null;
+  lastBillDate?: string | null;
+}
 
 export async function searchCustomers(
   shopId: string,
@@ -35,19 +41,35 @@ export async function searchCustomers(
 export async function getCustomerByPhone(
   shopId: string,
   phoneNumber: string
-): Promise<CustomerRow | null> {
+): Promise<CustomerWithOffer | null> {
   const digits = phoneNumber.replace(/\D/g, '').slice(-10);
   if (digits.length !== 10) return null;
 
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data: customer } = await admin
     .from('customers')
     .select('*')
     .eq('shop_id', shopId)
     .eq('phone_number', digits)
     .maybeSingle();
 
-  return data;
+  if (!customer) return null;
+
+  // Retrieve offer from customer's latest visit
+  const { data: lastTx } = await admin
+    .from('transactions')
+    .select('next_visit_offer, created_at')
+    .eq('shop_id', shopId)
+    .eq('customer_id', customer.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    ...customer,
+    lastOfferAwarded: lastTx?.next_visit_offer || null,
+    lastBillDate: lastTx?.created_at || null,
+  };
 }
 
 export interface RecordBillInput {
@@ -175,6 +197,13 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
     revalidatePath('/owner/dashboard');
     revalidatePath('/owner/customers');
 
+    logger.info('billing', `Bill recorded: ₹${amountNum || 0} for customer +91 ${digits} (Visit #${customer.visit_count})`, {
+      billAmount: amountNum,
+      visitNumber: customer.visit_count,
+      nextOffer: input.nextVisitOffer,
+      appliedOffer: input.appliedOffer
+    }, input.shopId);
+
     return {
       success: true,
       customer,
@@ -183,6 +212,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
       whatsAppText: rawMsg,
     };
   } catch (err: any) {
+    logger.error('billing', `Failed to record bill for +91 ${digits}`, { error: err.message }, input.shopId);
     console.error('recordBill error:', err);
     return { success: false, error: err.message };
   }

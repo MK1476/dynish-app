@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 export interface AuthResponse {
   success: boolean;
@@ -13,12 +14,14 @@ export interface AuthResponse {
 export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
   const digits = phoneNumber.replace(/\D/g, '').slice(-10);
   if (digits.length !== 10) {
+    logger.warn('auth', `Invalid phone number length entered: ${phoneNumber}`);
     return { success: false, message: 'Please enter a valid 10-digit Indian phone number.' };
   }
 
   const fullPhone = `+91${digits}`;
   const supabase = createClient();
 
+  logger.info('auth', `Sending OTP request for ${fullPhone}`);
   try {
     const { error } = await supabase.auth.signInWithOtp({
       phone: fullPhone,
@@ -28,8 +31,7 @@ export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
     });
 
     if (error) {
-      // If Twilio fails due to DLT registration or unverified test number, allow test mode continuation
-      console.warn('Supabase signInWithOtp notice (proceeding in test mode):', error.message);
+      logger.warn('auth', `Supabase OTP notice (proceeding in test mode): ${error.message}`);
       return { 
         success: true, 
         message: 'OTP sent! (In test mode, you can also use 123456 if SMS is delayed).' 
@@ -38,7 +40,7 @@ export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
 
     return { success: true, message: 'OTP sent to ' + fullPhone };
   } catch (err: any) {
-    console.error('Error in sendOtp:', err);
+    logger.error('auth', `Exception in sendOtp for ${fullPhone}`, { error: err.message });
     return { success: true, message: 'OTP sent! (Test mode fallback: 123456)' };
   }
 }
@@ -75,6 +77,7 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
       cookies().delete('dynish_uid');
     }
 
+    logger.info('auth', `Vendor signed in via test OTP: ${fullPhone}`, { userId });
     return { success: true, isNewUser: false };
   }
 

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { Database } from '@/types/database';
 import { 
   LayoutDashboard, ShoppingBag, Zap, Users, Gift, 
-  CreditCard, Settings, ExternalLink, Menu, X, ShieldAlert 
+  CreditCard, Settings, ExternalLink, Menu, X, ShieldAlert, Terminal 
 } from 'lucide-react';
 import { signOut } from '@/actions/auth';
 
@@ -38,6 +38,8 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
     { label: 'Customers', href: '/owner/customers', icon: Users },
     { label: 'Offers', href: '/owner/offers', icon: Gift },
     { label: 'Subscription', href: '/owner/subscription', icon: CreditCard },
+    { label: 'Store Settings', href: '/owner/settings', icon: Settings },
+    { label: 'System Logs', href: '/owner/logs', icon: Terminal },
   ];
 
   return (
@@ -214,6 +216,24 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               >
                 <CreditCard className="w-4 h-4 text-emerald-600" />
                 <span>Subscription & Recharges</span>
+              </Link>
+
+              <Link
+                href="/owner/settings"
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
+              >
+                <Settings className="w-4 h-4 text-brand-600" />
+                <span>Store Branding & Profile</span>
+              </Link>
+
+              <Link
+                href="/owner/logs"
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
+              >
+                <Terminal className="w-4 h-4 text-espresso-600" />
+                <span>System Logs Recorder</span>
               </Link>
 
               {shop && (

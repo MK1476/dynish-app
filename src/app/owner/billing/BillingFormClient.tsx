@@ -27,9 +27,10 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     initialOffers.find(o => o.is_default)?.title || 'Flat 10% OFF on Next Visit'
   );
 
-  const [matchedCustomer, setMatchedCustomer] = useState<CustomerRow | null>(null);
+  const [matchedCustomer, setMatchedCustomer] = useState<(CustomerRow & { lastOfferAwarded?: string | null }) | null>(null);
   const [suggestions, setSuggestions] = useState<CustomerRow[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [appliedOfferText, setAppliedOfferText] = useState<string>('');
   const [isOfferDismissed, setIsOfferDismissed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -71,21 +72,35 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       if (existing) {
         setMatchedCustomer(existing);
         setCustomerName(existing.name || '');
+        if (existing.lastOfferAwarded) {
+          setAppliedOfferText(existing.lastOfferAwarded);
+        }
       } else {
         setMatchedCustomer(null);
+        setAppliedOfferText('');
       }
       setShowSuggestions(false);
     } else {
       setMatchedCustomer(null);
+      setAppliedOfferText('');
     }
   };
 
-  const handleSelectSuggestion = (cust: CustomerRow) => {
+  const handleSelectSuggestion = async (cust: CustomerRow) => {
     setPhoneNumber(cust.phone_number);
-    setMatchedCustomer(cust);
     setCustomerName(cust.name || '');
     setShowSuggestions(false);
     amountInputRef.current?.focus();
+
+    const existing = await getCustomerByPhone(shop.id, cust.phone_number);
+    if (existing) {
+      setMatchedCustomer(existing);
+      if (existing.lastOfferAwarded) {
+        setAppliedOfferText(existing.lastOfferAwarded);
+      }
+    } else {
+      setMatchedCustomer(cust);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,7 +115,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       phoneNumber,
       customerName: customerName.trim() || undefined,
       billAmount: amountVal,
-      appliedOffer: isOfferDismissed ? undefined : 'Applied loyalty discount',
+      appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
       nextVisitOffer: selectedOffer,
     });
 
@@ -312,6 +327,54 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Returning Customer Available Reward from Previous Visit */}
+        {matchedCustomer?.lastOfferAwarded && !isOfferDismissed && (
+          <div className="bg-gradient-to-r from-amber-50 to-brand-50/70 border-2 border-amber-300 rounded-2xl p-4 shadow-sm animate-scale-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="p-2.5 rounded-xl bg-amber-300 text-amber-950 shrink-0 shadow-xs ring-2 ring-amber-400/50">
+                  <Gift className="w-5 h-5" />
+                </span>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 block">
+                    🎁 Reward from Previous Visit
+                  </span>
+                  <span className="text-sm sm:text-base font-bold text-espresso-950 block truncate">
+                    {matchedCustomer.lastOfferAwarded}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedOfferText(matchedCustomer.lastOfferAwarded || '');
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                    appliedOfferText === matchedCustomer.lastOfferAwarded
+                      ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
+                      : 'bg-amber-400 hover:bg-amber-500 text-espresso-950 active:scale-95'
+                  }`}
+                >
+                  {appliedOfferText === matchedCustomer.lastOfferAwarded ? '✓ Offer Applied' : 'Apply to This Bill'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOfferDismissed(true);
+                    setAppliedOfferText('');
+                  }}
+                  className="p-1.5 rounded-xl hover:bg-amber-200/60 text-espresso-400 hover:text-espresso-700 transition-colors"
+                  title="Dismiss reward"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

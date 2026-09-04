@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import type { Database } from '@/types/database';
 import { 
   TrendingUp, Users, Receipt, Repeat, Calendar, 
-  ExternalLink, Zap, ArrowRight, MessageCircle 
+  ExternalLink, Zap, ArrowRight, MessageCircle, ChevronDown 
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 import Link from 'next/link';
@@ -19,12 +19,22 @@ interface DashboardProps {
   customers: CustomerRow[];
 }
 
+export type DateFilterType = 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_30_days' | 'custom' | 'all';
+
 export const DashboardClient: React.FC<DashboardProps> = ({
   shop,
   transactions,
   customers,
 }) => {
-  const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all'>('week');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('this_week');
+  const [customStart, setCustomStart] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  });
+  const [customEnd, setCustomEnd] = useState<string>(() => {
+    return new Date().toISOString().slice(0, 10);
+  });
 
   // Filter transactions by selected date range
   const filteredTransactions = useMemo(() => {
@@ -32,15 +42,31 @@ export const DashboardClient: React.FC<DashboardProps> = ({
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
 
+    // Start of this week (Monday)
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // Start of this month (1st)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0).getTime();
+
     return transactions.filter((tx) => {
       const txTime = new Date(tx.created_at).getTime();
       if (dateFilter === 'today') return txTime >= startOfToday;
       if (dateFilter === 'yesterday') return txTime >= startOfYesterday && txTime < startOfToday;
-      if (dateFilter === 'week') return txTime >= now.getTime() - 7 * 24 * 60 * 60 * 1000;
-      if (dateFilter === 'month') return txTime >= now.getTime() - 30 * 24 * 60 * 60 * 1000;
+      if (dateFilter === 'this_week') return txTime >= startOfWeek.getTime();
+      if (dateFilter === 'this_month') return txTime >= startOfMonth;
+      if (dateFilter === 'last_30_days') return txTime >= now.getTime() - 30 * 24 * 60 * 60 * 1000;
+      if (dateFilter === 'custom') {
+        const startTime = new Date(customStart).setHours(0, 0, 0, 0);
+        const endTime = new Date(customEnd).setHours(23, 59, 59, 999);
+        return txTime >= startTime && txTime <= endTime;
+      }
       return true;
     });
-  }, [transactions, dateFilter]);
+  }, [transactions, dateFilter, customStart, customEnd]);
 
   // Aggregate metrics
   const totalRevenue = useMemo(() => {
@@ -70,27 +96,43 @@ export const DashboardClient: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        {/* Date Filter Pills */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-ivory-200 overflow-x-auto shadow-xs text-xs">
-          {[
-            { id: 'today', label: 'Today' },
-            { id: 'yesterday', label: 'Yesterday' },
-            { id: 'week', label: 'Last 7 Days' },
-            { id: 'month', label: 'Last 30 Days' },
-            { id: 'all', label: 'All Time' },
-          ].map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setDateFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 ${
-                dateFilter === f.id
-                  ? 'bg-espresso-950 text-white shadow-xs font-bold'
-                  : 'text-espresso-600 hover:text-espresso-950 hover:bg-ivory-100'
-              }`}
+        {/* Dropdown Date Filter & Custom Range Picker */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="relative inline-flex items-center">
+            <Calendar className="w-3.5 h-3.5 text-brand-700 absolute left-3 pointer-events-none" />
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as DateFilterType)}
+              className="pl-8 pr-8 py-2 rounded-2xl bg-white border-2 border-ivory-300 hover:border-brand-400 text-xs font-bold text-espresso-950 focus:outline-none focus:border-brand-500 shadow-xs appearance-none cursor-pointer transition-colors"
             >
-              {f.label}
-            </button>
-          ))}
+              <option value="today">📅 Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="this_week">📊 This Week (Mon - Today)</option>
+              <option value="this_month">📈 This Month (1st - Today)</option>
+              <option value="last_30_days">Last 30 Days</option>
+              <option value="custom">🎯 Custom Date Range...</option>
+              <option value="all">🌐 All Time</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-espresso-400 absolute right-3 pointer-events-none" />
+          </div>
+
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-1.5 animate-slide-up bg-white p-1.5 rounded-2xl border-2 border-brand-300 shadow-xs text-xs">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="px-2 py-1 rounded-xl bg-ivory-50 border border-ivory-200 text-xs text-espresso-900 font-semibold focus:outline-none"
+              />
+              <span className="text-espresso-400 font-bold text-[10px] uppercase">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="px-2 py-1 rounded-xl bg-ivory-50 border border-ivory-200 text-xs text-espresso-900 font-semibold focus:outline-none"
+              />
+            </div>
+          )}
         </div>
       </div>
 

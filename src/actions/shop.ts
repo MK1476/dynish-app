@@ -6,6 +6,7 @@ import { getCurrentVendorSession } from './auth';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/types/database';
 import { isValidUUID } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 export type ShopRow = Database['public']['Tables']['shops']['Row'];
 
@@ -109,9 +110,12 @@ export async function createShop(formData: {
     .single();
 
   if (error) {
+    logger.error('shop', `createShop error for ${formData.name}`, { error: error.message, details: error.details }, null);
     console.error('createShop error:', error);
     return { success: false, error: error.message };
   }
+
+  logger.info('shop', `Shop created successfully: ${data.name} (${data.id})`, { category: data.category }, data.id);
 
   // Create default starter categories & default next-visit retention offer
   await admin.from('categories').insert([
@@ -146,9 +150,11 @@ export async function updateShop(
     .eq('id', shopId);
 
   if (error) {
+    logger.error('shop', `Failed to update settings for shop ${shopId}`, { error: error.message }, shopId);
     return { success: false, error: error.message };
   }
 
+  logger.info('shop', `Shop settings updated for shop ${shopId}`, { updatedFields: Object.keys(updateData) }, shopId);
   revalidatePath(`/store/${shopId}`);
   revalidatePath('/owner/settings');
   return { success: true };
