@@ -182,19 +182,19 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             )}
           </label>
 
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-espresso-400 font-mono font-bold text-lg border-r border-ivory-300 pr-3 select-none">
-              +91
+          <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 transition-all shadow-inner overflow-hidden">
+            <div className="flex items-center gap-1 pl-4 pr-3 py-4 text-espresso-600 font-mono font-bold text-lg sm:text-xl border-r border-ivory-300 bg-ivory-100/60 select-none shrink-0">
+              <span>+91</span>
             </div>
             <input
               ref={phoneInputRef}
               type="tel"
               inputMode="numeric"
               maxLength={10}
-              placeholder="e.g. 98201 44521"
+              placeholder="98201 44521"
               value={phoneNumber}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              className="w-full pl-20 pr-4 py-4 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-mono text-xl sm:text-2xl font-bold tracking-wider focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all shadow-inner"
+              className="w-full px-4 py-4 bg-transparent text-espresso-950 font-mono text-xl sm:text-2xl font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
               required
             />
             {phoneNumber && (
@@ -205,7 +205,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   setMatchedCustomer(null);
                   phoneInputRef.current?.focus();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-espresso-400 hover:text-espresso-700 p-1"
+                className="pr-4 text-espresso-400 hover:text-espresso-700 p-1 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -226,8 +226,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   className="p-3 hover:bg-brand-50/50 cursor-pointer flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center font-bold text-xs">
-                      {cust.name ? cust.name[0] : <User className="w-3.5 h-3.5" />}
+                    <div className="w-8 h-8 shrink-0 aspect-square rounded-full bg-brand-100 text-brand-800 flex items-center justify-center font-bold text-xs ring-1 ring-brand-300/40">
+                      {cust.name ? cust.name[0].toUpperCase() : <User className="w-3.5 h-3.5 shrink-0" />}
                     </div>
                     <div>
                       <div className="text-sm font-bold text-espresso-950">{cust.name || 'Valued Guest'}</div>
@@ -250,44 +250,50 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
 
         {/* Customer Intelligence Snapshot */}
         {phoneNumber.length === 10 && (
-          <div className="bg-gradient-to-br from-ivory-50 via-brand-50/30 to-amber-50/40 rounded-2xl p-4 border border-brand-200/80 space-y-3 animate-slide-up">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-brand-500 text-espresso-950 font-bold flex items-center justify-center text-sm shadow-xs">
-                  {matchedCustomer?.name ? matchedCustomer.name[0] : <User className="w-4 h-4" />}
+          <div className="bg-gradient-to-br from-ivory-50 via-brand-50/40 to-amber-50/50 rounded-2xl p-4 border border-brand-200/90 space-y-3 animate-slide-up shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 shrink-0 aspect-square rounded-2xl bg-brand-500 text-espresso-950 font-bold flex items-center justify-center text-base shadow-sm ring-2 ring-brand-200">
+                  {matchedCustomer?.name ? (
+                    matchedCustomer.name[0].toUpperCase()
+                  ) : (
+                    <User className="w-5 h-5 shrink-0" />
+                  )}
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <input
                     type="text"
                     placeholder="Customer Name (optional)"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="bg-transparent font-serif font-bold text-base text-espresso-950 border-b border-dashed border-espresso-300 focus:border-brand-600 focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-sm"
+                    className="w-full bg-transparent font-serif font-bold text-base sm:text-lg text-espresso-950 border-b border-dashed border-espresso-300 focus:border-brand-600 focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-sm"
                   />
-                  <span className="text-[11px] text-espresso-500 block">
-                    {matchedCustomer ? 'Registered Regular' : 'New First-Time Guest'}
+                  <span className="text-[11px] font-medium text-espresso-500 block mt-0.5">
+                    {matchedCustomer ? 'Registered Regular Customer' : 'New First-Time Guest'}
                   </span>
                 </div>
               </div>
 
               {/* VIP Tier Badge */}
-              <div className="text-right">
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-xs ${
+              <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-1 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-brand-100">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-xs shrink-0 whitespace-nowrap ${
                   (matchedCustomer?.visit_count || 0) >= 5
-                    ? 'bg-amber-400 text-espresso-950 font-extrabold'
+                    ? 'bg-amber-400 text-espresso-950 font-black ring-1 ring-amber-500/50'
                     : (matchedCustomer?.visit_count || 0) >= 2
-                    ? 'bg-brand-500 text-espresso-950'
+                    ? 'bg-brand-500 text-espresso-950 ring-1 ring-brand-600/30'
                     : 'bg-emerald-600 text-white'
                 }`}>
-                  <Award className="w-3.5 h-3.5" />
-                  {matchedCustomer 
-                    ? matchedCustomer.visit_count >= 5 
-                      ? `VIP Client (${matchedCustomer.visit_count + 1}th Visit)` 
-                      : `Regular (${matchedCustomer.visit_count + 1}th Visit)`
-                    : '1st Time Guest'}
+                  <Award className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {matchedCustomer 
+                      ? matchedCustomer.visit_count >= 5 
+                        ? `VIP Client (${matchedCustomer.visit_count + 1}th Visit)` 
+                        : `Regular (${matchedCustomer.visit_count + 1}th Visit)`
+                      : '1st Time Guest'}
+                  </span>
                 </span>
                 {matchedCustomer && (
-                  <span className="block text-[10px] text-espresso-500 mt-0.5">
+                  <span className="text-[11px] font-semibold text-espresso-600">
                     LTV: {formatINR(matchedCustomer.total_spent)}
                   </span>
                 )}

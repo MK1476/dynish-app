@@ -6,7 +6,7 @@ import {
   X, Bookmark, Share2, MessageCircle, ChevronLeft, 
   ChevronRight, Check, ArrowLeft, Sparkles, Flame 
 } from 'lucide-react';
-import { formatINR } from '@/lib/utils';
+import { formatINR, copyTextToClipboard } from '@/lib/utils';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type ItemRow = Database['public']['Tables']['items']['Row'];
@@ -46,18 +46,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleShareProduct = () => {
+  const handleShareProduct = async () => {
     const productUrl = `${window.location.origin}/store/${shop.id}#item-${product.id}`;
-    if (navigator.share) {
-      navigator.share({
-        title: product.name,
-        text: `Check out ${product.name} at ${shop.name} for ${formatINR(product.price)}!`,
-        url: productUrl,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(productUrl);
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} at ${shop.name} for ${formatINR(product.price)}!`,
+      url: productUrl,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share && window.isSecureContext) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    const success = await copyTextToClipboard(productUrl);
+    if (success) {
       setCopiedShare(true);
-      setTimeout(() => setCopiedShare(false), 2000);
+      setTimeout(() => setCopiedShare(false), 2500);
+    } else {
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out ${product.name} at ${shop.name} (${formatINR(product.price)}): ${productUrl}`)}`;
+      window.open(waUrl, '_blank');
     }
   };
 
@@ -256,17 +268,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <span>Order / Inquire on WhatsApp</span>
               </a>
 
-              <button
-                onClick={onToggleSave}
-                className={`w-full py-2.5 px-4 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 border transition-all ${
-                  isSaved
-                    ? 'bg-brand-50 text-brand-800 border-brand-300'
-                    : 'bg-white text-espresso-800 border-ivory-300 hover:bg-ivory-100'
-                }`}
-              >
-                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-brand-600 text-brand-600' : ''}`} />
-                <span>{isSaved ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={onToggleSave}
+                  className={`w-full py-2.5 px-3 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 border transition-all ${
+                    isSaved
+                      ? 'bg-brand-50 text-brand-800 border-brand-300'
+                      : 'bg-white text-espresso-800 border-ivory-300 hover:bg-ivory-100'
+                  }`}
+                >
+                  <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-brand-600 text-brand-600' : ''}`} />
+                  <span>{isSaved ? 'Saved' : 'Save'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareProduct}
+                  className="w-full py-2.5 px-3 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 bg-ivory-100 hover:bg-ivory-200 text-espresso-800 border border-ivory-300 transition-all active:scale-95"
+                >
+                  {copiedShare ? (
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Share2 className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{copiedShare ? 'Copied!' : 'Share Item'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

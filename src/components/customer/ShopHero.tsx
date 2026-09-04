@@ -15,6 +15,8 @@ interface ShopHeroProps {
   onOpenSavedItems: () => void;
 }
 
+import { copyTextToClipboard } from '@/lib/utils';
+
 export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSavedItems }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -27,18 +29,30 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const shareUrl = window.location.href;
-    if (navigator.share) {
-      navigator.share({
-        title: shop.name,
-        text: `Visit ${shop.name} on Dynish!`,
-        url: shareUrl,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(shareUrl);
+    const shareData = {
+      title: shop.name,
+      text: `Visit ${shop.name} on Dynish!`,
+      url: shareUrl,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share && window.isSecureContext) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    const success = await copyTextToClipboard(shareUrl);
+    if (success) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
+    } else {
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out ${shop.name}'s digital catalog: ${shareUrl}`)}`;
+      window.open(waUrl, '_blank');
     }
   };
 
@@ -179,12 +193,24 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
 
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold shadow-xs shrink-0 active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold shadow-xs shrink-0 active:scale-95 transition-all"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            {copied ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            ) : (
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+            )}
             <span>{copied ? 'Link Copied!' : 'Share Shop'}</span>
           </button>
         </div>
+
+        {/* Floating Copied Toast */}
+        {copied && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-espresso-950/95 backdrop-blur-md text-white text-xs font-bold shadow-2xl flex items-center gap-2 border border-brand-500/50 animate-bounce">
+            <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0" />
+            <span>Storefront link copied! Paste anywhere to share.</span>
+          </div>
+        )}
 
       </div>
     </div>

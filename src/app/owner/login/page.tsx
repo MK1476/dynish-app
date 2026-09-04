@@ -83,19 +83,20 @@ export default function LoginPage() {
               <label className="block text-xs font-bold text-espresso-800 uppercase tracking-wider mb-2">
                 Mobile Number
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-espresso-400 font-mono font-bold text-base border-r border-ivory-300 pr-2.5">
-                  +91
+              <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 transition-all shadow-inner overflow-hidden">
+                <div className="flex items-center gap-1 pl-4 pr-3 py-3.5 text-espresso-600 font-mono font-bold text-base border-r border-ivory-300 bg-ivory-100/60 select-none shrink-0">
+                  <span>+91</span>
                 </div>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   maxLength={10}
                   required
                   autoFocus
                   placeholder="98201 44521"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full pl-18 pr-4 py-3.5 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-mono text-lg font-bold tracking-wider focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all shadow-inner"
+                  className="w-full px-4 py-3.5 bg-transparent text-espresso-950 font-mono text-lg font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
                 />
               </div>
             </div>
