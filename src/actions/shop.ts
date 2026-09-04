@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentVendorSession } from './auth';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/types/database';
+import { isValidUUID } from '@/lib/utils';
 
 export type ShopRow = Database['public']['Tables']['shops']['Row'];
 
@@ -15,10 +16,10 @@ export async function getOwnerShop(): Promise<ShopRow | null> {
   const admin = createAdminClient();
   let query = admin.from('shops').select('*');
 
-  if (userId) {
-    query = query.or(`owner_id.eq.${userId},owner_phone.eq.${phone}`);
-  } else if (phone) {
+  if (phone) {
     query = query.eq('owner_phone', phone);
+  } else if (userId && isValidUUID(userId)) {
+    query = query.eq('owner_id', userId);
   }
 
   const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -68,8 +69,21 @@ export async function createShop(formData: {
   const defaultLogo = formData.logoUrl || 
     'https://images.unsplash.com/photo-1544441893-675973e31985?w=300&auto=format&fit=crop&q=80';
 
+  // Only attach owner_id if it's a valid UUID in auth.users
+  let validOwnerId: string | null = null;
+  if (userId && isValidUUID(userId)) {
+    try {
+      const { data: authUser } = await admin.auth.admin.getUserById(userId);
+      if (authUser?.user) {
+        validOwnerId = authUser.user.id;
+      }
+    } catch {
+      validOwnerId = null;
+    }
+  }
+
   const insertData = {
-    owner_id: userId || null,
+    owner_id: validOwnerId,
     owner_phone: ownerPhone,
     name: formData.name.trim(),
     category: formData.category || 'Boutique',

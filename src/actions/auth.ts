@@ -69,7 +69,11 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
 
     // Set cookie for session
     cookies().set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 30 });
-    cookies().set('dynish_uid', userId || `user_${digits}`, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+    if (userId) {
+      cookies().set('dynish_uid', userId, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+    } else {
+      cookies().delete('dynish_uid');
+    }
 
     return { success: true, isNewUser: false };
   }
