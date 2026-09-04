@@ -1,0 +1,46 @@
+import React from 'react';
+import { getShopById } from '@/actions/shop';
+import { getShopCatalog } from '@/actions/catalog';
+import { notFound } from 'next/navigation';
+import { StorefrontClient } from './StorefrontClient';
+import type { Metadata } from 'next';
+
+interface StorePageProps {
+  params: {
+    shopId: string;
+  };
+}
+
+export async function generateMetadata({ params }: StorePageProps): Promise<Metadata> {
+  const shop = await getShopById(params.shopId);
+  if (!shop) return { title: 'Store Not Found — Dynish' };
+
+  return {
+    title: `${shop.name} — Digital Catalog on Dynish`,
+    description: shop.tagline || `Browse latest catalog from ${shop.name} on Dynish.`,
+    openGraph: {
+      title: shop.name,
+      description: shop.tagline || undefined,
+      images: shop.logo_url ? [shop.logo_url] : undefined,
+    },
+  };
+}
+
+export default async function StorePage({ params }: StorePageProps) {
+  const [shop, catalog] = await Promise.all([
+    getShopById(params.shopId),
+    getShopCatalog(params.shopId),
+  ]);
+
+  if (!shop) {
+    notFound();
+  }
+
+  return (
+    <StorefrontClient 
+      shop={shop} 
+      categories={catalog.categories} 
+      items={catalog.items} 
+    />
+  );
+}

@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 98%;
+    --foreground: 20 15% 12%;
+  }
+
+  body {
+    @apply bg-ivory text-espresso font-sans antialiased selection:bg-brand-200 selection:text-espresso-950;
+  }
+}
+
+/* Hide scrollbar for category and story strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
