@@ -31,7 +31,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
 }) => {
   const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [activeTab, setActiveTab] = useState<string>(initialCategories[0]?.id || '');
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   // Inline Category Creator
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -109,7 +109,8 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setItemName('');
     setItemPrice('');
     setItemOriginalPrice('');
-    setItemCategory(activeTab || categories[0]?.id || '');
+    const defaultCat = activeTab !== 'all' && activeTab ? activeTab : (categories[0]?.id || '');
+    setItemCategory(defaultCat);
     setItemDescription('');
     setItemImages([]);
     setItemUnit('per piece');
@@ -269,8 +270,10 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const currentTab = activeTab || (categories[0]?.id ?? '');
-  const filteredItems = items.filter(i => i.category_id === currentTab);
+  const filteredItems = items.filter(i => {
+    if (activeTab === 'all') return true;
+    return i.category_id === activeTab;
+  });
 
   return (
     <div className="space-y-6">
@@ -306,7 +309,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
         </div>
       </div>
 
-      {/* CATEGORY BAR (+ Add Category First, Reorderable Chips) */}
+      {/* CATEGORY BAR (+ Add Category First, All Items Tab, Reorderable Chips) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
         {/* Add Category as FIRST element */}
         {isAddingCategory ? (
@@ -342,6 +345,19 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
             <span>Add Category</span>
           </button>
         )}
+
+        {/* All Items Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+            activeTab === 'all'
+              ? 'bg-espresso-950 text-white shadow-xs font-bold'
+              : 'bg-white text-espresso-700 border border-ivory-200 hover:bg-ivory-50'
+          }`}
+        >
+          All Items ({items.length})
+        </button>
 
         {/* Reorderable Categories */}
         {categories.map((cat, idx) => {
@@ -391,7 +407,9 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
       {filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200 p-6">
           <ImageIcon className="w-10 h-10 text-espresso-300 mx-auto mb-2" />
-          <h3 className="font-serif text-base font-bold text-espresso-950">No items in this category</h3>
+          <h3 className="font-serif text-base font-bold text-espresso-950">
+            {activeTab === 'all' ? 'No items in your catalog yet' : 'No items in this category'}
+          </h3>
           <p className="text-xs text-espresso-500 mt-1 mb-4">Add your first product to display on your digital storefront.</p>
           <button
             onClick={handleOpenAddItem}
@@ -686,7 +704,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[9px] font-bold text-brand-800 uppercase bg-brand-100 px-1.5 py-0.5 rounded">
-                        {categories.find(c => c.id === itemCategory)?.name || 'General'}
+                        {categories.find(c => c.id === itemCategory)?.name || categories[0]?.name || 'General'}
                       </span>
                     </div>
                     <p className="font-serif font-bold text-espresso-950 text-sm truncate mt-0.5">

@@ -54,14 +54,6 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
         </div>
       </div>
 
-      {/* Security Privacy Notice (No raw export allowed) */}
-      <div className="bg-brand-50/50 border border-brand-200 rounded-2xl p-3 text-xs flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-brand-900">
-          <ShieldCheck className="w-4 h-4 text-brand-700 shrink-0" />
-          <span className="font-semibold">Privacy Protected: Customer phone numbers are retained within the app for retention WhatsApp messaging. Raw CSV export is disabled.</span>
-        </div>
-      </div>
-
       {/* Customer Cards List */}
       <div className="bg-white rounded-3xl border border-ivory-200 shadow-soft divide-y divide-ivory-100 overflow-hidden">
         {filteredCustomers.length === 0 ? (
@@ -130,6 +122,14 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
             );
           })
         )}
+      </div>
+
+      {/* Security Privacy Notice (Positioned beneath customer list) */}
+      <div className="bg-brand-50/50 border border-brand-200 rounded-2xl p-3 text-xs flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-brand-900">
+          <ShieldCheck className="w-4 h-4 text-brand-700 shrink-0" />
+          <span className="font-semibold">Privacy Protected: Customer phone numbers are retained within the app for retention WhatsApp messaging. Raw CSV export is disabled.</span>
+        </div>
       </div>
 
     </div>

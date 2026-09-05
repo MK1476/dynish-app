@@ -181,9 +181,9 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
 
             {/* Quick Budget Chips */}
             {[
+              { label: 'Under ₹200', max: 200 },
               { label: 'Under ₹500', max: 500 },
               { label: 'Under ₹1,000', max: 1000 },
-              { label: 'Under ₹2,000', max: 2000 },
             ].map((b) => {
               const isSelected = maxBudget === b.max;
               return (

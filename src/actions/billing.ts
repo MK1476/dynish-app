@@ -101,14 +101,15 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
   const admin = createAdminClient();
 
   try {
-    // 1. Fetch shop details for WhatsApp message
+    // 1. Fetch shop details for WhatsApp message (select * safely supports DB with or without migration 005)
     const { data: shop, error: shopError } = await admin
       .from('shops')
-      .select('name, address, owner_phone, slug, whatsapp_template')
+      .select('*')
       .eq('id', input.shopId)
       .single();
 
     if (shopError || !shop) {
+      console.error('Shop fetch error in recordBill:', shopError, 'shopId:', input.shopId);
       return { success: false, error: 'Shop not found' };
     }
 
@@ -194,8 +195,8 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
       nextOfferTitle: input.nextVisitOffer || undefined,
       shopAddress: shop.address || undefined,
       shopId: input.shopId,
-      shopSlug: shop.slug || undefined,
-      customTemplate: shop.whatsapp_template || undefined,
+      shopSlug: (shop as any)?.slug || undefined,
+      customTemplate: (shop as any)?.whatsapp_template || undefined,
     });
 
     const waUrl = generateWhatsAppUrl(digits, rawMsg);

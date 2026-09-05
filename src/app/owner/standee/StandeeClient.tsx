@@ -84,15 +84,54 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
       ctx.roundRect(50, 50, 1100, 240, 32);
       ctx.stroke();
 
+      let textCenterY = 175;
+      let categoryY = 225;
+
+      // Draw restaurant logo if present
+      if (shop.logo_url) {
+        try {
+          const shopLogo = new Image();
+          shopLogo.crossOrigin = 'anonymous';
+          shopLogo.src = shop.logo_url;
+          await new Promise((resolve) => {
+            shopLogo.onload = resolve;
+            shopLogo.onerror = resolve;
+            setTimeout(resolve, 1500);
+          });
+
+          if (shopLogo.complete && shopLogo.naturalWidth > 0) {
+            const logoSize = 84;
+            const logoX = 600 - logoSize / 2;
+            const logoY = 62;
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.roundRect(logoX - 4, logoY - 4, logoSize + 8, logoSize + 8, 20);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.roundRect(logoX, logoY, logoSize, logoSize, 16);
+            ctx.clip();
+            ctx.drawImage(shopLogo, logoX, logoY, logoSize, logoSize);
+            ctx.restore();
+
+            textCenterY = 205;
+            categoryY = 250;
+          }
+        } catch (err) {
+          console.warn('Could not draw shop logo to canvas:', err);
+        }
+      }
+
       // Store Name in top banner
       ctx.fillStyle = '#1A1412';
-      ctx.font = 'bold 54px serif';
+      ctx.font = 'bold 48px serif';
       ctx.textAlign = 'center';
-      ctx.fillText(shop.name, 600, 175);
+      ctx.fillText(shop.name, 600, textCenterY);
 
       ctx.fillStyle = '#78350F';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.fillText(shop.category_label || shop.category || 'Retail Store', 600, 225);
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(shop.category_label || shop.category || 'Retail Store', 600, categoryY);
 
       // 3. Main Call-To-Action Headline
       ctx.fillStyle = '#111827';

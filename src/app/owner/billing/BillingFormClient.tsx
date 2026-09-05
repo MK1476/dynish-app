@@ -213,13 +213,12 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
 
     setSubmitting(true);
     const amountVal = billAmount ? parseFloat(billAmount) : null;
-    const finalAmountToRecord = discountInfo ? discountInfo.finalAmount : amountVal;
 
     const result = await recordBill({
       shopId: shop.id,
       phoneNumber,
       customerName: customerName.trim() || undefined,
-      billAmount: finalAmountToRecord,
+      billAmount: amountVal,
       appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
       nextVisitOffer: selectedOffer,
     });
@@ -240,7 +239,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       setCompletedDetails({
         phone: phoneNumber,
         name: result.customer.name || 'Guest',
-        amount: finalAmountToRecord,
+        amount: amountVal,
         nextOffer: selectedOffer,
         visitNumber: result.customer.visit_count,
         rawText: result.whatsAppText || '',
@@ -488,7 +487,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               </div>
             </div>
 
-            {/* Calculated Discount Breakdown in Rupees */}
+            {/* Calculated Discount Breakdown in Rupees (Informational only, bill amount is untouched) */}
             {appliedOfferText === matchedCustomer.lastOfferAwarded && discountInfo && (
               <div className="mt-2.5 pt-2.5 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
@@ -496,8 +495,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   <span>{discountInfo.summary}</span>
                 </div>
                 <div className="font-serif font-bold text-sm text-espresso-950 bg-emerald-100/70 border border-emerald-300/80 px-2.5 py-1 rounded-xl">
-                  Payable: <span className="text-emerald-700 font-black text-base">₹{discountInfo.finalAmount}</span>
-                  <span className="text-[11px] text-espresso-500 font-normal ml-1">(Saved ₹{discountInfo.discountRupees})</span>
+                  Offer Discount Value: <span className="text-emerald-700 font-black text-base">₹{discountInfo.discountRupees}</span>
                 </div>
               </div>
             )}
@@ -512,7 +510,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             </label>
             {discountInfo && (
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                -₹{discountInfo.discountRupees} Discount ({discountInfo.percent}% OFF) ➜ Payable: ₹{discountInfo.finalAmount}
+                Offer Discount: ₹{discountInfo.discountRupees} ({discountInfo.percent}% OFF)
               </span>
             )}
           </div>
@@ -577,8 +575,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             <span>
               {submitting 
                 ? 'Recording...' 
-                : discountInfo 
-                ? `Charge ₹${discountInfo.finalAmount} & Open WhatsApp` 
+                : billNum > 0 
+                ? `Confirm Bill (₹${billNum}) & Open WhatsApp` 
                 : 'Record Bill & Open WhatsApp'}
             </span>
             <ArrowRight className="w-5 h-5 ml-1" />
