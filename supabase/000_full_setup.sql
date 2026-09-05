@@ -26,6 +26,8 @@ create table if not exists public.shops (
     trial_ends_at timestamptz not null default (now() + interval '14 days'),
     expires_at timestamptz not null default (now() + interval '14 days'),
     razorpay_subscription_id text,
+    slug text unique,
+    whatsapp_template text,
     is_active boolean not null default true,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
@@ -34,6 +36,7 @@ create table if not exists public.shops (
 create index if not exists idx_shops_owner_phone on public.shops(owner_phone);
 create index if not exists idx_shops_owner_id on public.shops(owner_id);
 create index if not exists idx_shops_expires_at on public.shops(expires_at);
+create index if not exists idx_shops_slug on public.shops(slug);
 
 -- 3. CATEGORIES
 create table if not exists public.categories (

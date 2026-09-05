@@ -20,8 +20,27 @@ interface SettingsClientProps {
   shop: ShopRow;
 }
 
+const PRESET_BUSINESS_CATEGORIES = [
+  { id: 'Boutique', label: 'Ethnic Wear & Kurti Boutique' },
+  { id: 'Restaurant', label: 'Café, Food Outlet & Restaurant' },
+  { id: 'Bakery', label: 'Bakery, Cakes & Confectionery' },
+  { id: 'Footwear', label: 'Footwear, Shoes & Bags' },
+  { id: 'Opticals', label: 'Specs & Optical Studio' },
+  { id: 'Jewellery', label: 'Jewellery & Accessories' },
+  { id: 'Salon', label: 'Beauty Salon & Spa' },
+  { id: 'Electronics', label: 'Electronics & Mobile Store' },
+  { id: 'Grocery', label: 'Supermarket & Grocery' },
+  { id: 'Retail', label: 'Small Retail & General Store' },
+];
+
 export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const router = useRouter();
+
+  const isInitialPreset = PRESET_BUSINESS_CATEGORIES.some(p => p.id === shop.category);
+  const [selectedCategoryPreset, setSelectedCategoryPreset] = useState(isInitialPreset ? shop.category : '__custom__');
+  const [isCustomCategory, setIsCustomCategory] = useState(!isInitialPreset);
+  const [customCategoryText, setCustomCategoryText] = useState(!isInitialPreset ? (shop.category_label || shop.category || '') : '');
+
   const [name, setName] = useState(shop.name);
   const [tagline, setTagline] = useState(shop.tagline || '');
   const [category, setCategory] = useState(shop.category);
@@ -40,6 +59,8 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const [slugChecking, setSlugChecking] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugMigrationError, setSlugMigrationError] = useState<string | null>(null);
+  const [copiedSql, setCopiedSql] = useState(false);
   const [slugSaving, setSlugSaving] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
@@ -75,6 +96,11 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       setSlugChecking(false);
       setSlugAvailable(res.available);
       setSlugError(res.error || null);
+      if (res.error?.includes('Database setup required') || res.error?.includes('migration') || res.error?.includes('schema cache')) {
+        setSlugMigrationError(res.error);
+      } else {
+        setSlugMigrationError(null);
+      }
     }, 400);
 
     return () => clearTimeout(timer);
@@ -95,10 +121,15 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
     if (res.success && res.slug) {
       setSlug(res.slug);
       setSlugInput(res.slug);
+      setSlugMigrationError(null);
       alert('Congratulations! Your store URL handle has been permanently registered.');
       router.refresh();
     } else {
-      alert(res.error || 'Failed to register store handle.');
+      if (res.error?.includes('migration') || res.error?.includes('slug') || res.error?.includes('schema cache') || res.error?.includes('Database setup')) {
+        setSlugMigrationError(res.error);
+      } else {
+        alert(res.error || 'Failed to register store handle.');
+      }
     }
   };
 
@@ -358,6 +389,39 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 </div>
               )}
 
+              {/* Database Migration / Schema Cache Banner */}
+              {slugMigrationError && (
+                <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2.5 animate-scale-in">
+                  <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>One-Time Supabase Database Setup Required</span>
+                  </div>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    The <code>slug</code> column is not yet enabled in your Supabase database table. Copy and run this 1-line command in your <strong>Supabase Dashboard → SQL Editor</strong>:
+                  </p>
+                  <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-amber-200 font-mono text-xs overflow-x-auto">
+                    <code className="text-espresso-950 font-bold whitespace-nowrap">
+                      ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE; NOTIFY pgrst, 'reload schema';
+                    </code>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await copyTextToClipboard("ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;\nNOTIFY pgrst, 'reload schema';");
+                        setCopiedSql(true);
+                        setTimeout(() => setCopiedSql(false), 2000);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 shadow-xs"
+                    >
+                      {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSql ? 'Copied SQL!' : 'Copy SQL'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    After running it in Supabase, click <strong>"Claim & Lock Store URL"</strong> above to register your handle!
+                  </p>
+                </div>
+              )}
+
               <p className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 leading-relaxed">
                 ⚠️ <strong>Important:</strong> You can only set your store URL handle <strong>once</strong>. Once locked, it cannot be changed.
               </p>
@@ -490,20 +554,56 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 Business Category
               </label>
               <select
-                value={category}
+                value={selectedCategoryPreset}
                 onChange={(e) => {
-                  setCategory(e.target.value);
-                  setCategoryLabel(e.target.value);
+                  const val = e.target.value;
+                  setSelectedCategoryPreset(val);
+                  if (val === '__custom__') {
+                    setIsCustomCategory(true);
+                    setCategory(customCategoryText || 'Custom');
+                    setCategoryLabel(customCategoryText || 'Custom Business');
+                  } else {
+                    setIsCustomCategory(false);
+                    const preset = PRESET_BUSINESS_CATEGORIES.find(p => p.id === val);
+                    setCategory(val);
+                    setCategoryLabel(preset?.label || val);
+                  }
                 }}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-sm font-bold text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white"
               >
-                <option value="Boutique">Ethnic Wear & Kurti Boutique</option>
-                <option value="Restaurant">Café, Food Outlet & Restaurant</option>
-                <option value="Opticals">Specs & Optical Studio</option>
-                <option value="Jewellery">Jewellery & Accessories</option>
-                <option value="Salon">Beauty Salon & Spa</option>
-                <option value="Retail">Small Retail & General Store</option>
+                {PRESET_BUSINESS_CATEGORIES.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+                <option value="__custom__" className="font-bold text-brand-600">
+                  + Add Custom Business Category...
+                </option>
               </select>
+
+              {isCustomCategory && (
+                <div className="mt-2.5 space-y-1 animate-scale-in">
+                  <label className="block text-[11px] font-bold text-espresso-700 uppercase tracking-wider">
+                    Custom Category Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Footwear & Sneakers, Pet Care, Home Decor"
+                    value={customCategoryText}
+                    onChange={(e) => {
+                      const text = e.target.value;
+                      setCustomCategoryText(text);
+                      setCategory(text.trim() || 'Custom');
+                      setCategoryLabel(text.trim() || 'Custom Business');
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border-2 border-brand-500 text-sm font-bold text-espresso-950 focus:outline-none focus:bg-white"
+                  />
+                  <p className="text-[11px] text-espresso-500">
+                    This custom category will be displayed on your store profile and customer bills.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

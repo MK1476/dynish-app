@@ -74,7 +74,19 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
     return result;
   };
 
-  // Group items by category
+  // Category ID -> Name lookup map
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [categories]);
+
+  // Global sorted items across the entire catalog (used when priceSort !== 'default')
+  const globalSortedItems = useMemo(() => {
+    return processItems(items);
+  }, [items, priceSort, maxBudget]);
+
+  // Group items by category (used for default categorized view)
   const categorySections = useMemo(() => {
     return categories.map((cat) => ({
       category: cat,
@@ -95,7 +107,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   // SCROLLSPY: Auto-select category chip on scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (isClickScrollingRef.current || searchQuery.trim()) return;
+      if (isClickScrollingRef.current || searchQuery.trim() || priceSort !== 'default') return;
 
       const scrollPos = window.scrollY + 180;
       const firstSection = document.getElementById(`cat-sec-${categorySections[0]?.category.id}`);
@@ -121,22 +133,28 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [categorySections, searchQuery]);
+  }, [categorySections, searchQuery, priceSort]);
 
   const handleCategoryClick = (catId: string) => {
+    if (priceSort !== 'default') {
+      setPriceSort('default');
+    }
     setActiveCategoryId(catId);
     isClickScrollingRef.current = true;
 
     if (catId === 'all') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      const targetElement = document.getElementById(`cat-sec-${catId}`);
-      if (targetElement) {
-        const headerOffset = 65;
-        const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-      }
+      // Delay slightly to allow DOM to re-render category sections if sort was previously active
+      setTimeout(() => {
+        const targetElement = document.getElementById(`cat-sec-${catId}`);
+        if (targetElement) {
+          const headerOffset = 65;
+          const elementPosition = targetElement.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+        }
+      }, 50);
     }
 
     setTimeout(() => {
@@ -244,6 +262,52 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                 <ProductCard
                   key={prod.id}
                   product={prod}
+                  categoryName={categoryMap.get(prod.category_id)}
+                  isSaved={savedItemIds.includes(prod.id)}
+                  onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
+                  onOpenDetail={() => setSelectedProduct(prod)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : priceSort !== 'default' ? (
+        /* GLOBAL WHOLE-CATALOG PRICE SORTED VIEW (ORDERED HIGH TO LOW OR LOW TO HIGH GLOBALLY) */
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-4 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-ivory-200">
+            <div>
+              <h2 className="font-sans text-lg sm:text-xl font-extrabold text-espresso-950 flex items-center gap-2">
+                <span>Whole Store Catalog</span>
+                <span className="text-[11px] font-bold text-white bg-espresso-950 px-2.5 py-0.5 rounded-full shadow-2xs">
+                  {priceSort === 'asc' ? '₹ Low → High' : '₹ High → Low'}
+                </span>
+              </h2>
+              <p className="text-xs text-espresso-500 mt-0.5">
+                All {globalSortedItems.length} products sorted by price across all departments
+              </p>
+            </div>
+
+            <button
+              onClick={() => setPriceSort('default')}
+              className="px-3 py-1.5 rounded-xl bg-white border border-[#E5DDD0] text-xs font-bold text-espresso-800 hover:bg-[#FAF7F2] shadow-2xs transition-colors"
+            >
+              Reset to Categories
+            </button>
+          </div>
+
+          {globalSortedItems.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-3xl border border-[#EBE5DA]">
+              <Sparkles className="w-8 h-8 text-[#C27835] mx-auto mb-2" />
+              <h3 className="font-sans text-base font-extrabold text-espresso-950">No items match this filter</h3>
+              <p className="text-xs text-espresso-500 mt-1">Try resetting the budget filter or sort order.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+              {globalSortedItems.map((prod) => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  categoryName={categoryMap.get(prod.category_id)}
                   isSaved={savedItemIds.includes(prod.id)}
                   onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
                   onOpenDetail={() => setSelectedProduct(prod)}
@@ -283,6 +347,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                     <ProductCard
                       key={prod.id}
                       product={prod}
+                      categoryName={categoryMap.get(prod.category_id)}
                       isSaved={savedItemIds.includes(prod.id)}
                       onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
                       onOpenDetail={() => setSelectedProduct(prod)}

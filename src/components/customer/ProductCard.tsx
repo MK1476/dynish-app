@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import type { Database } from '@/types/database';
-import { Bookmark, Sparkles, Eye, Flame } from 'lucide-react';
+import { Bookmark, Sparkles, Flame } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
 type ItemRow = Database['public']['Tables']['items']['Row'];
 
 interface ProductCardProps {
   product: ItemRow;
+  categoryName?: string;
   isSaved: boolean;
   onToggleSave: (e: React.MouseEvent) => void;
   onOpenDetail: () => void;
@@ -16,44 +17,73 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
+  categoryName,
   isSaved,
   onToggleSave,
   onOpenDetail,
 }) => {
   const [imageIdx, setImageIdx] = useState(0);
 
-  const images = product.image_urls && product.image_urls.length > 0 
-    ? product.image_urls 
-    : ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800'];
+  const validImages = (product.image_urls || []).filter(
+    (url) => typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')
+  );
+  const hasImages = validImages.length > 0;
 
   const discountPercent = product.original_price && product.original_price > product.price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
 
+  // Generate a clean 1-2 letter monogram from product name
+  const initials = product.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('') || '★';
+
   return (
     <div
       onClick={onOpenDetail}
       onMouseEnter={() => {
-        if (images.length > 1) setImageIdx(1);
+        if (validImages.length > 1) setImageIdx(1);
       }}
       onMouseLeave={() => {
         setImageIdx(0);
       }}
       className="group relative bg-white rounded-3xl overflow-hidden border border-[#EBE5DA] shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer select-none"
     >
-      {/* 2-Column Square Image Container */}
+      {/* 2-Column Square Visual Container */}
       <div className="relative w-full aspect-square overflow-hidden bg-[#FAF7F2]">
-        <img
-          src={images[imageIdx] || images[0]}
-          alt={product.name}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500 ease-out"
-          loading="lazy"
-        />
+        {hasImages ? (
+          <img
+            src={validImages[imageIdx] || validImages[0]}
+            alt={product.name}
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500 ease-out"
+            loading="lazy"
+          />
+        ) : (
+          /* Bespoke Artisan Monogram Canvas for Products Without Images */
+          <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] via-[#F5EFE4] to-[#EAE1D1] flex flex-col items-center justify-center p-4 relative overflow-hidden group-hover:bg-[#F2ECE0] transition-colors">
+            {/* Subtle luxury geometric pattern background */}
+            <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(#241E1C_1px,transparent_1px)] [background-size:12px_12px]" />
+            
+            {/* Elegant Monogram Medallion */}
+            <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/90 backdrop-blur-xs border border-brand-200/90 shadow-xs flex items-center justify-center group-hover:scale-110 group-hover:border-brand-400 group-hover:shadow-sm transition-all duration-300">
+              <span className="font-serif font-extrabold text-lg sm:text-xl text-brand-900 tracking-wider">
+                {initials}
+              </span>
+            </div>
 
-        {/* Multi-Photo Dots */}
-        {images.length > 1 && (
+            <span className="relative z-10 text-[9px] uppercase tracking-widest font-bold text-espresso-400 mt-2 text-center line-clamp-1">
+              {categoryName || 'Catalog Item'}
+            </span>
+          </div>
+        )}
+
+        {/* Multi-Photo Dots (Only if multiple photos) */}
+        {hasImages && validImages.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10">
-            {images.map((_, i) => (
+            {validImages.map((_, i) => (
               <span
                 key={i}
                 className={`w-1.5 h-1.5 rounded-full transition-all ${
@@ -66,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Featured Tag */}
         {product.is_featured && (
-          <div className="absolute top-2.5 left-2.5 bg-[#C27835] text-white px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1 backdrop-blur-xs">
+          <div className="absolute top-2.5 left-2.5 bg-[#C27835] text-white px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1 backdrop-blur-xs z-10">
             <Sparkles className="w-2.5 h-2.5 fill-current" />
             <span>Featured</span>
           </div>
@@ -74,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Scarcity Tag */}
         {product.scarcity_tag && (
-          <div className="absolute top-2.5 left-2.5 bg-espresso-950/80 text-white px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide flex items-center gap-1 backdrop-blur-xs">
+          <div className="absolute top-2.5 left-2.5 bg-espresso-950/80 text-white px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide flex items-center gap-1 backdrop-blur-xs z-10">
             <Flame className="w-2.5 h-2.5 text-brand-400 fill-brand-400" />
             <span>{product.scarcity_tag}</span>
           </div>
@@ -82,17 +112,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Out of Stock Overlay */}
         {!product.is_available && (
-          <div className="absolute inset-0 bg-espresso-950/70 backdrop-blur-xs flex items-center justify-center p-2 text-center">
+          <div className="absolute inset-0 bg-espresso-950/70 backdrop-blur-xs flex items-center justify-center p-2 text-center z-20">
             <span className="bg-rose-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-rose-400 shadow-sm">
               Sold Out
             </span>
           </div>
         )}
 
-        {/* Bookmark Heart / Bookmark Ribbon */}
+        {/* Bookmark Heart / Ribbon */}
         <button
           onClick={onToggleSave}
-          className={`absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-300 shadow-xs active:scale-125 ${
+          className={`absolute top-2.5 right-2.5 p-2 rounded-full transition-all duration-300 shadow-xs active:scale-125 z-10 ${
             isSaved
               ? 'bg-[#C27835] text-white scale-105'
               : 'bg-white/90 backdrop-blur-sm text-espresso-700 hover:bg-white hover:text-[#C27835]'
@@ -104,7 +134,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Discount Badge */}
         {discountPercent > 0 && (
-          <div className="absolute bottom-2 left-2 bg-emerald-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+          <div className="absolute bottom-2 left-2 bg-emerald-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs z-10">
             {discountPercent}% OFF
           </div>
         )}
@@ -113,6 +143,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Details */}
       <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between bg-white">
         <div>
+          {categoryName && (
+            <span className="inline-block text-[10px] font-bold text-brand-800 uppercase tracking-wider bg-brand-50/80 border border-brand-200/70 px-1.5 py-0.5 rounded-md mb-1 truncate max-w-full">
+              {categoryName}
+            </span>
+          )}
           <h3 className="font-sans font-bold text-espresso-950 text-sm leading-snug truncate group-hover:text-[#C27835] transition-colors">
             {product.name}
           </h3>

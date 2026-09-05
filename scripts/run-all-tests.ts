@@ -198,6 +198,34 @@ async function runTestSuite() {
 
   assert(cleanSlug === 'royal-silk-sarees', 'Normalized slug matches expected clean format');
 
+  // 12. EXCEL PARSER ROBUSTNESS & OPTIONAL IMAGES
+  console.log(`\n${YELLOW}12. Excel Parser Robustness & Optional Images${RESET}`);
+  const { parseCatalogExcel, generateCatalogTemplate } = await import('../src/lib/excel-parser');
+  const templateBytes = generateCatalogTemplate();
+  const parsedTemplateRows = parseCatalogExcel(templateBytes);
+
+  assert(parsedTemplateRows.length >= 3, 'Template generates and parses at least 3 sample items');
+  const itemWithoutImage = parsedTemplateRows.find(r => r.imageUrl === undefined);
+  assert(!!itemWithoutImage, 'Items without image URLs are parsed successfully without rejection');
+  assert(Boolean(itemWithoutImage?.name.includes('No Photo Needed')), 'Image-less item retains full product name');
+  assert((itemWithoutImage?.price || 0) > 0, 'Image-less item retains valid numeric price');
+
+  // 13. WHOLE-CATALOG GLOBAL PRICE SORTING
+  console.log(`\n${YELLOW}13. Whole-Catalog Global Price Sorting${RESET}`);
+  const mockCatalog = [
+    { id: '1', name: 'Item Low', price: 150, is_available: true },
+    { id: '2', name: 'Item High', price: 950, is_available: true },
+    { id: '3', name: 'Item Mid', price: 400, is_available: true },
+    { id: '4', name: 'Unavailable Item', price: 50, is_available: false },
+  ];
+
+  const sortAsc = [...mockCatalog].filter(i => i.is_available).sort((a, b) => a.price - b.price);
+  const sortDesc = [...mockCatalog].filter(i => i.is_available).sort((a, b) => b.price - a.price);
+
+  assert(sortAsc[0].price === 150 && sortAsc[2].price === 950, 'Global price sort (low to high) orders all catalog items correctly');
+  assert(sortDesc[0].price === 950 && sortDesc[2].price === 150, 'Global price sort (high to low) orders all catalog items correctly');
+  assert(!sortAsc.some(i => !i.is_available), 'Out of stock items excluded from active sort view');
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

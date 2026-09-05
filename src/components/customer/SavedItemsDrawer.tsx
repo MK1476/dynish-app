@@ -94,15 +94,29 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
                   key={product.id}
                   className="flex items-center gap-3 p-3 rounded-2xl border border-ivory-200 bg-white hover:border-brand-300 transition-all shadow-xs group"
                 >
-                  <img
-                    src={product.image_urls[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300'}
-                    alt={product.name}
-                    onClick={() => {
-                      onSelectProduct(product);
-                      onClose();
-                    }}
-                    className="w-16 h-16 rounded-xl object-cover cursor-pointer shrink-0 border border-ivory-200"
-                  />
+                  {product.image_urls && product.image_urls.length > 0 && product.image_urls[0] ? (
+                    <img
+                      src={product.image_urls[0]}
+                      alt={product.name}
+                      onClick={() => {
+                        onSelectProduct(product);
+                        onClose();
+                      }}
+                      className="w-16 h-16 rounded-xl object-cover cursor-pointer shrink-0 border border-ivory-200"
+                    />
+                  ) : (
+                    <div
+                      onClick={() => {
+                        onSelectProduct(product);
+                        onClose();
+                      }}
+                      className="w-16 h-16 rounded-xl bg-gradient-to-br from-ivory-100 to-brand-50 border border-ivory-200 shrink-0 flex items-center justify-center cursor-pointer select-none"
+                    >
+                      <span className="font-serif font-extrabold text-brand-900 text-sm">
+                        {product.name.trim().slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
 
                   <div 
                     className="flex-1 min-w-0 cursor-pointer"

@@ -430,11 +430,20 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
               className="bg-white rounded-2xl border border-ivory-200 p-3 shadow-xs hover:border-brand-300 transition-all flex flex-col justify-between"
             >
               <div className="flex gap-3">
-                <img
-                  src={prod.image_urls[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300'}
-                  alt={prod.name}
-                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-ivory-200"
-                />
+                {prod.image_urls && prod.image_urls.length > 0 && prod.image_urls[0] ? (
+                  <img
+                    src={prod.image_urls[0]}
+                    alt={prod.name}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-ivory-200"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-ivory-100 to-brand-50 border border-ivory-200 shrink-0 flex flex-col items-center justify-center p-1 select-none">
+                    <span className="font-serif font-extrabold text-brand-900 text-sm">
+                      {prod.name.trim().slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="text-[8px] text-espresso-400 font-bold uppercase mt-0.5">No photo</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <span className="text-[10px] font-bold text-brand-800 uppercase bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200">
                     {categories.find(c => c.id === prod.category_id)?.name || 'General'}
@@ -721,11 +730,27 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                 {/* Live Preview Card */}
                 <div className="rounded-3xl bg-white border border-[#EBE5DA] overflow-hidden shadow-sm max-w-xs sm:max-w-sm mx-auto">
                   <div className="relative aspect-[4/5] w-full bg-ivory-100 overflow-hidden">
-                    <img
-                      src={itemImages[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600'}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    {itemImages && itemImages.length > 0 && itemImages[0] ? (
+                      <img
+                        src={itemImages[0]}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] via-[#F5EFE4] to-[#EAE1D1] flex flex-col items-center justify-center p-6 text-center select-none">
+                        <div className="w-16 h-16 rounded-2xl bg-white shadow-xs border border-brand-200/90 flex items-center justify-center mb-2">
+                          <span className="font-serif font-extrabold text-xl text-brand-900">
+                            {(itemName.trim() || 'Item').slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-espresso-400">
+                          {categories.find(c => c.id === itemCategory)?.name || 'Catalog Item'}
+                        </span>
+                        <span className="text-[11px] text-espresso-500 mt-1 font-medium">
+                          No photo added (looks beautiful in artisan text style!)
+                        </span>
+                      </div>
+                    )}
                     {isFeatured && (
                       <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C27835] text-white shadow-xs">
                         Featured

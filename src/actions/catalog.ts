@@ -115,9 +115,7 @@ export async function createItem(itemData: {
       description: itemData.description?.trim() || null,
       price: itemData.price,
       original_price: itemData.originalPrice || null,
-      image_urls: itemData.imageUrls.length > 0 ? itemData.imageUrls : [
-        'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800'
-      ],
+      image_urls: (itemData.imageUrls || []).filter(url => typeof url === 'string' && url.trim().length > 0),
       is_available: itemData.isAvailable ?? true,
       is_featured: itemData.isFeatured ?? false,
       unit: itemData.unit || 'per piece',
@@ -215,9 +213,7 @@ export async function bulkUploadCatalog(
         description: r.description || null,
         price: r.price,
         original_price: r.originalPrice || null,
-        image_urls: r.imageUrl ? [r.imageUrl] : [
-          'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800'
-        ],
+        image_urls: r.imageUrl && r.imageUrl.trim().length > 0 ? [r.imageUrl.trim()] : [],
         is_available: true,
         unit: r.unit || 'per piece',
         scarcity_tag: r.scarcityTag || null,

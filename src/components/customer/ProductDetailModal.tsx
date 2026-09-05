@@ -32,18 +32,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (!product) return null;
 
-  const images = product.image_urls && product.image_urls.length > 0 
-    ? product.image_urls 
-    : ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800'];
+  const validImages = (product.image_urls || []).filter(
+    (url) => typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')
+  );
+  const hasImages = validImages.length > 0;
+
+  const initials = product.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('') || '★';
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveImageIndex((prev) => (prev + 1) % images.length);
+    if (validImages.length === 0) return;
+    setActiveImageIndex((prev) => (prev + 1) % validImages.length);
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (validImages.length === 0) return;
+    setActiveImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
   };
 
   const handleShareProduct = async () => {
@@ -127,53 +137,71 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Gallery Carousel */}
-          <div className="relative bg-espresso-950 flex flex-col justify-center items-center select-none">
-            <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center">
-              <img
-                src={images[activeImageIndex]}
-                alt={product.name}
-                className="w-full h-full object-cover transition-opacity duration-300"
-              />
+          {/* Gallery Carousel or Artisan Canvas */}
+          {hasImages ? (
+            <div className="relative bg-espresso-950 flex flex-col justify-center items-center select-none">
+              <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center">
+                <img
+                  src={validImages[activeImageIndex] || validImages[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-opacity duration-300"
+                />
 
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-espresso-950 shadow-md transition-all active:scale-90"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-espresso-950 shadow-md transition-all active:scale-90"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                {validImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-espresso-950 shadow-md transition-all active:scale-90"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-espresso-950 shadow-md transition-all active:scale-90"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
 
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-mono">
-                    {activeImageIndex + 1} / {images.length}
-                  </div>
-                </>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-mono">
+                      {activeImageIndex + 1} / {validImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {validImages.length > 1 && (
+                <div className="flex gap-2 p-2 overflow-x-auto w-full justify-center bg-espresso-900 border-t border-espresso-800">
+                  {validImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                        idx === activeImageIndex ? 'border-brand-500 scale-105' : 'border-transparent opacity-60'
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-
-            {images.length > 1 && (
-              <div className="flex gap-2 p-2 overflow-x-auto w-full justify-center bg-espresso-900 border-t border-espresso-800">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
-                      idx === activeImageIndex ? 'border-brand-500 scale-105' : 'border-transparent opacity-60'
-                    }`}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+          ) : (
+            /* Bespoke Artisan Presentation Canvas */
+            <div className="relative bg-gradient-to-br from-[#FAF6EE] via-[#F5EFE4] to-[#EAE1D1] flex flex-col justify-center items-center p-8 select-none aspect-square overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#241E1C_1px,transparent_1px)] [background-size:16px_16px]" />
+              <div className="relative z-10 w-24 h-24 rounded-3xl bg-white/95 backdrop-blur-xs border-2 border-brand-200/90 shadow-sm flex items-center justify-center">
+                <span className="font-serif font-extrabold text-3xl text-brand-900 tracking-wider">
+                  {initials}
+                </span>
               </div>
-            )}
-          </div>
+              <span className="relative z-10 text-xs uppercase tracking-widest font-bold text-espresso-500 mt-4 text-center">
+                {shop.name}
+              </span>
+              <span className="relative z-10 text-[11px] text-espresso-400 mt-0.5 font-medium">
+                Verified In-Store Catalog Item
+              </span>
+            </div>
+          )}
 
           {/* Product Details */}
           <div className="p-5 sm:p-6 flex flex-col justify-between">

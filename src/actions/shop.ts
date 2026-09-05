@@ -208,7 +208,14 @@ export async function checkSlugAvailability(
       .maybeSingle();
 
     if (error) {
-      // Column might not exist yet
+      const isMissingCol = error.message?.includes('slug') || error.code === 'PGRST204' || error.code === '42703';
+      if (isMissingCol) {
+        return {
+          available: false,
+          slug: clean,
+          error: "Database setup required: The 'slug' column is not yet enabled in your Supabase database. Run: ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE; in Supabase SQL Editor.",
+        };
+      }
       return { available: true, slug: clean };
     }
 
@@ -253,6 +260,13 @@ export async function updateShopSlug(
     .eq('id', shopId);
 
   if (updateError) {
+    const isMissingCol = updateError.message?.includes('slug') || updateError.code === 'PGRST204' || updateError.code === '42703';
+    if (isMissingCol) {
+      return {
+        success: false,
+        error: "Database migration required: The 'slug' column does not exist in your Supabase 'shops' table. Run this SQL in your Supabase SQL Editor:\nALTER TABLE public.shops ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;\nNOTIFY pgrst, 'reload schema';",
+      };
+    }
     return { success: false, error: updateError.message };
   }
 

@@ -19,13 +19,21 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryText, setCustomCategoryText] = useState('');
+
   const categories = [
     { id: 'Boutique', label: 'Ethnic Wear & Kurti Boutique' },
     { id: 'Restaurant', label: 'Café, Food Outlet & Restaurant' },
+    { id: 'Bakery', label: 'Bakery, Cakes & Sweets' },
+    { id: 'Footwear', label: 'Footwear, Shoes & Bags' },
     { id: 'Opticals', label: 'Specs & Optical Studio' },
     { id: 'Jewellery', label: 'Jewellery & Accessories' },
     { id: 'Salon', label: 'Beauty Salon & Spa' },
+    { id: 'Electronics', label: 'Electronics & Mobile Store' },
+    { id: 'Grocery', label: 'Supermarket & Grocery Store' },
     { id: 'Retail', label: 'Small Retail & General Store' },
+    { id: '__custom__', label: '+ Add Custom Business Category...' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,9 +41,11 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
+    const finalCategory = isCustomCategory ? (customCategoryText.trim() || 'Custom') : category;
+
     const res = await createShop({
       name,
-      category,
+      category: finalCategory,
       phone,
       whatsappNumber: whatsapp || phone,
       address,
@@ -105,14 +115,38 @@ export default function OnboardingPage() {
               Trade Category <span className="text-rose-500">*</span>
             </label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={isCustomCategory ? '__custom__' : category}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '__custom__') {
+                  setIsCustomCategory(true);
+                } else {
+                  setIsCustomCategory(false);
+                  setCategory(val);
+                }
+              }}
               className="w-full px-4 py-3 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 text-xs font-semibold focus:outline-none focus:border-brand-500"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
             </select>
+
+            {isCustomCategory && (
+              <div className="mt-2.5 space-y-1 animate-scale-in">
+                <label className="block text-[11px] font-bold text-espresso-700 uppercase tracking-wider">
+                  Custom Category Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Handmade Crafts, Sports Equipment, Pet Supplies"
+                  value={customCategoryText}
+                  onChange={(e) => setCustomCategoryText(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border-2 border-brand-500 text-espresso-950 font-bold text-xs focus:outline-none focus:bg-white"
+                />
+              </div>
+            )}
           </div>
 
           {/* Contact Numbers */}
