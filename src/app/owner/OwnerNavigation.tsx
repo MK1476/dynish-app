@@ -127,7 +127,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               className="w-10 h-10 rounded-xl object-cover ring-1 ring-brand-400"
             />
             <div className="min-w-0">
-              <h3 className="font-serif font-bold text-sm text-espresso-950 truncate">
+              <h3 className="font-sans font-bold text-sm text-espresso-950 truncate">
                 {shop?.name || 'My Store'}
               </h3>
               <span className="text-[10px] uppercase font-bold text-brand-800 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200 block truncate">
@@ -245,104 +245,192 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
         </div>
       </aside>
 
-      {/* MOBILE FLOATING NAVIGATION DOCK (MATCHING SCREENSHOTS) */}
-      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1">
-        {/* Store / Dashboard */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (CLASSIC & PREMIUM WITH ELEVATED BILLING) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E8E2D8] px-3 py-2 flex items-center justify-around shadow-2xl">
+        {/* Dashboard */}
         <Link
           href="/owner/dashboard"
           onClick={(e) => handleNavClick(e, '/owner/dashboard')}
-          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
-            pathname === '/owner/dashboard'
-              ? 'bg-[#241E1C] text-white shadow-xs'
-              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-sans font-semibold transition-colors ${
+            pathname === '/owner/dashboard' ? 'text-[#C27835] font-bold' : 'text-espresso-500'
           }`}
-          title="Dashboard"
         >
-          <Store className="w-5 h-5" />
+          <LayoutDashboard className="w-5 h-5" />
+          <span>Home</span>
         </Link>
 
         {/* Catalog */}
         <Link
           href="/owner/catalog"
           onClick={(e) => handleNavClick(e, '/owner/catalog')}
-          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
-            pathname === '/owner/catalog'
-              ? 'bg-[#241E1C] text-white shadow-xs'
-              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-sans font-semibold transition-colors ${
+            pathname === '/owner/catalog' ? 'text-[#C27835] font-bold' : 'text-espresso-500'
           }`}
-          title="Catalog"
         >
-          <LayoutGrid className="w-5 h-5" />
+          <ShoppingBag className="w-5 h-5" />
+          <span>Catalog</span>
         </Link>
 
-        {/* Billing Counter */}
+        {/* ELEVATED CENTER BILLING BUTTON */}
         <Link
           href="/owner/billing"
-          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
-            pathname === '/owner/billing'
-              ? 'bg-[#241E1C] text-white shadow-xs'
-              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
-          }`}
-          title="Billing"
+          className="flex flex-col items-center -mt-6 active:scale-95 transition-transform"
         >
-          <Zap className="w-5 h-5" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 text-espresso-950 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-white">
+            <Zap className="w-7 h-7 fill-current" />
+          </div>
+          <span className="text-[11px] font-sans font-extrabold text-espresso-950 mt-1">Billing</span>
         </Link>
 
-        {/* Subscription */}
+        {/* Clients */}
         <Link
-          href="/owner/subscription"
-          onClick={(e) => handleNavClick(e, '/owner/subscription')}
-          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
-            pathname === '/owner/subscription'
-              ? 'bg-[#241E1C] text-white shadow-xs'
-              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
+          href="/owner/customers"
+          onClick={(e) => handleNavClick(e, '/owner/customers')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-sans font-semibold transition-colors ${
+            pathname === '/owner/customers' ? 'text-[#C27835] font-bold' : 'text-espresso-500'
           }`}
-          title="Subscription"
         >
-          <ShieldCheck className="w-5 h-5" />
+          <Users className="w-5 h-5" />
+          <span>Clients</span>
         </Link>
 
-        {/* More Drawer Button */}
+        {/* More Menu Drawer Trigger */}
         <button
           type="button"
           onClick={() => setIsMobileMoreOpen(true)}
-          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
-            isMobileMoreOpen
-              ? 'bg-[#241E1C] text-white shadow-xs'
-              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-sans font-semibold transition-colors ${
+            isMobileMoreOpen ? 'text-[#C27835] font-bold' : 'text-espresso-500'
           }`}
-          title="More options"
         >
           <Menu className="w-5 h-5" />
+          <span>Menu</span>
         </button>
       </div>
 
-      {/* MOBILE MORE DRAWER */}
+      {/* MOBILE MORE DRAWER (MATCHING media_1788637855357.png) */}
       {isMobileMoreOpen && (
         <div 
           className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end animate-fade-in"
           onClick={() => setIsMobileMoreOpen(false)}
         >
           <div 
-            className="w-full bg-white rounded-t-3xl p-5 shadow-2xl space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"
+            className="w-full bg-white rounded-t-3xl p-5 shadow-2xl space-y-4 animate-slide-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
-              <BrandLogo size="xs" subtext="Store Menu" />
+            {/* Header: Avatar, Name, Management subtitle, Close button */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#EBE5DA]">
+              <div className="flex items-center gap-3">
+                <img
+                  src={shop?.logo_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=100'}
+                  alt={shop?.name || 'Shop'}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#EBE5DA]"
+                />
+                <div>
+                  <h3 className="font-sans font-bold text-sm sm:text-base text-espresso-950">
+                    {shop?.name || 'Aadya Couture & Kurtis'}
+                  </h3>
+                  <p className="text-[11px] text-espresso-500">
+                    Shop Menu &amp; Management
+                  </p>
+                </div>
+              </div>
               <button 
                 onClick={() => setIsMobileMoreOpen(false)}
-                className="p-1 rounded-lg text-espresso-400 hover:text-espresso-800"
+                className="p-1.5 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Staff Mode Switch in Mobile Drawer */}
-            <div className="p-3 rounded-2xl bg-ivory-50 border border-ivory-200 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-espresso-950 block">Cashier Staff PIN Mode</span>
-                <span className="text-[10px] text-espresso-500">Lock app to counter billing only</span>
-              </div>
+            {/* 2x2 Grid matching Image */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Card 1: Offers */}
+              <Link
+                href="/owner/offers"
+                onClick={(e) => {
+                  setIsMobileMoreOpen(false);
+                  handleNavClick(e, '/owner/offers');
+                }}
+                className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EBE5DA] hover:border-[#C27835] flex items-center gap-3 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-700 flex items-center justify-center shrink-0">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-sans font-bold text-xs text-espresso-950 block truncate">Offers</span>
+                  <span className="text-[10px] text-espresso-500 block truncate">Discounts &amp; Promos</span>
+                </div>
+              </Link>
+
+              {/* Card 2: Subscription */}
+              <Link
+                href="/owner/subscription"
+                onClick={(e) => {
+                  setIsMobileMoreOpen(false);
+                  handleNavClick(e, '/owner/subscription');
+                }}
+                className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EBE5DA] hover:border-[#C27835] flex items-center gap-3 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-sans font-bold text-xs text-espresso-950 block truncate">Subscription</span>
+                  <span className="text-[10px] font-bold text-emerald-600 block truncate">
+                    {subscriptionStatus?.daysRemaining ?? 14}d Left
+                  </span>
+                </div>
+              </Link>
+
+              {/* Card 3: Shop Profile */}
+              <Link
+                href="/owner/settings"
+                onClick={(e) => {
+                  setIsMobileMoreOpen(false);
+                  handleNavClick(e, '/owner/settings');
+                }}
+                className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EBE5DA] hover:border-[#C27835] flex items-center gap-3 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/60 text-purple-600 flex items-center justify-center shrink-0">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-sans font-bold text-xs text-espresso-950 block truncate">Shop Profile</span>
+                  <span className="text-[10px] text-espresso-500 block truncate">Contact &amp; Socials</span>
+                </div>
+              </Link>
+
+              {/* Card 4: Storefront */}
+              <Link
+                href={`/store/${shop?.slug || shop?.id || ''}`}
+                target="_blank"
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EBE5DA] hover:border-[#C27835] flex items-center gap-3 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0">
+                  <Store className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-sans font-bold text-xs text-espresso-950 block truncate">Storefront</span>
+                  <span className="text-[10px] text-espresso-500 block truncate">Customer View</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* Quick Standee & Staff PIN Tools */}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/owner/standee"
+                onClick={(e) => {
+                  setIsMobileMoreOpen(false);
+                  handleNavClick(e, '/owner/standee');
+                }}
+                className="flex-1 p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EBE5DA] hover:bg-[#F2ECE4] text-xs font-bold text-espresso-900 flex items-center justify-center gap-2 transition-colors"
+              >
+                <QrCode className="w-4 h-4 text-amber-600" />
+                <span>QR Standee</span>
+              </Link>
+
               <button
                 onClick={() => {
                   setIsMobileMoreOpen(false);
@@ -353,103 +441,56 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
                     router.push('/owner/billing');
                   }
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border ${
+                className={`flex-1 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors ${
                   isStaffMode 
                     ? 'bg-rose-100 text-rose-800 border-rose-300' 
-                    : 'bg-white text-espresso-800 border-ivory-300'
+                    : 'bg-[#FAF7F2] text-espresso-800 border-[#EBE5DA] hover:bg-[#F2ECE4]'
                 }`}
               >
-                {isStaffMode ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                <span>{isStaffMode ? 'Unlock' : 'Lock'}</span>
+                {isStaffMode ? <Lock className="w-3.5 h-3.5 text-rose-600" /> : <Unlock className="w-3.5 h-3.5 text-espresso-600" />}
+                <span>{isStaffMode ? 'Staff Locked' : 'Staff PIN'}</span>
               </button>
             </div>
 
-            <div className="space-y-1">
-              <Link
-                href="/owner/standee"
-                onClick={(e) => {
-                  setIsMobileMoreOpen(false);
-                  handleNavClick(e, '/owner/standee');
-                }}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
-              >
-                <QrCode className="w-4 h-4 text-brand-600" />
-                <span>Print Counter QR Standee</span>
-              </Link>
+            {/* Subscription Days Remaining Card (Matching Screenshot) */}
+            <div className="rounded-2xl bg-[#FAF7F2] border border-[#EBE5DA] p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-espresso-950">
+                  {subscriptionStatus?.daysRemaining ?? 14} Days Remaining
+                </span>
+                <span className="text-espresso-500 font-medium">
+                  ₹199 / month
+                </span>
+              </div>
 
-              <Link
-                href="/owner/offers"
-                onClick={(e) => {
-                  setIsMobileMoreOpen(false);
-                  handleNavClick(e, '/owner/offers');
-                }}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
-              >
-                <Gift className="w-4 h-4 text-brand-600" />
-                <span>Next-Visit Loyalty Offers</span>
-              </Link>
+              {/* Progress Bar */}
+              <div className="w-full h-1.5 bg-[#E8E2D8] rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-amber-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, Math.max(10, ((subscriptionStatus?.daysRemaining ?? 14) / 30) * 100))}%` }}
+                />
+              </div>
 
               <Link
                 href="/owner/subscription"
-                onClick={(e) => {
-                  setIsMobileMoreOpen(false);
-                  handleNavClick(e, '/owner/subscription');
-                }}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="w-full py-2.5 px-4 rounded-full bg-[#14100F] hover:bg-black text-white text-xs font-bold text-center block transition-all shadow-xs"
               >
-                <CreditCard className="w-4 h-4 text-emerald-600" />
-                <span>Subscription & Recharges</span>
+                Manage Subscription &amp; Recharge
               </Link>
+            </div>
 
-              <Link
-                href="/owner/settings"
-                onClick={(e) => {
-                  setIsMobileMoreOpen(false);
-                  handleNavClick(e, '/owner/settings');
-                }}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
-              >
-                <Settings className="w-4 h-4 text-brand-600" />
-                <span>Store Branding & Profile</span>
-              </Link>
-
-              {canInstall && (
-                <button
-                  onClick={() => {
-                    setIsMobileMoreOpen(false);
-                    handleInstallApp();
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-brand-50 text-xs font-bold text-brand-900 border border-brand-200"
-                >
-                  <span className="flex items-center gap-2">
-                    <Download className="w-4 h-4 text-brand-700" />
-                    <span>Install Dynish on Device</span>
-                  </span>
-                  <span className="text-[10px] uppercase">Install &gt;</span>
-                </button>
-              )}
-
-              {shop && (
-                <Link
-                  href={`/store/${shop.id}`}
-                  target="_blank"
-                  className="flex items-center justify-between p-3 rounded-2xl bg-ivory-100 text-xs font-bold text-espresso-950"
-                >
-                  <span className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-brand-700" />
-                    <span>Open Public Storefront</span>
-                  </span>
-                  <span className="text-[10px] text-brand-800 uppercase">View &gt;</span>
-                </Link>
-              )}
-
+            {/* Red Sign Out Link (Matching Screenshot) */}
+            <div className="pt-2 text-center">
               <button
                 onClick={() => signOut()}
-                className="w-full text-left p-3 rounded-2xl text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                className="inline-flex items-center justify-center gap-2 text-rose-600 hover:text-rose-700 text-xs font-bold hover:underline py-1"
               >
-                Sign Out
+                <ExternalLink className="w-3.5 h-3.5 rotate-90" />
+                <span>Sign Out of Shop Owner</span>
               </button>
             </div>
+
           </div>
         </div>
       )}

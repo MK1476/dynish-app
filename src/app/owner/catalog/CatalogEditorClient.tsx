@@ -54,6 +54,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
   const [itemImages, setItemImages] = useState<string[]>([]);
   const [itemUnit, setItemUnit] = useState('per piece');
   const [itemTag, setItemTag] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [savingItem, setSavingItem] = useState(false);
 
@@ -115,6 +116,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setItemImages([]);
     setItemUnit('per piece');
     setItemTag('');
+    setIsFeatured(false);
     setIsAddingCategoryInModal(false);
     setIsItemModalOpen(true);
   };
@@ -130,6 +132,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setItemImages(item.image_urls.length > 0 ? item.image_urls : []);
     setItemUnit(item.unit || 'per piece');
     setItemTag(item.scarcity_tag || '');
+    setIsFeatured(item.scarcity_tag === 'Featured');
     setIsAddingCategoryInModal(false);
     setIsItemModalOpen(true);
   };
@@ -174,6 +177,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setSavingItem(true);
     const priceNum = parseFloat(itemPrice);
     const origPriceNum = itemOriginalPrice ? parseFloat(itemOriginalPrice) : undefined;
+    const computedTag = isFeatured ? 'Featured' : (itemTag.trim() || null);
 
     if (editingItem) {
       await updateItem(editingItem.id, shop.id, {
@@ -184,7 +188,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
         description: itemDescription.trim() || null,
         image_urls: itemImages,
         unit: itemUnit,
-        scarcity_tag: itemTag.trim() || null,
+        scarcity_tag: computedTag,
       });
       setItems(items.map(i => i.id === editingItem.id ? {
         ...i,
@@ -195,7 +199,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
         description: itemDescription.trim() || null,
         image_urls: itemImages,
         unit: itemUnit,
-        scarcity_tag: itemTag.trim() || null,
+        scarcity_tag: computedTag,
       } : i));
     } else {
       const res = await createItem({
@@ -206,7 +210,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
         originalPrice: origPriceNum,
         imageUrls: itemImages,
         unit: itemUnit,
-        scarcityTag: itemTag.trim() || undefined,
+        scarcityTag: computedTag || undefined,
         description: itemDescription.trim() || undefined,
       });
       if (res.success && res.item) {
@@ -526,9 +530,9 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
       {/* ADD / EDIT ITEM MODAL */}
       {isItemModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-espresso-950/70 backdrop-blur-sm overflow-y-auto animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 shadow-2xl border border-ivory-200 my-auto animate-scale-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl border border-ivory-200 my-auto animate-scale-in max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-ivory-200 mb-4">
-              <h3 className="font-serif text-xl font-bold text-espresso-950">
+              <h3 className="font-sans text-xl font-bold text-espresso-950">
                 {editingItem ? 'Edit Product' : 'Add New Product'}
               </h3>
               <button onClick={() => setIsItemModalOpen(false)} className="p-1 rounded-lg text-espresso-400 hover:text-espresso-800">
@@ -544,10 +548,10 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Lucknowi Chikankari Kurti"
+                  placeholder="e.g. Bagru Hand Block Indigo Daily Kurti"
                   value={itemName}
                   onChange={(e) => setItemName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-serif font-bold text-sm focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans font-bold text-sm focus:outline-none focus:border-brand-500"
                 />
               </div>
 
@@ -559,10 +563,10 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                   <input
                     type="number"
                     required
-                    placeholder="1450"
+                    placeholder="950"
                     value={itemPrice}
                     onChange={(e) => setItemPrice(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-serif font-bold text-base focus:outline-none focus:border-brand-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans font-bold text-base focus:outline-none focus:border-brand-500"
                   />
                 </div>
 
@@ -572,10 +576,10 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                   </label>
                   <input
                     type="number"
-                    placeholder="2000"
+                    placeholder="1200"
                     value={itemOriginalPrice}
                     onChange={(e) => setItemOriginalPrice(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-serif focus:outline-none focus:border-brand-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
@@ -641,23 +645,23 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
 
               <div>
                 <label className="block font-bold text-espresso-800 uppercase tracking-wider mb-1">
-                  Description
+                  DESCRIPTION
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Fabric, sizing, or styling notes..."
+                  placeholder="Natural indigo vegetable dyed 100% cambric cotton straight fit daily kurti. Pocket included."
                   value={itemDescription}
                   onChange={(e) => setItemDescription(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 focus:outline-none focus:border-brand-500 leading-relaxed"
                 />
               </div>
 
-              {/* Upload compressed image */}
+              {/* Upload image */}
               <div>
                 <label className="block font-bold text-espresso-800 uppercase tracking-wider mb-1.5">
-                  Product Images (Auto-compressed to &lt;150KB)
+                  Product Images (Auto-compressed)
                 </label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {itemImages.map((img, i) => (
                     <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-ivory-300 shrink-0 group">
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -685,61 +689,80 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                 </div>
               </div>
 
-              {/* LIVE CUSTOMER REPRESENTATION PREVIEW */}
-              <div className="rounded-2xl border border-dashed border-brand-300 bg-brand-50/40 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider flex items-center gap-1">
-                    <Eye className="w-3.5 h-3.5 text-brand-700" />
-                    Customer Storefront Preview
-                  </span>
-                  <span className="text-[10px] text-espresso-400">Live preview</span>
+              {/* Show with Featured badge checkbox (Matching Screenshot) */}
+              <label className="flex items-center gap-2 cursor-pointer pt-1 select-none">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="w-4 h-4 rounded border-ivory-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                />
+                <span className="text-xs text-espresso-800 font-medium">
+                  Show with "Featured" badge on storefront
+                </span>
+              </label>
+
+              {/* Primary Golden Save Button (Matching Screenshot) */}
+              <button
+                type="submit"
+                disabled={savingItem}
+                className="w-full py-3.5 rounded-xl bg-[#F5B722] hover:bg-[#E5A712] text-espresso-950 font-sans font-bold text-sm shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+              >
+                <span>{savingItem ? 'Updating...' : editingItem ? 'Update & Save Changes' : 'Update & Save Changes'}</span>
+              </button>
+
+              {/* CUSTOMER STOREFRONT LIVE PREVIEW (MATCHING SCREENSHOT) */}
+              <div className="pt-4 border-t border-ivory-200">
+                <div className="text-center font-bold text-[11px] uppercase tracking-wider text-amber-700 flex items-center justify-center gap-1.5 mb-3">
+                  <Eye className="w-3.5 h-3.5 text-amber-600" />
+                  <span>CUSTOMER STOREFRONT LIVE PREVIEW</span>
                 </div>
 
-                <div className="bg-white rounded-xl p-3 border border-ivory-200 shadow-xs flex gap-3 items-center">
-                  <img
-                    src={itemImages[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300'}
-                    alt="Preview"
-                    className="w-16 h-16 rounded-xl object-cover border border-ivory-200 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold text-brand-800 uppercase bg-brand-100 px-1.5 py-0.5 rounded">
-                        {categories.find(c => c.id === itemCategory)?.name || categories[0]?.name || 'General'}
+                {/* Live Preview Card */}
+                <div className="rounded-3xl bg-white border border-[#EBE5DA] overflow-hidden shadow-sm max-w-xs sm:max-w-sm mx-auto">
+                  <div className="relative aspect-[4/5] w-full bg-ivory-100 overflow-hidden">
+                    <img
+                      src={itemImages[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600'}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    {isFeatured && (
+                      <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C27835] text-white shadow-xs">
+                        Featured
                       </span>
-                    </div>
-                    <p className="font-serif font-bold text-espresso-950 text-sm truncate mt-0.5">
-                      {itemName.trim() || 'Product Name Preview'}
+                    )}
+                  </div>
+
+                  <div className="p-4 space-y-1">
+                    <h4 className="font-sans font-bold text-base text-espresso-950 truncate">
+                      {itemName.trim() || 'Bagru Hand Block Indigo Daily Kurti'}
+                    </h4>
+                    <p className="text-xs text-espresso-500 line-clamp-1 leading-relaxed">
+                      {itemDescription.trim() || 'Natural indigo vegetable dyed 100% cambric cotton straight fit daily kurti. Pocket included.'}
                     </p>
-                    <div className="flex items-baseline gap-2 mt-0.5">
-                      <span className="text-sm font-bold text-emerald-700 font-serif">
-                        ₹{itemPrice || '0'}
-                      </span>
-                      {itemOriginalPrice && (
-                        <span className="text-xs text-espresso-400 line-through">
-                          ₹{itemOriginalPrice}
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-sans font-bold text-lg text-espresso-950">
+                          ₹{itemPrice || '950'}
                         </span>
-                      )}
+                        {itemOriginalPrice && (
+                          <span className="text-xs text-espresso-400 line-through">
+                            ₹{itemOriginalPrice}
+                          </span>
+                        )}
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Available
+                      </span>
                     </div>
                   </div>
                 </div>
+
+                <p className="text-center text-[10px] sm:text-[11px] text-espresso-400 max-w-xs mx-auto mt-3 leading-relaxed">
+                  Items update in real-time. Customers can immediately view and save them on WhatsApp catalog.
+                </p>
               </div>
 
-              <div className="pt-3 border-t border-ivory-100 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsItemModalOpen(false)}
-                  className="w-1/2 py-3 rounded-xl bg-ivory-100 text-espresso-800 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingItem}
-                  className="w-1/2 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-bold shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  <span>{savingItem ? 'Saving...' : 'Save Product'}</span>
-                </button>
-              </div>
             </form>
           </div>
         </div>

@@ -128,7 +128,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 tracking-tight">
+        <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
           Subscription
         </h1>
         <p className="text-espresso-500 text-xs sm:text-sm mt-0.5 font-normal">
@@ -167,7 +167,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
               <span className="text-xs text-espresso-500">Plan: Standard Merchant</span>
             </div>
 
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 mt-2">
+            <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 mt-2">
               {status.isExpired ? '0 Days Remaining' : `${status.daysRemaining} Days Remaining`}
             </h2>
             <p className="text-xs text-espresso-500 mt-0.5">
@@ -181,7 +181,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
 
           <div className="text-left sm:text-right">
             <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider block">Base Rate</span>
-            <span className="font-serif font-bold text-2xl text-espresso-950">₹199 / mo</span>
+            <span className="font-sans font-bold text-2xl text-espresso-950">₹199 / mo</span>
           </div>
         </div>
 
@@ -231,7 +231,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         <div className="bg-white rounded-3xl p-6 border border-[#EBE5DA] shadow-sm space-y-5">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="font-serif text-4xl font-bold text-espresso-950">₹199</span>
+              <span className="font-sans text-4xl font-extrabold text-espresso-950">₹199</span>
             </div>
             <span className="text-espresso-500 text-xs font-medium block mt-0.5">per month</span>
           </div>
@@ -274,11 +274,11 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           </div>
 
           <div>
-            <h3 className="font-serif text-xl font-bold text-espresso-950 mt-1">
+            <h3 className="font-sans text-xl font-bold text-espresso-950 mt-1">
               6 Months
             </h3>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-serif text-4xl font-bold text-espresso-950">₹999</span>
+              <span className="font-sans text-4xl font-extrabold text-espresso-950">₹999</span>
             </div>
             <span className="text-espresso-500 text-xs font-medium block mt-0.5">for 6 months</span>
           </div>
@@ -324,7 +324,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       <div className="bg-ivory-100 rounded-3xl p-5 border border-ivory-200">
         <div className="flex items-center gap-2 mb-1">
           <RefreshCw className={`w-4 h-4 text-brand-800 ${simulating ? 'animate-spin' : ''}`} />
-          <h4 className="font-serif text-sm font-bold text-espresso-900">
+          <h4 className="font-sans text-sm font-bold text-espresso-900">
             Demo & Presentation State Controls
           </h4>
         </div>

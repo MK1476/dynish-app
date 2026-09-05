@@ -113,7 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Details */}
       <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between bg-white">
         <div>
-          <h3 className="font-serif font-bold text-espresso-950 text-sm leading-snug truncate group-hover:text-[#C27835] transition-colors">
+          <h3 className="font-sans font-bold text-espresso-950 text-sm leading-snug truncate group-hover:text-[#C27835] transition-colors">
             {product.name}
           </h3>
           {product.description && (
@@ -125,7 +125,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Price Row */}
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-serif font-bold text-base text-espresso-950 tracking-tight">
+          <span className="font-sans font-bold text-base text-espresso-950 tracking-tight">
             ₹{product.price.toLocaleString('en-IN')}
           </span>
 

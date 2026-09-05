@@ -88,10 +88,25 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const latestPhoneQuery = useRef('');
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const customerCacheRef = useRef<Map<string, CustomerRow & { lastOfferAwarded?: string | null }>>(new Map());
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     phoneInputRef.current?.focus();
-  }, []);
+    // Warm client cache with recent customers for zero-latency lookups
+    searchCustomers(shop.id, '').then((custs) => {
+      if (custs && custs.length > 0) {
+        custs.forEach((c) => {
+          const digits = c.phone_number.replace(/\D/g, '').slice(-10);
+          customerCacheRef.current.set(digits, c);
+        });
+      }
+    }).catch(() => {});
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [shop.id]);
 
   const calculateDiscountBreakdown = (offerText: string | null | undefined, amount: number | null) => {
     if (!offerText || !amount || amount <= 0) return null;
@@ -139,72 +154,106 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     billNum
   );
 
-  const handlePhoneChange = async (val: string) => {
+  const handlePhoneChange = (val: string) => {
     const numeric = val.replace(/\D/g, '').slice(0, 10);
     setPhoneNumber(numeric);
     setIsOfferDismissed(false);
     latestPhoneQuery.current = numeric;
 
-    if (numeric.length >= 2 && numeric.length < 10) {
-      const matches = await searchCustomers(shop.id, numeric);
-      if (latestPhoneQuery.current === numeric) {
-        setSuggestions(matches);
-        setShowSuggestions(true);
-      }
-    } else {
-      setShowSuggestions(false);
-      if (numeric.length < 2) setSuggestions([]);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
 
     if (numeric.length === 10) {
       setShowSuggestions(false);
-      // Instant cache check to avoid UI flicker
-      const cached = suggestions.find(s => s.phone_number.replace(/\D/g, '').slice(-10) === numeric);
+
+      // Instant 0ms cache check
+      const cached = customerCacheRef.current.get(numeric);
       if (cached) {
         setMatchedCustomer(cached);
         if (cached.name) setCustomerName(cached.name);
+        if (cached.lastOfferAwarded) setAppliedOfferText(cached.lastOfferAwarded);
       }
 
-      setLoadingCustomer(true);
-      const existing = await getCustomerByPhone(shop.id, numeric);
-      if (latestPhoneQuery.current === numeric) {
-        setLoadingCustomer(false);
-        if (existing) {
-          setMatchedCustomer(existing);
-          setCustomerName(existing.name || '');
-          if (existing.lastOfferAwarded) {
-            setAppliedOfferText(existing.lastOfferAwarded);
+      setLoadingCustomer(!cached);
+      getCustomerByPhone(shop.id, numeric).then((existing) => {
+        if (latestPhoneQuery.current === numeric) {
+          setLoadingCustomer(false);
+          if (existing) {
+            customerCacheRef.current.set(numeric, existing);
+            setMatchedCustomer(existing);
+            if (existing.name) setCustomerName(existing.name);
+            if (existing.lastOfferAwarded) setAppliedOfferText(existing.lastOfferAwarded);
+          } else if (!cached) {
+            setMatchedCustomer(null);
+            setAppliedOfferText('');
           }
-        } else if (!cached) {
-          setMatchedCustomer(null);
-          setAppliedOfferText('');
         }
+      }).catch(() => {
+        if (latestPhoneQuery.current === numeric) setLoadingCustomer(false);
+      });
+      return;
+    }
+
+    // Under 10 digits
+    setLoadingCustomer(false);
+    setMatchedCustomer(null);
+    setAppliedOfferText('');
+
+    if (numeric.length >= 3) {
+      // Check local cache first (instant!)
+      const localMatches: CustomerRow[] = [];
+      customerCacheRef.current.forEach((cust, digits) => {
+        if (localMatches.length < 4 && digits.includes(numeric)) {
+          localMatches.push(cust);
+        }
+      });
+      if (localMatches.length > 0) {
+        setSuggestions(localMatches);
+        setShowSuggestions(true);
       }
+
+      searchDebounceRef.current = setTimeout(async () => {
+        if (latestPhoneQuery.current === numeric) {
+          const matches = await searchCustomers(shop.id, numeric);
+          if (latestPhoneQuery.current === numeric) {
+            matches.forEach((c) => {
+              const digits = c.phone_number.replace(/\D/g, '').slice(-10);
+              customerCacheRef.current.set(digits, c);
+            });
+            setSuggestions(matches);
+            setShowSuggestions(matches.length > 0);
+          }
+        }
+      }, 250);
     } else {
-      setLoadingCustomer(false);
-      setMatchedCustomer(null);
-      setAppliedOfferText('');
+      setShowSuggestions(false);
+      setSuggestions([]);
     }
   };
 
-  const handleSelectSuggestion = async (cust: CustomerRow) => {
+  const handleSelectSuggestion = (cust: CustomerRow) => {
     const cleanDigits = cust.phone_number.replace(/\D/g, '').slice(-10);
     setPhoneNumber(cleanDigits);
     setCustomerName(cust.name || '');
     setShowSuggestions(false);
     amountInputRef.current?.focus();
 
-    setLoadingCustomer(true);
-    const existing = await getCustomerByPhone(shop.id, cleanDigits);
-    setLoadingCustomer(false);
-    if (existing) {
-      setMatchedCustomer(existing);
-      if (existing.lastOfferAwarded) {
-        setAppliedOfferText(existing.lastOfferAwarded);
-      }
+    const cached = customerCacheRef.current.get(cleanDigits);
+    if (cached) {
+      setMatchedCustomer(cached);
+      if (cached.lastOfferAwarded) setAppliedOfferText(cached.lastOfferAwarded);
     } else {
       setMatchedCustomer(cust);
     }
+
+    getCustomerByPhone(shop.id, cleanDigits).then((existing) => {
+      if (existing) {
+        customerCacheRef.current.set(cleanDigits, existing);
+        setMatchedCustomer(existing);
+        if (existing.lastOfferAwarded) setAppliedOfferText(existing.lastOfferAwarded);
+      }
+    }).catch(() => {});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,7 +317,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 tracking-tight">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
             Billing
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5 font-normal">
@@ -278,12 +327,12 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
 
         <div className="text-right">
           <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider block">Shop</span>
-          <span className="font-serif font-bold text-espresso-900 text-xs sm:text-sm truncate max-w-[140px] inline-block">{shop.name}</span>
+          <span className="font-sans font-bold text-espresso-900 text-xs sm:text-sm truncate max-w-[140px] inline-block">{shop.name}</span>
         </div>
       </div>
 
       {/* Main Billing Form Cards Stack */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 pb-28">
         
         {/* CARD 1: Customer Mobile Number */}
         <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm relative">
@@ -308,7 +357,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               placeholder="98542 29199"
               value={phoneNumber}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              className="w-full bg-transparent font-serif font-bold text-2xl sm:text-3xl text-espresso-950 tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
+              className="w-full bg-transparent font-sans font-bold text-2xl sm:text-3xl text-espresso-950 tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
               required
             />
             {phoneNumber && (
@@ -373,7 +422,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   placeholder="Customer Name (optional)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full bg-transparent font-serif font-bold text-xl sm:text-2xl text-espresso-950 border-b border-dashed border-espresso-300 focus:border-[#C27835] focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-base"
+                  className="w-full bg-transparent font-sans font-bold text-xl sm:text-2xl text-espresso-950 border-b border-dashed border-espresso-300 focus:border-[#C27835] focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-base"
                 />
                 <div className="text-xs text-espresso-500 mt-1 font-medium">
                   {matchedCustomer ? (
@@ -406,7 +455,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                     <Sparkles className="w-3.5 h-3.5 fill-[#C27835]" />
                     <span>OFFER TO APPLY NOW</span>
                   </div>
-                  <div className="font-serif font-bold text-sm sm:text-base text-espresso-950 truncate mt-0.5">
+                  <div className="font-sans font-bold text-sm sm:text-base text-espresso-950 truncate mt-0.5">
                     {matchedCustomer.lastOfferAwarded}
                   </div>
                   {discountInfo && (
@@ -465,7 +514,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
           </div>
 
           <div className="relative flex items-center rounded-2xl bg-[#FAF7F2] border-2 border-[#C27835]/60 focus-within:border-[#C27835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#C27835]/20 px-4 py-3 transition-all">
-            <span className="font-serif text-2xl sm:text-3xl text-espresso-400 select-none mr-2 font-bold">
+            <span className="font-sans text-2xl sm:text-3xl text-espresso-400 select-none mr-2 font-bold">
               ₹
             </span>
             <input
@@ -474,22 +523,16 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               placeholder="0"
               value={billAmount}
               onChange={(e) => setBillAmount(e.target.value)}
-              className="w-full bg-transparent font-serif font-bold text-3xl sm:text-4xl text-espresso-950 focus:outline-none placeholder:text-espresso-300"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (phoneNumber.length === 10) {
+                    handleSubmit(e);
+                  }
+                }
+              }}
+              className="w-full bg-transparent font-sans font-bold text-3xl sm:text-4xl text-espresso-950 focus:outline-none placeholder:text-espresso-300"
             />
-          </div>
-
-          {/* Quick Amount Chips */}
-          <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar py-0.5">
-            {[500, 1000, 1500, 2500].map((amt) => (
-              <button
-                key={amt}
-                type="button"
-                onClick={() => setBillAmount(amt.toString())}
-                className="px-4 py-1.5 rounded-full bg-white border border-[#E8E2D8] text-xs font-serif font-bold text-espresso-800 hover:border-[#C27835] hover:bg-[#FAF7F2] transition-all shadow-2xs active:scale-95 shrink-0"
-              >
-                ₹{amt.toLocaleString('en-IN')}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -519,19 +562,19 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
           </div>
         </div>
 
-        {/* Primary Action Button */}
+        {/* In-Form Primary Action Button */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={submitting || phoneNumber.length !== 10}
-            className="w-full py-4 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white font-serif font-bold text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
+            className="w-full py-4 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white font-sans font-bold text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
           >
             <Zap className="w-5 h-5 text-amber-400 fill-current" />
             <span>
               {submitting 
                 ? 'Recording...' 
                 : billNum > 0 
-                ? `Confirm Bill (₹${billNum}) & Open WhatsApp` 
+                ? `Confirm Bill (₹${billNum.toLocaleString('en-IN')}) & Open WhatsApp` 
                 : 'Record Bill & Open WhatsApp'}
             </span>
             <ArrowRight className="w-5 h-5 ml-1" />
@@ -539,6 +582,34 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
         </div>
 
       </form>
+
+      {/* STICKY BOTTOM ACTION BAR (CASHIER ULTRA-FAST COUNTER UX) */}
+      <div className="fixed bottom-14 sm:bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#E8E2D8] p-3 sm:p-4 shadow-2xl">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || phoneNumber.length !== 10}
+            className={`w-full py-3.5 sm:py-4 px-6 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 active:scale-[0.98] shadow-lg ${
+              phoneNumber.length === 10
+                ? 'bg-[#241E1C] hover:bg-[#342B28] text-white shadow-amber-500/10 cursor-pointer'
+                : 'bg-ivory-200 text-espresso-400 cursor-not-allowed border border-ivory-300'
+            }`}
+          >
+            <Zap className={`w-5 h-5 ${phoneNumber.length === 10 ? 'text-amber-400 fill-current' : 'text-espresso-400'}`} />
+            <span>
+              {submitting
+                ? 'Recording Bill & Launching...'
+                : phoneNumber.length === 10
+                ? billNum > 0
+                  ? `Confirm Bill (₹${billNum.toLocaleString('en-IN')}) & Open WhatsApp 💬`
+                  : 'Record Bill & Open WhatsApp 💬'
+                : 'Enter 10-Digit Mobile Number to Bill'}
+            </span>
+            {phoneNumber.length === 10 && <ArrowRight className="w-4 h-4 text-white shrink-0 ml-1" />}
+          </button>
+        </div>
+      </div>
 
       {/* WHATSAPP CONFIRMATION MODAL */}
       {completedDetails && (
@@ -548,7 +619,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <h3 className="font-serif text-2xl font-bold text-center text-espresso-950 mb-1">
+            <h3 className="font-sans text-2xl font-extrabold text-center text-espresso-950 mb-1">
               Bill Recorded Successfully!
             </h3>
             <p className="text-center text-xs text-espresso-500 mb-4">
@@ -563,7 +634,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               </div>
               <div className="flex justify-between">
                 <span className="text-espresso-500">Bill Amount:</span>
-                <span className="font-bold font-serif text-sm text-espresso-950">{formatINR(completedDetails.amount)}</span>
+                <span className="font-bold font-sans text-sm text-espresso-950">{formatINR(completedDetails.amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-espresso-500">Next-Visit Gift:</span>
@@ -637,7 +708,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-ivory-200">
               <div className="flex items-center gap-2">
                 <Printer className="w-5 h-5 text-brand-600" />
-                <h3 className="font-serif font-bold text-lg text-espresso-950">Thermal Slip</h3>
+                <h3 className="font-sans font-bold text-lg text-espresso-950">Thermal Slip</h3>
               </div>
               <button 
                 onClick={() => setIsThermalModalOpen(false)}

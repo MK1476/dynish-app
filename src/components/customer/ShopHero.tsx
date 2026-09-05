@@ -91,7 +91,7 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-cover ring-1 ring-[#C27835] shrink-0"
             />
             <div className="min-w-0">
-              <span className="font-serif font-bold text-espresso-950 text-xs sm:text-sm truncate block">
+              <span className="font-sans font-bold text-espresso-950 text-xs sm:text-sm truncate block">
                 {shop.name}
               </span>
               <span className="text-[10px] text-espresso-500 font-medium truncate block">
@@ -162,7 +162,7 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-white/70 shadow-lg object-cover bg-white shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight drop-shadow-sm truncate">
+              <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight drop-shadow-sm truncate">
                 {shop.name}
               </h1>
               <p className="text-white/90 text-xs sm:text-sm font-normal mt-0.5 line-clamp-1 drop-shadow-xs">

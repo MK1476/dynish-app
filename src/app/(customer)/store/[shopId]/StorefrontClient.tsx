@@ -6,7 +6,7 @@ import { ShopHero } from '@/components/customer/ShopHero';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { ProductDetailModal } from '@/components/customer/ProductDetailModal';
 import { SavedItemsDrawer } from '@/components/customer/SavedItemsDrawer';
-import { Search, X, Sparkles, ArrowDownUp } from 'lucide-react';
+import { Search, X, Sparkles, ArrowDownUp, LayoutGrid, Check, Bookmark } from 'lucide-react';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
@@ -24,6 +24,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   items,
 }) => {
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<ItemRow | null>(null);
@@ -220,7 +221,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
       {searchQuery.trim() ? (
         <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-lg font-bold text-espresso-950">
+            <h2 className="font-sans text-lg font-extrabold text-espresso-950">
               Search results for "{searchQuery}"
             </h2>
             <button
@@ -254,37 +255,10 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
       ) : (
         /* STANDARD CATEGORY SECTIONS */
         <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-4 space-y-6">
-          {/* Top Category Filter Pills matching Image 2 */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-            <button
-              onClick={() => handleCategoryClick('all')}
-              className={`px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
-                activeCategoryId === 'all'
-                  ? 'bg-[#241E1C] text-white shadow-xs font-bold'
-                  : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2]'
-              }`}
-            >
-              All
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
-                  activeCategoryId === cat.id
-                    ? 'bg-[#241E1C] text-white shadow-xs font-bold'
-                    : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2]'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
           {categorySections.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-3xl border border-[#EBE5DA]">
               <Sparkles className="w-8 h-8 text-[#C27835] mx-auto mb-2" />
-              <h3 className="font-serif text-base font-bold text-espresso-950">Catalog Updating</h3>
+              <h3 className="font-sans text-base font-extrabold text-espresso-950">Catalog Updating</h3>
               <p className="text-xs text-espresso-500 mt-1">The store owner is currently curating pieces. Check back soon!</p>
             </div>
           ) : (
@@ -295,7 +269,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                 className="scroll-mt-20"
               >
                 <div className="flex items-center justify-between mb-3 border-b border-ivory-200 pb-1.5">
-                  <h2 className="font-serif text-lg sm:text-xl font-bold text-espresso-950 flex items-center gap-2">
+                  <h2 className="font-sans text-lg sm:text-xl font-extrabold text-espresso-950 flex items-center gap-2">
                     <span>{section.category.name}</span>
                     <span className="text-xs text-espresso-400 font-sans font-normal">
                       ({section.items.length})
@@ -321,7 +295,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       )}
 
-      {/* FLOATING BOTTOM DOCK (MATCHING SCREENSHOT) */}
+      {/* FLOATING BOTTOM DOCK */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-[94vw] w-auto">
         {isSearchActive ? (
           <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-2xl p-1.5 flex items-center gap-2 animate-scale-in">
@@ -356,47 +330,139 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
             </button>
           </div>
         ) : (
-          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1">
+          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1.5">
             <button
               onClick={() => setIsSearchActive(true)}
-              className="p-2.5 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-black/5 transition-all shrink-0"
+              className="px-3.5 py-2 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-black/5 transition-all flex items-center gap-1.5 text-xs font-semibold"
               title="Search catalog"
             >
               <Search className="w-4 h-4" />
+              <span>Search</span>
             </button>
 
             <button
-              id="cat-pill-all"
-              onClick={() => handleCategoryClick('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
-                activeCategoryId === 'all'
-                  ? 'bg-[#241E1C] text-white shadow-xs'
-                  : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
-              }`}
+              onClick={() => setIsSavedDrawerOpen(true)}
+              className="px-3.5 py-2 rounded-full text-xs font-bold text-espresso-800 hover:bg-[#FAF7F2] transition-all flex items-center gap-1.5 shrink-0"
+              title="Saved items"
             >
-              All
+              <Bookmark className="w-3.5 h-3.5 text-[#C27835] fill-current" />
+              <span>Saved</span>
+              {savedItemIds.length > 0 && (
+                <span className="bg-[#C27835] text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+                  {savedItemIds.length}
+                </span>
+              )}
             </button>
-
-            {categories.map((cat) => {
-              const isActive = activeCategoryId === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  id={`cat-pill-${cat.id}`}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
-                    isActive
-                      ? 'bg-[#241E1C] text-white shadow-xs font-bold'
-                      : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
           </div>
         )}
       </div>
+
+      {/* FLOATING ACTION BUTTON (FAB) FOR CATEGORIES */}
+      <button
+        type="button"
+        onClick={() => setIsCategoryModalOpen(true)}
+        className="fixed bottom-4 right-4 sm:right-6 z-30 px-4 py-2.5 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white shadow-xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all border border-[#C27835]/40"
+      >
+        <LayoutGrid className="w-4 h-4 text-amber-400" />
+        <span>
+          {activeCategoryId === 'all'
+            ? 'Categories'
+            : (categories.find(c => c.id === activeCategoryId)?.name || 'Categories')}
+        </span>
+        <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+          {categories.length}
+        </span>
+      </button>
+
+      {/* CATEGORY POPUP MODAL (BOTTOM-SHEET) */}
+      {isCategoryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          onClick={() => setIsCategoryModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#EBE5DA]">
+              <div>
+                <h3 className="font-sans font-bold text-base text-espresso-950">Shop Categories</h3>
+                <p className="text-xs text-espresso-500">Jump directly to any section</p>
+              </div>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="p-1.5 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {/* All Items Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCategoryClick('all');
+                  setIsCategoryModalOpen(false);
+                }}
+                className={`w-full p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-all ${
+                  activeCategoryId === 'all'
+                    ? 'bg-[#241E1C] text-white shadow-xs'
+                    : 'bg-[#FAF7F2] text-espresso-800 hover:bg-[#F2ECE4] border border-[#EBE5DA]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeCategoryId === 'all' ? 'bg-white/10 text-white' : 'bg-white text-espresso-800 shadow-2xs'}`}>
+                    <LayoutGrid className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block font-sans font-bold text-sm">All Products</span>
+                    <span className={`text-[10px] font-normal ${activeCategoryId === 'all' ? 'text-white/70' : 'text-espresso-500'}`}>
+                      {items.length} items cataloged
+                    </span>
+                  </div>
+                </div>
+                {activeCategoryId === 'all' && <Check className="w-4 h-4 text-amber-400" />}
+              </button>
+
+              {/* Each Category */}
+              {categories.map((cat) => {
+                const catItemCount = items.filter((i) => i.category_id === cat.id).length;
+                const isActive = activeCategoryId === cat.id;
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      handleCategoryClick(cat.id);
+                      setIsCategoryModalOpen(false);
+                    }}
+                    className={`w-full p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-[#241E1C] text-white shadow-xs'
+                        : 'bg-[#FAF7F2] text-espresso-800 hover:bg-[#F2ECE4] border border-[#EBE5DA]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/10 text-white' : 'bg-white text-espresso-800 shadow-2xs'}`}>
+                        <Sparkles className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-sans font-bold text-sm">{cat.name}</span>
+                        <span className={`text-[10px] font-normal ${isActive ? 'text-white/70' : 'text-espresso-500'}`}>
+                          {catItemCount} items
+                        </span>
+                      </div>
+                    </div>
+                    {isActive && <Check className="w-4 h-4 text-amber-400" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Powered By Dynish Footer */}
       <footer className="mt-8 mb-24 text-center py-6 border-t border-ivory-200">
