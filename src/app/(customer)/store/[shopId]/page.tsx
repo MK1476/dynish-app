@@ -1,5 +1,5 @@
 import React from 'react';
-import { getShopById } from '@/actions/shop';
+import { getShopBySlugOrId } from '@/actions/shop';
 import { getShopCatalog } from '@/actions/catalog';
 import { notFound } from 'next/navigation';
 import { StorefrontClient } from './StorefrontClient';
@@ -12,7 +12,7 @@ interface StorePageProps {
 }
 
 export async function generateMetadata({ params }: StorePageProps): Promise<Metadata> {
-  const shop = await getShopById(params.shopId);
+  const shop = await getShopBySlugOrId(params.shopId);
   if (!shop) return { title: 'Store Not Found — Dynish' };
 
   return {
@@ -27,14 +27,13 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
 }
 
 export default async function StorePage({ params }: StorePageProps) {
-  const [shop, catalog] = await Promise.all([
-    getShopById(params.shopId),
-    getShopCatalog(params.shopId),
-  ]);
+  const shop = await getShopBySlugOrId(params.shopId);
 
   if (!shop) {
     notFound();
   }
+
+  const catalog = await getShopCatalog(shop.id);
 
   return (
     <StorefrontClient 

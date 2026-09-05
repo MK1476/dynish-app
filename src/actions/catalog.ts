@@ -235,3 +235,39 @@ export async function bulkUploadCatalog(
     return { success: false, count: 0, error: err.message };
   }
 }
+
+export async function uploadProductImage(
+  shopId: string,
+  formData: FormData
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File;
+    if (!file) return { success: false, error: 'No file provided' };
+
+    const admin = createAdminClient();
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'webp';
+    const filePath = `shop_${shopId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+    const { data, error } = await admin.storage
+      .from('product-images')
+      .upload(filePath, buffer, {
+        contentType: file.type || 'image/webp',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      return { success: false, error: error.message };
+    }
+
+    const { data: publicData } = admin.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return { success: true, url: publicData.publicUrl };
+  } catch (err: any) {
+    console.error('uploadProductImage exception:', err);
+    return { success: false, error: err.message || 'Upload failed' };
+  }
+}

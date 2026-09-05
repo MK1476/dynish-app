@@ -84,6 +84,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     }
   };
 
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const latestPhoneQuery = useRef('');
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,46 +93,110 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     phoneInputRef.current?.focus();
   }, []);
 
+  const calculateDiscountBreakdown = (offerText: string | null | undefined, amount: number | null) => {
+    if (!offerText || !amount || amount <= 0) return null;
+
+    const percentMatch = offerText.match(/(\d+(\.\d+)?)\s*%/);
+    if (percentMatch) {
+      const percent = parseFloat(percentMatch[1]);
+      if (!isNaN(percent) && percent > 0) {
+        const discount = Math.round((amount * percent) / 100);
+        const finalAmount = Math.max(0, amount - discount);
+        return {
+          type: 'percentage' as const,
+          percent,
+          discountRupees: discount,
+          originalAmount: amount,
+          finalAmount,
+          summary: `${percent}% on ₹${amount} is ₹${discount}/- discount`,
+        };
+      }
+    }
+
+    const flatMatch = offerText.match(/(?:₹|rs\.?|flat\s*)(\d+)/i);
+    if (flatMatch) {
+      const flatDiscount = parseFloat(flatMatch[1]);
+      if (!isNaN(flatDiscount) && flatDiscount > 0) {
+        const discount = Math.min(amount, flatDiscount);
+        const finalAmount = Math.max(0, amount - discount);
+        return {
+          type: 'flat' as const,
+          percent: Math.round((discount / amount) * 100),
+          discountRupees: discount,
+          originalAmount: amount,
+          finalAmount,
+          summary: `Flat ₹${discount}/- discount on ₹${amount}`,
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const billNum = billAmount ? parseFloat(billAmount) : 0;
+  const discountInfo = calculateDiscountBreakdown(
+    !isOfferDismissed && appliedOfferText ? appliedOfferText : null, 
+    billNum
+  );
+
   const handlePhoneChange = async (val: string) => {
     const numeric = val.replace(/\D/g, '').slice(0, 10);
     setPhoneNumber(numeric);
     setIsOfferDismissed(false);
+    latestPhoneQuery.current = numeric;
 
-    if (numeric.length >= 2) {
+    if (numeric.length >= 2 && numeric.length < 10) {
       const matches = await searchCustomers(shop.id, numeric);
-      setSuggestions(matches);
-      setShowSuggestions(true);
+      if (latestPhoneQuery.current === numeric) {
+        setSuggestions(matches);
+        setShowSuggestions(true);
+      }
     } else {
       setShowSuggestions(false);
-      setSuggestions([]);
+      if (numeric.length < 2) setSuggestions([]);
     }
 
     if (numeric.length === 10) {
-      const existing = await getCustomerByPhone(shop.id, numeric);
-      if (existing) {
-        setMatchedCustomer(existing);
-        setCustomerName(existing.name || '');
-        if (existing.lastOfferAwarded) {
-          setAppliedOfferText(existing.lastOfferAwarded);
-        }
-      } else {
-        setMatchedCustomer(null);
-        setAppliedOfferText('');
-      }
       setShowSuggestions(false);
+      // Instant cache check to avoid UI flicker
+      const cached = suggestions.find(s => s.phone_number.replace(/\D/g, '').slice(-10) === numeric);
+      if (cached) {
+        setMatchedCustomer(cached);
+        if (cached.name) setCustomerName(cached.name);
+      }
+
+      setLoadingCustomer(true);
+      const existing = await getCustomerByPhone(shop.id, numeric);
+      if (latestPhoneQuery.current === numeric) {
+        setLoadingCustomer(false);
+        if (existing) {
+          setMatchedCustomer(existing);
+          setCustomerName(existing.name || '');
+          if (existing.lastOfferAwarded) {
+            setAppliedOfferText(existing.lastOfferAwarded);
+          }
+        } else if (!cached) {
+          setMatchedCustomer(null);
+          setAppliedOfferText('');
+        }
+      }
     } else {
+      setLoadingCustomer(false);
       setMatchedCustomer(null);
       setAppliedOfferText('');
     }
   };
 
   const handleSelectSuggestion = async (cust: CustomerRow) => {
-    setPhoneNumber(cust.phone_number);
+    const cleanDigits = cust.phone_number.replace(/\D/g, '').slice(-10);
+    setPhoneNumber(cleanDigits);
     setCustomerName(cust.name || '');
     setShowSuggestions(false);
     amountInputRef.current?.focus();
 
-    const existing = await getCustomerByPhone(shop.id, cust.phone_number);
+    setLoadingCustomer(true);
+    const existing = await getCustomerByPhone(shop.id, cleanDigits);
+    setLoadingCustomer(false);
     if (existing) {
       setMatchedCustomer(existing);
       if (existing.lastOfferAwarded) {
@@ -147,12 +213,13 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
 
     setSubmitting(true);
     const amountVal = billAmount ? parseFloat(billAmount) : null;
+    const finalAmountToRecord = discountInfo ? discountInfo.finalAmount : amountVal;
 
     const result = await recordBill({
       shopId: shop.id,
       phoneNumber,
       customerName: customerName.trim() || undefined,
-      billAmount: amountVal,
+      billAmount: finalAmountToRecord,
       appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
       nextVisitOffer: selectedOffer,
     });
@@ -160,6 +227,9 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     setSubmitting(false);
 
     if (result.success && result.customer && result.whatsAppUrl) {
+      // 1-Click direct WhatsApp launch
+      window.open(result.whatsAppUrl, '_blank');
+
       confetti({
         particleCount: 65,
         spread: 70,
@@ -170,7 +240,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       setCompletedDetails({
         phone: phoneNumber,
         name: result.customer.name || 'Guest',
-        amount: amountVal,
+        amount: finalAmountToRecord,
         nextOffer: selectedOffer,
         visitNumber: result.customer.visit_count,
         rawText: result.whatsAppText || '',
@@ -322,7 +392,11 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                     className="w-full bg-transparent font-serif font-bold text-base sm:text-lg text-espresso-950 border-b border-dashed border-espresso-300 focus:border-brand-600 focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-sm"
                   />
                   <span className="text-[11px] font-medium text-espresso-500 block mt-0.5">
-                    {matchedCustomer ? 'Registered Regular Customer' : 'New First-Time Guest'}
+                    {loadingCustomer 
+                      ? 'Checking customer history...' 
+                      : matchedCustomer 
+                      ? 'Registered Regular Customer' 
+                      : 'New First-Time Guest'}
                   </span>
                 </div>
               </div>
@@ -413,14 +487,35 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                 </button>
               </div>
             </div>
+
+            {/* Calculated Discount Breakdown in Rupees */}
+            {appliedOfferText === matchedCustomer.lastOfferAwarded && discountInfo && (
+              <div className="mt-2.5 pt-2.5 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{discountInfo.summary}</span>
+                </div>
+                <div className="font-serif font-bold text-sm text-espresso-950 bg-emerald-100/70 border border-emerald-300/80 px-2.5 py-1 rounded-xl">
+                  Payable: <span className="text-emerald-700 font-black text-base">₹{discountInfo.finalAmount}</span>
+                  <span className="text-[11px] text-espresso-500 font-normal ml-1">(Saved ₹{discountInfo.discountRupees})</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Bill Amount */}
         <div>
-          <label className="block text-xs font-bold text-espresso-800 uppercase tracking-wider mb-2">
-            Bill Amount (₹ INR)
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-bold text-espresso-800 uppercase tracking-wider">
+              Bill Amount (₹ INR)
+            </label>
+            {discountInfo && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                -₹{discountInfo.discountRupees} Discount ({discountInfo.percent}% OFF) ➜ Payable: ₹{discountInfo.finalAmount}
+              </span>
+            )}
+          </div>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-espresso-500 font-serif font-bold text-2xl select-none">
               ₹
@@ -479,7 +574,13 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-500 via-amber-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-espresso-950 font-serif font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
           >
             <Zap className="w-5 h-5 fill-current" />
-            <span>{submitting ? 'Recording...' : 'Confirm & Send WhatsApp Receipt'}</span>
+            <span>
+              {submitting 
+                ? 'Recording...' 
+                : discountInfo 
+                ? `Charge ₹${discountInfo.finalAmount} & Open WhatsApp` 
+                : 'Record Bill & Open WhatsApp'}
+            </span>
             <ArrowRight className="w-5 h-5 ml-1" />
           </button>
         </div>

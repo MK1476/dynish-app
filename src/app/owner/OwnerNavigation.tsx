@@ -72,7 +72,6 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
     { label: 'Offers', href: '/owner/offers', icon: Gift },
     { label: 'Subscription', href: '/owner/subscription', icon: CreditCard },
     { label: 'Store Settings', href: '/owner/settings', icon: Settings },
-    { label: 'System Logs', href: '/owner/logs', icon: Terminal },
   ];
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
@@ -397,18 +396,6 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               >
                 <Settings className="w-4 h-4 text-brand-600" />
                 <span>Store Branding & Profile</span>
-              </Link>
-
-              <Link
-                href="/owner/logs"
-                onClick={(e) => {
-                  setIsMobileMoreOpen(false);
-                  handleNavClick(e, '/owner/logs');
-                }}
-                className="flex items-center gap-3 p-3 rounded-2xl hover:bg-ivory-50 text-xs font-semibold text-espresso-800"
-              >
-                <Terminal className="w-4 h-4 text-espresso-600" />
-                <span>System Logs Recorder</span>
               </Link>
 
               {canInstall && (

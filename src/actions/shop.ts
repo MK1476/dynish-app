@@ -159,3 +159,140 @@ export async function updateShop(
   revalidatePath('/owner/settings');
   return { success: true };
 }
+
+const RESERVED_SLUGS = new Set([
+  'owner', 'admin', 'api', 'login', 'store', 'settings', 'billing', 'catalog', 
+  'dashboard', 'auth', 'public', 'static', 'dynish', 'root', 'system', 'app'
+]);
+
+export async function checkSlugAvailability(
+  slugCandidate: string,
+  currentShopId: string
+): Promise<{ available: boolean; slug: string; error?: string }> {
+  const clean = slugCandidate
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  if (clean.length < 3) {
+    return { available: false, slug: clean, error: 'Handle must be at least 3 characters long.' };
+  }
+
+  if (clean.length > 30) {
+    return { available: false, slug: clean, error: 'Maximum 30 characters allowed.' };
+  }
+
+  if (RESERVED_SLUGS.has(clean)) {
+    return { available: false, slug: clean, error: 'This URL handle is reserved.' };
+  }
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from('shops')
+    .select('id')
+    .eq('slug', clean)
+    .neq('id', currentShopId)
+    .maybeSingle();
+
+  if (existing) {
+    return { available: false, slug: clean, error: 'Handle already taken by another store.' };
+  }
+
+  return { available: true, slug: clean };
+}
+
+export async function updateShopSlug(
+  shopId: string,
+  slugCandidate: string
+): Promise<{ success: boolean; slug?: string; error?: string }> {
+  const admin = createAdminClient();
+
+  const { data: currentShop } = await admin
+    .from('shops')
+    .select('slug')
+    .eq('id', shopId)
+    .single();
+
+  if (currentShop?.slug) {
+    return { success: false, error: 'Store URL handle is already locked and permanently fixed.' };
+  }
+
+  const check = await checkSlugAvailability(slugCandidate, shopId);
+  if (!check.available) {
+    return { success: false, error: check.error || 'Handle is unavailable.' };
+  }
+
+  const { error: updateError } = await admin
+    .from('shops')
+    .update({ slug: check.slug, updated_at: new Date().toISOString() })
+    .eq('id', shopId);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  revalidatePath(`/store/${check.slug}`);
+  revalidatePath(`/store/${shopId}`);
+  revalidatePath('/owner/settings');
+  revalidatePath('/owner/standee');
+  return { success: true, slug: check.slug };
+}
+
+export async function getShopBySlugOrId(identifier: string): Promise<ShopRow | null> {
+  const admin = createAdminClient();
+
+  if (isValidUUID(identifier)) {
+    const { data: shopById } = await admin
+      .from('shops')
+      .select('*')
+      .eq('id', identifier)
+      .maybeSingle();
+    if (shopById) return shopById;
+  }
+
+  const { data: shopBySlug, error } = await admin
+    .from('shops')
+    .select('*')
+    .eq('slug', identifier.toLowerCase().trim())
+    .maybeSingle();
+
+  if (error) {
+    console.error('getShopBySlugOrId error:', error);
+    return null;
+  }
+  return shopBySlug;
+}
+
+export async function uploadShopAsset(
+  shopId: string,
+  formData: FormData,
+  type: 'logo' | 'banner'
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  const file = formData.get('file') as File | null;
+  if (!file) {
+    return { success: false, error: 'No file provided' };
+  }
+
+  const admin = createAdminClient();
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  const ext = file.name.split('.').pop() || 'jpg';
+  const fileName = `${shopId}/${type}_${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await admin.storage
+    .from('shop-assets')
+    .upload(fileName, buffer, {
+      contentType: file.type || 'image/jpeg',
+      upsert: true,
+    });
+
+  if (uploadError) {
+    console.error('uploadShopAsset storage error:', uploadError);
+    return { success: false, error: uploadError.message };
+  }
+
+  const { data: urlData } = admin.storage.from('shop-assets').getPublicUrl(fileName);
+  return { success: true, url: urlData.publicUrl };
+}

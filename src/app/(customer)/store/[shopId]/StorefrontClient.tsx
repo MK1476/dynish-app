@@ -6,7 +6,7 @@ import { ShopHero } from '@/components/customer/ShopHero';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { ProductDetailModal } from '@/components/customer/ProductDetailModal';
 import { SavedItemsDrawer } from '@/components/customer/SavedItemsDrawer';
-import { Search, X, Sparkles } from 'lucide-react';
+import { Search, X, Sparkles, ArrowDownUp } from 'lucide-react';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
@@ -29,6 +29,8 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<ItemRow | null>(null);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState<boolean>(false);
   const [savedItemIds, setSavedItemIds] = useState<string[]>([]);
+  const [priceSort, setPriceSort] = useState<'default' | 'asc' | 'desc'>('default');
+  const [maxBudget, setMaxBudget] = useState<number | null>(null);
 
   const isClickScrollingRef = useRef(false);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
@@ -58,22 +60,36 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
     });
   };
 
+  const processItems = (itemList: ItemRow[]) => {
+    let result = itemList.filter(i => i.is_available);
+    if (maxBudget !== null) {
+      result = result.filter(i => i.price <= maxBudget);
+    }
+    if (priceSort === 'asc') {
+      result = [...result].sort((a, b) => a.price - b.price);
+    } else if (priceSort === 'desc') {
+      result = [...result].sort((a, b) => b.price - a.price);
+    }
+    return result;
+  };
+
   // Group items by category
   const categorySections = useMemo(() => {
     return categories.map((cat) => ({
       category: cat,
-      items: items.filter((p) => p.category_id === cat.id && p.is_available),
+      items: processItems(items.filter((p) => p.category_id === cat.id)),
     })).filter((sec) => sec.items.length > 0);
-  }, [categories, items]);
+  }, [categories, items, priceSort, maxBudget]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
-    return items.filter((p) => 
+    const matched = items.filter((p) => 
       p.name.toLowerCase().includes(q) ||
       (p.description && p.description.toLowerCase().includes(q))
     );
-  }, [items, searchQuery]);
+    return processItems(matched);
+  }, [items, searchQuery, priceSort, maxBudget]);
 
   // SCROLLSPY: Auto-select category chip on scroll
   useEffect(() => {
@@ -139,6 +155,66 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         savedCount={savedItemIds.length}
         onOpenSavedItems={() => setIsSavedDrawerOpen(true)}
       />
+
+      {/* FILTER & SORT TOOLBAR */}
+      <div className="bg-white/90 backdrop-blur-md border-b border-ivory-200 sticky top-0 z-20 px-3.5 sm:px-4 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Sort Toggle */}
+            <button
+              onClick={() => {
+                if (priceSort === 'default') setPriceSort('asc');
+                else if (priceSort === 'asc') setPriceSort('desc');
+                else setPriceSort('default');
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all ${
+                priceSort !== 'default'
+                  ? 'bg-espresso-950 text-white shadow-xs'
+                  : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200'
+              }`}
+            >
+              <ArrowDownUp className="w-3 h-3" />
+              <span>
+                {priceSort === 'asc' ? 'Price: Low → High' : priceSort === 'desc' ? 'Price: High → Low' : 'Sort Price'}
+              </span>
+            </button>
+
+            {/* Quick Budget Chips */}
+            {[
+              { label: 'Under ₹500', max: 500 },
+              { label: 'Under ₹1,000', max: 1000 },
+              { label: 'Under ₹2,000', max: 2000 },
+            ].map((b) => {
+              const isSelected = maxBudget === b.max;
+              return (
+                <button
+                  key={b.max}
+                  onClick={() => setMaxBudget(isSelected ? null : b.max)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
+                    isSelected
+                      ? 'bg-brand-500 text-espresso-950 font-bold shadow-xs'
+                      : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              );
+            })}
+
+            {(priceSort !== 'default' || maxBudget !== null) && (
+              <button
+                onClick={() => {
+                  setPriceSort('default');
+                  setMaxBudget(null);
+                }}
+                className="text-xs text-espresso-400 hover:text-rose-600 font-bold px-1.5"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* SEARCH RESULTS VIEW */}
       {searchQuery.trim() ? (

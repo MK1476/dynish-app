@@ -5,7 +5,7 @@ import type { Database } from '@/types/database';
 import QRCode from 'qrcode';
 import { 
   Printer, Download, Sparkles, Check, 
-  ExternalLink, QrCode as QrCodeIcon, ShieldCheck, Zap 
+  ExternalLink, QrCode as QrCodeIcon, Image as ImageIcon, ArrowDownRight 
 } from 'lucide-react';
 import { BrandLogo } from '@/components/common/BrandLogo';
 
@@ -17,63 +17,191 @@ interface StandeeClientProps {
 
 export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [tagline, setTagline] = useState('Scan to browse live catalog & claim instant loyalty rewards on your bill!');
-  const [standeeSize, setStandeeSize] = useState<'a5' | 'a4' | 'tent'>('a5');
-  const [theme, setTheme] = useState<'gold' | 'black' | 'clean'>('gold');
-  const standeeRef = useRef<HTMLDivElement>(null);
-
+  const [headline, setHeadline] = useState('BROWSE CATALOG & EXCITING OFFERS');
   const [origin, setOrigin] = useState('');
+  const [downloadingImage, setDownloadingImage] = useState(false);
+  const standeeCardRef = useRef<HTMLDivElement>(null);
+
+  const storeUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/store/${shop.slug || shop.id}`
+    : `/store/${shop.slug || shop.id}`;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setOrigin(window.location.origin);
-      const storeUrl = `${window.location.origin}/store/${shop.id}`;
-      QRCode.toDataURL(storeUrl, {
-        width: 600,
+      const url = `${window.location.origin}/store/${shop.slug || shop.id}`;
+      QRCode.toDataURL(url, {
+        width: 700,
         margin: 1.5,
         color: {
-          dark: '#1a1412',
+          dark: '#111827',
           light: '#FFFFFF',
         },
         errorCorrectionLevel: 'H',
       }).then(setQrDataUrl);
     }
-  }, [shop.id]);
+  }, [shop.id, shop.slug]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleDownloadQr = () => {
+  const handleDownloadQrOnly = () => {
     if (!qrDataUrl) return;
     const a = document.createElement('a');
     a.href = qrDataUrl;
-    a.download = `${shop.name.replace(/\s+/g, '_')}_Dynish_QR.png`;
+    a.download = `${shop.name.replace(/\s+/g, '_')}_QR.png`;
     a.click();
+  };
+
+  // High-Resolution Standee Image Exporter (Draws 1200x1800 canvas)
+  const handleDownloadStandeeImage = async () => {
+    setDownloadingImage(true);
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 1800;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // 1. Warm ivory background with subtle texture tone
+      ctx.fillStyle = '#FAF7F2';
+      ctx.fillRect(0, 0, 1200, 1800);
+
+      // 2. Top curved header banner
+      const grad = ctx.createLinearGradient(0, 0, 1200, 320);
+      grad.addColorStop(0, '#F59E0B');
+      grad.addColorStop(1, '#D97706');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(40, 40, 1120, 260, 40);
+      ctx.fill();
+
+      // Top banner inner border
+      ctx.strokeStyle = '#FDE68A';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(50, 50, 1100, 240, 32);
+      ctx.stroke();
+
+      // Store Name in top banner
+      ctx.fillStyle = '#1A1412';
+      ctx.font = 'bold 54px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(shop.name, 600, 175);
+
+      ctx.fillStyle = '#78350F';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText(shop.category_label || shop.category || 'Retail Store', 600, 225);
+
+      // 3. Main Call-To-Action Headline
+      ctx.fillStyle = '#111827';
+      ctx.font = '900 48px sans-serif';
+      ctx.textAlign = 'center';
+      
+      const words = headline.split('&');
+      if (words.length > 1) {
+        ctx.fillText(words[0].trim(), 600, 420);
+        ctx.fillStyle = '#D97706';
+        ctx.font = 'bold 36px serif';
+        ctx.fillText('&', 600, 475);
+        ctx.fillStyle = '#111827';
+        ctx.font = '900 48px sans-serif';
+        ctx.fillText(words[1].trim(), 600, 535);
+      } else {
+        ctx.fillText(headline, 600, 460);
+      }
+
+      // 4. White card for QR Code
+      ctx.fillStyle = '#FFFFFF';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetY = 15;
+      ctx.beginPath();
+      ctx.roundRect(225, 620, 750, 750, 48);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+
+      // Draw QR image
+      if (qrDataUrl) {
+        const qrImg = new Image();
+        qrImg.src = qrDataUrl;
+        await new Promise((resolve) => {
+          qrImg.onload = resolve;
+        });
+        ctx.drawImage(qrImg, 265, 660, 670, 670);
+      }
+
+      // 5. Instruction text below QR
+      ctx.fillStyle = '#4B5563';
+      ctx.font = '500 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Scan with any smartphone camera', 600, 1440);
+
+      // 6. Powered by Dynish Branding at bottom
+      ctx.fillStyle = '#6B7280';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('Powered by', 600, 1560);
+
+      // Load Dynish Logo
+      const logoImg = new Image();
+      logoImg.src = '/dynish-logo.png';
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+      });
+      ctx.drawImage(logoImg, 460, 1600, 70, 70);
+
+      ctx.fillStyle = '#1A1412';
+      ctx.font = '900 52px serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('DYNISH', 545, 1655);
+
+      // Export as PNG
+      const link = document.createElement('a');
+      link.download = `${shop.name.replace(/\s+/g, '_')}_Counter_Standee.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch (e) {
+      console.error('Failed to export standee image:', e);
+      alert('Failed to generate image. Please use Print Standee instead.');
+    } finally {
+      setDownloadingImage(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       
       {/* SCREEN CONTROLS (Hidden during printing) */}
-      <div className="print:hidden space-y-6">
+      <div className="print:hidden space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
-              Counter QR Standee Generator
+              Counter QR Standee
             </h1>
             <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
-              Print a luxury acrylic QR standee to place on your billing desk or billing counter.
+              High-resolution, elegant standee card formatted for standard 4&quot;×6&quot; or 5&quot;×7&quot; acrylic desk frames.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={handleDownloadQr}
+              onClick={handleDownloadQrOnly}
               className="px-3.5 py-2.5 rounded-2xl bg-white border border-ivory-300 hover:bg-ivory-50 text-espresso-800 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all active:scale-95"
+              title="Download only the QR code image"
             >
               <Download className="w-4 h-4 text-espresso-600" />
-              <span>Download QR</span>
+              <span className="hidden sm:inline">QR Only</span>
+            </button>
+
+            <button
+              onClick={handleDownloadStandeeImage}
+              disabled={downloadingImage}
+              className="px-4 py-2.5 rounded-2xl bg-white border-2 border-brand-500 hover:bg-brand-50 text-brand-900 text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-50"
+            >
+              <ImageIcon className="w-4 h-4 text-brand-600" />
+              <span>{downloadingImage ? 'Generating...' : 'Save as Image'}</span>
             </button>
 
             <button
@@ -86,150 +214,87 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
           </div>
         </div>
 
-        {/* Customization Options Bar */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-ivory-200 shadow-soft grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-espresso-700 uppercase tracking-wider mb-1.5">
-              Standee Size Format
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setStandeeSize('a5')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  standeeSize === 'a5' 
-                    ? 'bg-espresso-950 text-white border-espresso-950 shadow-xs' 
-                    : 'bg-ivory-50 text-espresso-700 border-ivory-300 hover:bg-ivory-100'
-                }`}
-              >
-                A5 Desk (5.8 × 8.3 in)
-              </button>
-              <button
-                type="button"
-                onClick={() => setStandeeSize('a4')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  standeeSize === 'a4' 
-                    ? 'bg-espresso-950 text-white border-espresso-950 shadow-xs' 
-                    : 'bg-ivory-50 text-espresso-700 border-ivory-300 hover:bg-ivory-100'
-                }`}
-              >
-                A4 Wall (8.3 × 11.7 in)
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-espresso-700 uppercase tracking-wider mb-1.5">
-              Color Styling
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setTheme('gold')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  theme === 'gold' 
-                    ? 'bg-amber-500 text-espresso-950 border-amber-600 shadow-xs' 
-                    : 'bg-ivory-50 text-espresso-700 border-ivory-300'
-                }`}
-              >
-                Heritage Gold
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme('black')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  theme === 'black' 
-                    ? 'bg-espresso-950 text-white border-espresso-950 shadow-xs' 
-                    : 'bg-ivory-50 text-espresso-700 border-ivory-300'
-                }`}
-              >
-                Midnight
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme('clean')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  theme === 'clean' 
-                    ? 'bg-white text-espresso-950 border-espresso-950 ring-2 ring-espresso-300' 
-                    : 'bg-ivory-50 text-espresso-700 border-ivory-300'
-                }`}
-              >
-                Minimal
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-espresso-700 uppercase tracking-wider mb-1.5">
-              Customer Call-To-Action
+        {/* Custom Tagline input */}
+        <div className="bg-white p-4 rounded-2xl border border-ivory-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <label className="block text-[11px] font-bold text-espresso-700 uppercase tracking-wider mb-1">
+              Call-To-Action Headline
             </label>
             <input
               type="text"
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder="e.g. Scan to get instant ₹100 reward!"
+              value={headline}
+              onChange={(e) => setHeadline(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold"
+              placeholder="e.g. BROWSE CATALOG & EXCITING OFFERS"
             />
+          </div>
+
+          <div className="text-xs text-espresso-500 shrink-0">
+            <span>Links to: </span>
+            <span className="font-mono font-bold text-espresso-950 truncate max-w-[200px] inline-block align-bottom">
+              /store/{shop.slug || shop.id}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* STANDEE INSERT (PRINTABLE ZONE) */}
+      {/* STANDEE CARD (PREVIEW & PRINTABLE ZONE) */}
       <div className="flex justify-center">
         <div 
-          ref={standeeRef}
+          ref={standeeCardRef}
           id="printable-standee"
-          className={`relative rounded-3xl p-8 sm:p-10 shadow-2xl transition-all border-4 flex flex-col items-center justify-between text-center overflow-hidden ${
-            standeeSize === 'a4' ? 'w-full max-w-xl aspect-[1/1.414]' : 'w-full max-w-md aspect-[1/1.414]'
-          } ${
-            theme === 'gold' 
-              ? 'bg-gradient-to-b from-[#FDFBF7] via-[#FFFDF5] to-[#FDF4DC] border-amber-500 text-espresso-950' 
-              : theme === 'black'
-              ? 'bg-gradient-to-b from-espresso-950 via-espresso-900 to-black border-amber-400 text-white'
-              : 'bg-white border-ivory-300 text-espresso-950'
-          }`}
+          className="relative w-full max-w-[380px] aspect-[1/1.5] bg-[#FAF7F2] rounded-[32px] p-6 shadow-2xl border-4 border-amber-400/80 flex flex-col justify-between items-center text-center overflow-hidden transition-all"
         >
-          {/* Top Decorative Border Accent */}
-          <div className="w-full flex items-center justify-between border-b pb-4 border-amber-500/30">
-            <BrandLogo size="md" inverted={theme === 'black'} subtext="Fast Counter Partner" />
-            <div className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${
-              theme === 'black' ? 'bg-amber-500 text-espresso-950' : 'bg-brand-500 text-espresso-950'
-            }`}>
-              <Sparkles className="w-3 h-3 fill-current" />
-              <span>Official Member Store</span>
+          {/* Subtle textured paper overlay effect */}
+          <div className="absolute inset-0 opacity-40 pointer-events-none bg-[radial-gradient(#E5E7EB_1px,transparent_1px)] [background-size:16px_16px]" />
+
+          {/* 1. TOP CURVED STORE HEADER */}
+          <div className="w-full relative z-10">
+            <div className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 p-3.5 shadow-md border border-amber-300/80 flex flex-col items-center justify-center">
+              {shop.logo_url && (
+                <div className="w-12 h-12 rounded-xl p-0.5 bg-white shadow-xs mb-1.5 overflow-hidden">
+                  <img src={shop.logo_url} alt="" className="w-full h-full object-cover rounded-[10px]" />
+                </div>
+              )}
+              <h2 className="font-serif text-xl sm:text-2xl font-black text-espresso-950 tracking-tight leading-tight">
+                {shop.name}
+              </h2>
+              <span className="text-[10px] uppercase font-extrabold text-amber-950/80 tracking-wider mt-0.5">
+                {shop.category_label || shop.category || 'Retail Store'}
+              </span>
             </div>
           </div>
 
-          {/* Center Shop Branding */}
-          <div className="my-auto space-y-4 max-w-xs w-full">
-            <div className="relative mx-auto w-24 h-24 rounded-3xl p-1 bg-gradient-to-tr from-brand-600 to-amber-300 shadow-lg">
-              <img
-                src={shop.logo_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=200'}
-                alt={shop.name}
-                className="w-full h-full object-cover rounded-[20px] bg-white"
-              />
+          {/* 2. CALL-TO-ACTION WITH ELEGANT CURVED ARROW */}
+          <div className="my-auto py-2 relative z-10 w-full flex flex-col items-center">
+            <div className="relative inline-block max-w-[280px]">
+              <h3 className="font-sans font-black text-lg sm:text-xl text-espresso-950 tracking-tight uppercase leading-snug">
+                {headline.includes('&') ? (
+                  <>
+                    <span>{headline.split('&')[0].trim()}</span>
+                    <span className="block font-serif italic text-amber-600 text-base font-normal my-0.5">&amp;</span>
+                    <span>{headline.split('&')[1].trim()}</span>
+                  </>
+                ) : (
+                  headline
+                )}
+              </h3>
+
+              {/* Hand-drawn stylish arrow pointing to QR */}
+              <div className="absolute -right-7 -bottom-4 text-espresso-900 pointer-events-none">
+                <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform rotate-12">
+                  <path d="M6 3C18 7 28 17 26 31M26 31L18 27M26 31L31 23" stroke="#1F2937" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
             </div>
 
-            <div>
-              <h2 className={`font-serif text-2xl sm:text-3xl font-bold tracking-tight ${
-                theme === 'black' ? 'text-white' : 'text-espresso-950'
-              }`}>
-                {shop.name}
-              </h2>
-              <p className={`text-xs font-semibold uppercase tracking-wider mt-1 ${
-                theme === 'black' ? 'text-brand-300' : 'text-brand-800'
-              }`}>
-                {shop.category_label || shop.category}
-              </p>
-            </div>
-
-            {/* High-Resolution QR Code */}
-            <div className="bg-white p-4 rounded-3xl shadow-xl ring-4 ring-amber-400/40 mx-auto inline-block">
+            {/* 3. HIGH-RESOLUTION WHITE QR CARD */}
+            <div className="mt-4 bg-white p-3.5 sm:p-4 rounded-3xl shadow-xl border border-ivory-200 ring-4 ring-amber-400/30 inline-block">
               {qrDataUrl ? (
                 <img
                   src={qrDataUrl}
-                  alt="Shop QR Code"
-                  className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
+                  alt="Store QR Code"
+                  className="w-48 h-48 sm:w-52 sm:h-52 object-contain"
                 />
               ) : (
                 <div className="w-48 h-48 flex items-center justify-center text-xs text-espresso-400">
@@ -238,44 +303,31 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
               )}
             </div>
 
-            {/* Call to Action Prompt */}
-            <div className="space-y-1">
-              <p className={`font-serif text-base sm:text-lg font-bold ${
-                theme === 'black' ? 'text-amber-300' : 'text-espresso-950'
-              }`}>
-                {tagline}
-              </p>
-              <p className={`text-[11px] font-medium ${
-                theme === 'black' ? 'text-espresso-300' : 'text-espresso-600'
-              }`}>
-                Point your phone camera to scan • Opens instantly in browser
-              </p>
-            </div>
+            <p className="text-[11px] font-medium text-espresso-500 mt-2">
+              Scan with any phone camera
+            </p>
+            <p className="text-[10px] font-mono font-bold text-espresso-600 mt-0.5">
+              {storeUrl.replace(/^https?:\/\//, '')}
+            </p>
           </div>
 
-          {/* Bottom 3 Perk Badges */}
-          <div className="w-full border-t pt-4 border-amber-500/30 grid grid-cols-3 gap-2 text-center text-[10px]">
-            <div className="flex flex-col items-center gap-0.5">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <span className="font-bold">No App Needed</span>
-              <span className={`text-[9px] ${theme === 'black' ? 'text-espresso-400' : 'text-espresso-500'}`}>Instant Browser</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5 border-x border-amber-500/20 px-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span className="font-bold">WhatsApp Bills</span>
-              <span className={`text-[9px] ${theme === 'black' ? 'text-espresso-400' : 'text-espresso-500'}`}>Direct on Phone</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <Sparkles className="w-4 h-4 text-brand-500" />
-              <span className="font-bold">Earn Rewards</span>
-              <span className={`text-[9px] ${theme === 'black' ? 'text-espresso-400' : 'text-espresso-500'}`}>Next-Visit Gifts</span>
+          {/* 4. CLEAN POWERED BY DYNISH FOOTER */}
+          <div className="w-full pt-2 border-t border-amber-400/30 flex flex-col items-center justify-center relative z-10">
+            <span className="text-[9px] uppercase tracking-widest text-espresso-500 font-bold mb-0.5">
+              Powered by
+            </span>
+            <div className="flex items-center gap-1.5">
+              <img src="/dynish-logo.png" alt="Dynish" className="w-5 h-5 object-contain" />
+              <span className="font-serif font-black text-sm tracking-wider text-espresso-950">
+                DYNISH
+              </span>
             </div>
           </div>
 
         </div>
       </div>
 
-      {/* PRINT MEDIA STYLES */}
+      {/* PRINT MEDIA STYLES (Centers standee on standard page) */}
       <style jsx global>{`
         @media print {
           body {
@@ -283,18 +335,15 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
             margin: 0 !important;
             padding: 0 !important;
           }
-          /* Hide all application headers, sidebars, mobile dock, and controls */
           header, aside, nav, .print\\:hidden, button, .mobile-dock {
             display: none !important;
           }
-          /* Center only printable standee */
           #printable-standee {
             box-shadow: none !important;
-            border-width: 2px !important;
-            margin: 0 auto !important;
-            max-width: 100% !important;
+            border-width: 3px !important;
+            margin: 20px auto !important;
+            max-width: 420px !important;
             width: 100% !important;
-            height: 98vh !important;
             page-break-inside: avoid !important;
           }
         }

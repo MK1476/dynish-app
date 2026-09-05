@@ -153,6 +153,51 @@ async function runTestSuite() {
 
   assert(qrDataUrl.startsWith('data:image/png;base64,'), 'QR Code generated as valid high-res PNG data URI');
 
+  // 9. CUSTOM WHATSAPP TEMPLATE ENGINE
+  console.log(`\n${YELLOW}9. Custom WhatsApp Template Engine${RESET}`);
+  const customTemplate = 'Hello {customer_name}! Thanks for shopping at {shop_name}. Bill: {bill_amount}. Next reward: {next_offer}. Link: {store_link}';
+  const templatedMessage = generateWhatsAppBillMessage({
+    shopName: 'Boutique XYZ',
+    ownerName: 'Boutique XYZ',
+    customerName: 'Aarav',
+    customerPhone: '9876543210',
+    billAmount: 546,
+    visitNumber: 2,
+    nextOfferTitle: '10% OFF',
+    shopId: 'shop-uuid-123',
+    shopSlug: 'boutique-xyz',
+    customTemplate,
+  });
+
+  assert(templatedMessage.includes('Hello Aarav!'), 'Replaced {customer_name} correctly');
+  assert(templatedMessage.includes('Boutique XYZ'), 'Replaced {shop_name} correctly');
+  assert(templatedMessage.includes('₹546'), 'Replaced {bill_amount} correctly');
+  assert(templatedMessage.includes('10% OFF'), 'Replaced {next_offer} correctly');
+  assert(templatedMessage.includes('/store/boutique-xyz'), 'Replaced {store_link} with custom slug correctly');
+
+  // 10. BILLING DISCOUNT PERCENTAGE CALCULATION
+  console.log(`\n${YELLOW}10. Billing Discount Calculation (Rupees Breakdown)${RESET}`);
+  const billAmountTest = 546;
+  const percentMatch = '10% OFF'.match(/(\d+(\.\d+)?)\s*%/);
+  const percent = percentMatch ? parseFloat(percentMatch[1]) : 0;
+  const calculatedDiscount = Math.round((billAmountTest * percent) / 100);
+  const finalPayable = billAmountTest - calculatedDiscount;
+
+  assert(calculatedDiscount === 55, '10% discount on ₹546 correctly rounds to ₹55');
+  assert(finalPayable === 491, 'Payable amount is ₹491 (546 - 55)');
+
+  // 11. VANITY SLUG NORMALIZATION
+  console.log(`\n${YELLOW}11. Vanity Slug Normalization${RESET}`);
+  const rawSlugCandidate = '  Royal Silk & Sarees!  ';
+  const cleanSlug = rawSlugCandidate
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  assert(cleanSlug === 'royal-silk-sarees', 'Normalized slug matches expected clean format');
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

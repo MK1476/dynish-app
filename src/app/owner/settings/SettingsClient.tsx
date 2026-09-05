@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Database } from '@/types/database';
-import { updateShop } from '@/actions/shop';
+import { updateShop, checkSlugAvailability, updateShopSlug, uploadShopAsset } from '@/actions/shop';
 import { signOut } from '@/actions/auth';
 import { useRouter } from 'next/navigation';
 import { 
   Store, Phone, MapPin, Image as ImageIcon, Save, 
   Check, LogOut, Sparkles, ExternalLink, Palette, 
-  UploadCloud, AlertCircle, RefreshCw, Lock 
+  UploadCloud, AlertCircle, RefreshCw, Lock, Link as LinkIcon, ShieldCheck, Copy, MessageCircle 
 } from 'lucide-react';
 import { compressImage } from '@/lib/image-compressor';
-import { createClient } from '@/lib/supabase/client';
+import { copyTextToClipboard } from '@/lib/utils';
 import { useStaffMode } from '@/lib/useStaffMode';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
@@ -34,6 +34,18 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const [bannerUrl, setBannerUrl] = useState(shop.banner_url || '');
   const [theme, setTheme] = useState<'heritage' | 'minimal' | 'artisanal'>((shop.theme as any) || 'heritage');
 
+  // Vanity URL Slug
+  const [slug, setSlug] = useState(shop.slug || '');
+  const [slugInput, setSlugInput] = useState(shop.slug || '');
+  const [slugChecking, setSlugChecking] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Custom WhatsApp Template
+  const [whatsappTemplate, setWhatsappTemplate] = useState(shop.whatsapp_template || '');
+
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +59,48 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   useEffect(() => {
     if (customPin) setStaffPin(customPin);
   }, [customPin]);
+
+  // Debounced live check for custom slug availability
+  useEffect(() => {
+    if (slug) return; // Already locked
+    if (!slugInput.trim()) {
+      setSlugAvailable(null);
+      setSlugError(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSlugChecking(true);
+      const res = await checkSlugAvailability(slugInput, shop.id);
+      setSlugChecking(false);
+      setSlugAvailable(res.available);
+      setSlugError(res.error || null);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [slugInput, slug, shop.id]);
+
+  const handleLockSlug = async () => {
+    if (slug) return;
+    if (!slugAvailable || !slugInput.trim()) return;
+
+    if (!confirm(`Confirm permanent store URL: https://dynish.vercel.app/store/${slugInput.toLowerCase().trim()}\n\nNote: Once confirmed, this URL handle CANNOT be changed.`)) {
+      return;
+    }
+
+    setSlugSaving(true);
+    const res = await updateShopSlug(shop.id, slugInput);
+    setSlugSaving(false);
+
+    if (res.success && res.slug) {
+      setSlug(res.slug);
+      setSlugInput(res.slug);
+      alert('Congratulations! Your store URL handle has been permanently registered.');
+      router.refresh();
+    } else {
+      alert(res.error || 'Failed to register store handle.');
+    }
+  };
 
   // Curated banner presets
   const bannerPresets = [
@@ -83,31 +137,22 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       else setUploadingBanner(true);
 
       const compressed = await compressImage(file, {
-        maxSizeMB: 0.15,
+        maxSizeMB: 0.2,
         maxWidthOrHeight: type === 'logo' ? 600 : 1600,
       });
 
-      const supabase = createClient();
-      const path = `${shop.id}/${Date.now()}_${compressed.name}`;
-      const { data, error: uploadErr } = await supabase.storage
-        .from('shop-assets')
-        .upload(path, compressed, { upsert: true });
+      const formData = new FormData();
+      formData.append('file', compressed);
 
-      if (uploadErr) {
-        console.warn('Storage upload error, using local data URL:', uploadErr);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (type === 'logo') setLogoUrl(e.target?.result as string);
-          else setBannerUrl(e.target?.result as string);
-        };
-        reader.readAsDataURL(compressed);
+      const res = await uploadShopAsset(shop.id, formData, type);
+      if (res.success && res.url) {
+        if (type === 'logo') setLogoUrl(res.url);
+        else setBannerUrl(res.url);
       } else {
-        const { data: urlData } = supabase.storage.from('shop-assets').getPublicUrl(path);
-        if (type === 'logo') setLogoUrl(urlData.publicUrl);
-        else setBannerUrl(urlData.publicUrl);
+        alert(res.error || 'Failed to upload image.');
       }
     } catch (err: any) {
-      alert('Failed to upload image: ' + err.message);
+      alert('Failed to upload image: ' + (err?.message || 'Upload failed'));
     } finally {
       setUploadingLogo(false);
       setUploadingBanner(false);
@@ -131,6 +176,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       logo_url: logoUrl || null,
       banner_url: bannerUrl || null,
       theme,
+      whatsapp_template: whatsappTemplate.trim() || null,
     });
 
     setSaving(false);
@@ -205,6 +251,120 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       {/* Settings Form */}
       <form onSubmit={handleSave} className="space-y-6">
         
+        {/* CUSTOM STORE VANITY URL CARD */}
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-ivory-200 shadow-card space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-ivory-100">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+                <LinkIcon className="w-4 h-4" />
+              </span>
+              <div>
+                <h2 className="font-serif font-bold text-lg text-espresso-950">
+                  Custom Store URL Handle
+                </h2>
+                <p className="text-xs text-espresso-500">
+                  A clean, memorable vanity link for your customers and social media bio.
+                </p>
+              </div>
+            </div>
+
+            {slug && (
+              <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Verified & Locked</span>
+              </span>
+            )}
+          </div>
+
+          {slug ? (
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-2">
+              <div className="text-xs text-emerald-800 font-semibold">
+                Your permanent public storefront link is live:
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="font-mono text-sm sm:text-base font-bold text-emerald-950 truncate">
+                  https://dynish.vercel.app/store/{slug}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await copyTextToClipboard(`https://dynish.vercel.app/store/${slug}`);
+                      setCopiedUrl(true);
+                      setTimeout(() => setCopiedUrl(false), 2000);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1 shadow-xs"
+                  >
+                    {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedUrl ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+                  <a
+                    href={`/store/${slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-colors flex items-center gap-1 shadow-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>View Store</span>
+                  </a>
+                </div>
+              </div>
+              <p className="text-[11px] text-espresso-400">
+                🔒 Handle is permanently fixed so your printed standees and customer bookmarks never break.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 overflow-hidden transition-all">
+                <span className="px-3.5 py-3 text-espresso-500 font-mono text-xs sm:text-sm font-semibold border-r border-ivory-300 bg-ivory-100/70 select-none">
+                  dynish.vercel.app/store/
+                </span>
+                <input
+                  type="text"
+                  placeholder="e.g. royal-boutique"
+                  value={slugInput}
+                  onChange={(e) => setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                  className="w-full px-3.5 py-3 bg-transparent text-sm sm:text-base font-mono font-bold text-espresso-950 focus:outline-none placeholder:text-espresso-300"
+                />
+              </div>
+
+              {/* Live Availability Status */}
+              {slugInput.trim() && (
+                <div className="flex items-center justify-between text-xs px-1">
+                  <div>
+                    {slugChecking ? (
+                      <span className="text-espresso-500 flex items-center gap-1">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Checking availability...
+                      </span>
+                    ) : slugAvailable ? (
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> ✓ Handle "{slugInput}" is available!
+                      </span>
+                    ) : (
+                      <span className="text-rose-600 font-bold flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> {slugError || 'Handle is unavailable'}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLockSlug}
+                    disabled={!slugAvailable || slugChecking || slugSaving}
+                    className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-espresso-950 font-bold text-xs shadow-xs transition-all active:scale-95"
+                  >
+                    {slugSaving ? 'Locking...' : 'Claim & Lock Store URL'}
+                  </button>
+                </div>
+              )}
+
+              <p className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 leading-relaxed">
+                ⚠️ <strong>Important:</strong> You can only set your store URL handle <strong>once</strong>. Once locked, it cannot be changed.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* BRAND ASSETS & VISUALS */}
         <div className="bg-white rounded-3xl p-5 sm:p-7 border border-ivory-200 shadow-card space-y-5">
           <div className="flex items-center gap-2 border-b border-ivory-100 pb-3">
@@ -449,6 +609,90 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               onChange={(e) => setMapsLink(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-sm text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white"
             />
+          </div>
+        </div>
+
+        {/* CUSTOM WHATSAPP RECEIPT TEMPLATE */}
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-ivory-200 shadow-card space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-ivory-100">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+                <MessageCircle className="w-4 h-4 fill-current" />
+              </span>
+              <div>
+                <h2 className="font-serif font-bold text-lg text-espresso-950">
+                  Custom WhatsApp Receipt Message
+                </h2>
+                <p className="text-xs text-espresso-500">
+                  Design the automated thank-you note sent with the bill and next-visit reward.
+                </p>
+              </div>
+            </div>
+
+            {whatsappTemplate && (
+              <button
+                type="button"
+                onClick={() => setWhatsappTemplate('')}
+                className="text-xs text-espresso-500 hover:text-rose-600 font-semibold transition-colors"
+              >
+                Reset to Standard Copy
+              </button>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-espresso-800 uppercase tracking-wider">
+                Message Copy
+              </label>
+              <span className="text-[11px] text-espresso-400">Tap chips below to insert dynamic tags</span>
+            </div>
+
+            <textarea
+              rows={4}
+              placeholder={`Hi {customer_name}! Thank you for visiting *{shop_name}* (Visit #{visit_count}).\n\nYour bill: *{bill_amount}*\n\n🎁 *Special offer for your next visit:* {next_offer}\n\nCheck out our catalog & new arrivals here: {store_link}\n\nSee you again soon! ✨`}
+              value={whatsappTemplate}
+              onChange={(e) => setWhatsappTemplate(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-2xl bg-ivory-50 border border-ivory-300 text-xs sm:text-sm text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white font-mono leading-relaxed"
+            />
+
+            {/* Variable Tag Insertion Chips */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[
+                { tag: '{customer_name}', label: '+ Customer Name' },
+                { tag: '{shop_name}', label: '+ Store Name' },
+                { tag: '{bill_amount}', label: '+ Bill Amount' },
+                { tag: '{visit_count}', label: '+ Visit Count' },
+                { tag: '{next_offer}', label: '+ Next Offer' },
+                { tag: '{store_link}', label: '+ Store Link' },
+              ].map((chip) => (
+                <button
+                  key={chip.tag}
+                  type="button"
+                  onClick={() => setWhatsappTemplate((prev) => (prev ? prev + ' ' + chip.tag : chip.tag))}
+                  className="px-2.5 py-1 rounded-lg bg-ivory-100 hover:bg-brand-100 text-espresso-800 hover:text-brand-900 border border-ivory-300 text-[11px] font-bold transition-all active:scale-95"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Live Message Preview */}
+          <div className="bg-[#EFEAE2] p-4 rounded-2xl border border-[#D1C7BA] text-xs text-espresso-900 whitespace-pre-line leading-relaxed">
+            <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+              <span>Preview (How Customer Sees It on WhatsApp)</span>
+            </div>
+            {whatsappTemplate.trim()
+              ? whatsappTemplate
+                  .replace(/\{customer_name\}/g, 'Priya Sharma')
+                  .replace(/\{shop_name\}/g, name || 'Your Store')
+                  .replace(/\{bill_amount\}/g, '₹1,450')
+                  .replace(/\{visit_count\}/g, '3')
+                  .replace(/\{next_offer\}/g, 'Flat 10% OFF on Next Visit')
+                  .replace(/\{store_link\}/g, `https://dynish.vercel.app/store/${slug || shop.id}`)
+              : `Hi Priya Sharma! Thank you for visiting *${name || 'Your Store'}* (Visit #3).\n\nYour bill: *₹1,450*\n\n🎁 *Special offer for your next visit:* Flat 10% OFF on Next Visit\nJust show this message at our counter on your next visit!\n\nCheck out our catalog & new arrivals here: https://dynish.vercel.app/store/${slug || shop.id}\n\nSee you again soon! ✨`}
           </div>
         </div>
 

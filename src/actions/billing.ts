@@ -46,11 +46,13 @@ export async function getCustomerByPhone(
   if (digits.length !== 10) return null;
 
   const admin = createAdminClient();
+  const possibleNumbers = [digits, `+91${digits}`, `91${digits}`, `0${digits}`];
   const { data: customer } = await admin
     .from('customers')
     .select('*')
     .eq('shop_id', shopId)
-    .eq('phone_number', digits)
+    .in('phone_number', possibleNumbers)
+    .limit(1)
     .maybeSingle();
 
   if (!customer) return null;
@@ -102,7 +104,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
     // 1. Fetch shop details for WhatsApp message
     const { data: shop, error: shopError } = await admin
       .from('shops')
-      .select('name, address, owner_phone')
+      .select('name, address, owner_phone, slug, whatsapp_template')
       .eq('id', input.shopId)
       .single();
 
@@ -113,12 +115,14 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
     const amountNum = input.billAmount && input.billAmount > 0 ? Number(input.billAmount) : null;
     const nowIso = new Date().toISOString();
 
-    // 2. Fetch existing customer
+    // 2. Fetch existing customer (matching clean 10-digits or with prefix)
+    const possibleNumbers = [digits, `+91${digits}`, `91${digits}`, `0${digits}`];
     const { data: existingCustomer } = await admin
       .from('customers')
       .select('*')
       .eq('shop_id', input.shopId)
-      .eq('phone_number', digits)
+      .in('phone_number', possibleNumbers)
+      .limit(1)
       .maybeSingle();
 
     let customer: CustomerRow;
@@ -190,6 +194,8 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
       nextOfferTitle: input.nextVisitOffer || undefined,
       shopAddress: shop.address || undefined,
       shopId: input.shopId,
+      shopSlug: shop.slug || undefined,
+      customTemplate: shop.whatsapp_template || undefined,
     });
 
     const waUrl = generateWhatsAppUrl(digits, rawMsg);

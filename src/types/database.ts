@@ -30,6 +30,8 @@ export interface Database {
           expires_at: string
           razorpay_subscription_id: string | null
           is_active: boolean
+          slug?: string | null
+          whatsapp_template?: string | null
           created_at: string
           updated_at: string
         }
@@ -53,6 +55,8 @@ export interface Database {
           expires_at?: string
           razorpay_subscription_id?: string | null
           is_active?: boolean
+          slug?: string | null
+          whatsapp_template?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -76,6 +80,8 @@ export interface Database {
           expires_at?: string
           razorpay_subscription_id?: string | null
           is_active?: boolean
+          slug?: string | null
+          whatsapp_template?: string | null
           created_at?: string
           updated_at?: string
         }

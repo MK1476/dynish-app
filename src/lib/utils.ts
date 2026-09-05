@@ -20,7 +20,7 @@ export function formatIndianPhone(phone: string): string {
 
 export interface WhatsAppBillPayload {
   shopName: string;
-  ownerName: string;
+  ownerName?: string;
   customerName?: string;
   customerPhone: string;
   billAmount?: number | null;
@@ -28,27 +28,39 @@ export interface WhatsAppBillPayload {
   nextOfferTitle?: string;
   shopAddress?: string;
   shopId: string;
+  shopSlug?: string | null;
+  customTemplate?: string | null;
 }
 
 export function generateWhatsAppBillMessage(payload: WhatsAppBillPayload): string {
-  const greetingName = payload.customerName ? ` ${payload.customerName}` : ' Valued Guest';
-  const amountStr = payload.billAmount && payload.billAmount > 0 
-    ? `*${formatINR(payload.billAmount)}*` 
-    : 'your visit';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dynish.vercel.app';
+  const storeUrl = `${appUrl}/store/${payload.shopSlug || payload.shopId}`;
+  const amountFormatted = payload.billAmount && payload.billAmount > 0 
+    ? formatINR(payload.billAmount) 
+    : 'Paid';
 
-  let msg = `Namaste${greetingName} 🙏!\n\nThank you for visiting *${payload.shopName}* today! We truly appreciate your patronage (Visit #${payload.visitNumber}).\n\nYour bill: ${amountStr}`;
+  // If shop owner customized their template
+  if (payload.customTemplate && payload.customTemplate.trim()) {
+    let templated = payload.customTemplate
+      .replace(/\{customer_name\}/g, payload.customerName || 'Valued Guest')
+      .replace(/\{shop_name\}/g, payload.shopName)
+      .replace(/\{bill_amount\}/g, amountFormatted)
+      .replace(/\{visit_count\}/g, String(payload.visitNumber))
+      .replace(/\{next_offer\}/g, payload.nextOfferTitle || '')
+      .replace(/\{store_link\}/g, storeUrl);
+
+    return templated.trim();
+  }
+
+  // Friendly, clean standard default copy (without dramatic words or lengthy address)
+  const greetingName = payload.customerName ? ` ${payload.customerName}` : '';
+  let msg = `Hi${greetingName}! Thank you for visiting *${payload.shopName}* (Visit #${payload.visitNumber}).\n\nYour bill: *${amountFormatted}*`;
 
   if (payload.nextOfferTitle) {
-    msg += `\n\n🎁 *Special Gift for your next visit:* ${payload.nextOfferTitle}.\nJust show this WhatsApp message at our counter on your next purchase!`;
+    msg += `\n\n🎁 *Special offer for your next visit:* ${payload.nextOfferTitle}\nJust show this message at our counter on your next visit!`;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dynish.vercel.app';
-  msg += `\n\nBrowse our latest catalog anytime here: ${appUrl}/store/${payload.shopId}`;
-
-  if (payload.shopAddress) {
-    msg += `\n\nWarm regards,\n*${payload.shopName}*\n${payload.shopAddress}`;
-  }
-
+  msg += `\n\nCheck out our catalog & new arrivals here: ${storeUrl}\n\nSee you again soon! ✨`;
   return msg;
 }
 

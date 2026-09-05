@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import type { Database } from '@/types/database';
 import { 
   MessageCircle, Instagram, Youtube, MapPin, Share2, 
-  Bookmark, Sparkles, CheckCircle2 
+  Bookmark, Sparkles, CheckCircle2, Phone 
 } from 'lucide-react';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
@@ -30,14 +30,17 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
   }, []);
 
   const handleShare = async () => {
-    const shareUrl = window.location.href;
+    const shareUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/store/${shop.slug || shop.id}`
+      : `https://dynish.vercel.app/store/${shop.slug || shop.id}`;
+
     const shareData = {
-      title: shop.name,
-      text: `Visit ${shop.name} on Dynish!`,
+      title: `${shop.name} — Digital Catalog`,
+      text: `Browse products and offers from ${shop.name} on Dynish!`,
       url: shareUrl,
     };
 
-    if (typeof navigator !== 'undefined' && navigator.share && window.isSecureContext) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share(shareData);
         return;
@@ -167,8 +170,8 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
           </p>
         )}
 
-        {/* Quick Action Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-ivory-100">
+        {/* Quick Action Buttons (Wrapped so none are clipped on mobile) */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-ivory-100">
           <a
             href={`https://wa.me/91${shop.whatsapp_number}?text=${encodeURIComponent(`Hi ${shop.name}, I am viewing your digital catalog on Dynish!`)}`}
             target="_blank"
@@ -176,7 +179,15 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-semibold shadow-xs shrink-0 active:scale-95 transition-transform"
           >
             <MessageCircle className="w-3.5 h-3.5 fill-current" />
-            <span>Chat on WhatsApp</span>
+            <span>WhatsApp</span>
+          </a>
+
+          <a
+            href={`tel:+91${shop.phone}`}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-800 text-xs font-medium border border-ivory-300 shrink-0 active:scale-95 transition-all"
+          >
+            <Phone className="w-3.5 h-3.5 text-espresso-600" />
+            <span>Call</span>
           </a>
 
           {shop.maps_link && (
@@ -193,14 +204,14 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
 
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold shadow-xs shrink-0 active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold shadow-xs shrink-0 active:scale-95 transition-all"
           >
             {copied ? (
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             ) : (
               <Share2 className="w-3.5 h-3.5 shrink-0" />
             )}
-            <span>{copied ? 'Link Copied!' : 'Share Shop'}</span>
+            <span>{copied ? 'Link Copied!' : 'Share'}</span>
           </button>
         </div>
 

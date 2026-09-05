@@ -26,7 +26,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
   transactions,
   customers,
 }) => {
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('this_week');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [customStart, setCustomStart] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
@@ -43,20 +43,18 @@ export const DashboardClient: React.FC<DashboardProps> = ({
     const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
 
     // Start of this week (Monday)
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    startOfWeek.setHours(0, 0, 0, 0);
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const startOfWeek = new Date(now.setDate(diff)).setHours(0, 0, 0, 0);
 
-    // Start of this month (1st)
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0).getTime();
+    // Start of this month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
     return transactions.filter((tx) => {
       const txTime = new Date(tx.created_at).getTime();
       if (dateFilter === 'today') return txTime >= startOfToday;
       if (dateFilter === 'yesterday') return txTime >= startOfYesterday && txTime < startOfToday;
-      if (dateFilter === 'this_week') return txTime >= startOfWeek.getTime();
+      if (dateFilter === 'this_week') return txTime >= startOfWeek;
       if (dateFilter === 'this_month') return txTime >= startOfMonth;
       if (dateFilter === 'last_30_days') return txTime >= now.getTime() - 30 * 24 * 60 * 60 * 1000;
       if (dateFilter === 'custom') {
@@ -86,9 +84,9 @@ export const DashboardClient: React.FC<DashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Date Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 truncate">
             {shop.name} Analytics
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -96,14 +94,14 @@ export const DashboardClient: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        {/* Dropdown Date Filter & Custom Range Picker */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="relative inline-flex items-center">
-            <Calendar className="w-3.5 h-3.5 text-brand-700 absolute left-3 pointer-events-none" />
+        {/* Dropdown Date Filter & Custom Range Picker cleanly aligned to right */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-start md:justify-end gap-2.5 shrink-0 self-start md:self-auto">
+          <div className="relative inline-flex items-center min-w-[190px]">
+            <Calendar className="w-4 h-4 text-brand-700 absolute left-3.5 pointer-events-none" />
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as DateFilterType)}
-              className="pl-8 pr-8 py-2 rounded-2xl bg-white border-2 border-ivory-300 hover:border-brand-400 text-xs font-bold text-espresso-950 focus:outline-none focus:border-brand-500 shadow-xs appearance-none cursor-pointer transition-colors"
+              className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-white border-2 border-ivory-300 hover:border-brand-400 text-xs font-bold text-espresso-950 focus:outline-none focus:border-brand-500 shadow-2xs appearance-none cursor-pointer transition-colors"
             >
               <option value="today">📅 Today</option>
               <option value="yesterday">Yesterday</option>
@@ -113,7 +111,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <option value="custom">🎯 Custom Date Range...</option>
               <option value="all">🌐 All Time</option>
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-espresso-400 absolute right-3 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-espresso-400 absolute right-3.5 pointer-events-none" />
           </div>
 
           {dateFilter === 'custom' && (

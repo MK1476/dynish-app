@@ -4,11 +4,10 @@ import React, { useState } from 'react';
 import type { Database } from '@/types/database';
 import { 
   createCategory, reorderCategories, deleteCategory,
-  createItem, updateItem, deleteItem, toggleItemAvailability, bulkUploadCatalog 
+  createItem, updateItem, deleteItem, toggleItemAvailability, bulkUploadCatalog, uploadProductImage 
 } from '@/actions/catalog';
 import { compressImage } from '@/lib/image-compressor';
 import { parseCatalogExcel, generateCatalogTemplate } from '@/lib/excel-parser';
-import { createClient } from '@/lib/supabase/client';
 import { 
   Plus, Edit, Trash2, Check, X, Upload, FileSpreadsheet, 
   Sparkles, Eye, Download, Image as ImageIcon, ChevronLeft, ChevronRight 
@@ -32,11 +31,13 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
 }) => {
   const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [activeTab, setActiveTab] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>(initialCategories[0]?.id || '');
 
   // Inline Category Creator
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAddingCategoryInModal, setIsAddingCategoryInModal] = useState(false);
+  const [newModalCategoryName, setNewModalCategoryName] = useState('');
 
   // 1-Click Inline Price Edit
   const [inlinePriceId, setInlinePriceId] = useState<string | null>(null);
@@ -63,8 +64,6 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [excelUploading, setExcelUploading] = useState(false);
   const [excelCount, setExcelCount] = useState<number | null>(null);
-
-  const supabase = createClient();
 
   // Create Category
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -110,11 +109,12 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setItemName('');
     setItemPrice('');
     setItemOriginalPrice('');
-    setItemCategory(activeTab === 'all' ? (categories[0]?.id || '') : activeTab);
+    setItemCategory(activeTab || categories[0]?.id || '');
     setItemDescription('');
-    setItemImages(['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800']);
+    setItemImages([]);
     setItemUnit('per piece');
     setItemTag('');
+    setIsAddingCategoryInModal(false);
     setIsItemModalOpen(true);
   };
 
@@ -126,13 +126,14 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     setItemOriginalPrice(item.original_price ? item.original_price.toString() : '');
     setItemCategory(item.category_id);
     setItemDescription(item.description || '');
-    setItemImages(item.image_urls.length > 0 ? item.image_urls : ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800']);
+    setItemImages(item.image_urls.length > 0 ? item.image_urls : []);
     setItemUnit(item.unit || 'per piece');
     setItemTag(item.scarcity_tag || '');
+    setIsAddingCategoryInModal(false);
     setIsItemModalOpen(true);
   };
 
-  // Handle Image Upload with Client Compression
+  // Handle Image Upload with Client Compression and Server Action
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -141,25 +142,25 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     const uploadedUrls: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      // Compress client-side to <150KB WebP
-      const compressed = await compressImage(file);
-      const filePath = `shop_${shop.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.webp`;
+      try {
+        const file = files[i];
+        const compressed = await compressImage(file);
+        const formData = new FormData();
+        formData.append('file', compressed);
 
-      const { data, error } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, compressed, { contentType: 'image/webp' });
-
-      if (data) {
-        const { data: publicData } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath);
-        uploadedUrls.push(publicData.publicUrl);
+        const res = await uploadProductImage(shop.id, formData);
+        if (res.success && res.url) {
+          uploadedUrls.push(res.url);
+        } else {
+          console.error('Image upload failed:', res.error);
+        }
+      } catch (err) {
+        console.error('Image processing error:', err);
       }
     }
 
     if (uploadedUrls.length > 0) {
-      setItemImages([...uploadedUrls, ...itemImages.slice(0, 3)]);
+      setItemImages((prev) => [...prev, ...uploadedUrls]);
     }
     setUploadingImage(false);
   };
@@ -268,9 +269,8 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const filteredItems = activeTab === 'all' 
-    ? items 
-    : items.filter(i => i.category_id === activeTab);
+  const currentTab = activeTab || (categories[0]?.id ?? '');
+  const filteredItems = items.filter(i => i.category_id === currentTab);
 
   return (
     <div className="space-y-6">
@@ -301,14 +301,14 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
             className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-bold text-xs shadow-xs flex items-center gap-1.5 transition-transform active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Item</span>
+            <span>Add Item</span>
           </button>
         </div>
       </div>
 
       {/* CATEGORY BAR (+ Add Category First, Reorderable Chips) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-        {/* + Add Category as FIRST element */}
+        {/* Add Category as FIRST element */}
         {isAddingCategory ? (
           <form onSubmit={handleAddCategory} className="flex items-center gap-1 shrink-0 animate-scale-in">
             <input
@@ -339,21 +339,9 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
             className="px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-300 text-brand-900 text-xs font-bold shrink-0 flex items-center gap-1 transition-all active:scale-95 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Category</span>
+            <span>Add Category</span>
           </button>
         )}
-
-        {/* All Items tab */}
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-            activeTab === 'all'
-              ? 'bg-espresso-950 text-white shadow-xs'
-              : 'bg-white text-espresso-700 border border-ivory-200 hover:bg-ivory-50'
-          }`}
-        >
-          All Items ({items.length})
-        </button>
 
         {/* Reorderable Categories */}
         {categories.map((cat, idx) => {
@@ -578,15 +566,59 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                 <label className="block font-bold text-espresso-800 uppercase tracking-wider mb-1">
                   Category
                 </label>
-                <select
-                  value={itemCategory}
-                  onChange={(e) => setItemCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-semibold focus:outline-none focus:border-brand-500"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                {isAddingCategoryInModal ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="New Category Name"
+                      value={newModalCategoryName}
+                      onChange={(e) => setNewModalCategoryName(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl bg-ivory-50 border-2 border-brand-500 text-espresso-950 font-bold text-xs focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!newModalCategoryName.trim()) return;
+                        const res = await createCategory(shop.id, newModalCategoryName.trim());
+                        if (res.success && res.category) {
+                          const created = res.category;
+                          setCategories(prev => [...prev, created]);
+                          setItemCategory(created.id);
+                          setNewModalCategoryName('');
+                          setIsAddingCategoryInModal(false);
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-brand-500 text-espresso-950 font-bold text-xs hover:bg-brand-600 shadow-xs"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCategoryInModal(false)}
+                      className="p-2 text-espresso-400 hover:text-espresso-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={itemCategory}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        setIsAddingCategoryInModal(true);
+                      } else {
+                        setItemCategory(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-semibold focus:outline-none focus:border-brand-500"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                    <option value="__add_new__" className="text-brand-600 font-bold">+ Add New Category...</option>
+                  </select>
+                )}
               </div>
 
               <div>
@@ -609,13 +641,21 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                 </label>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {itemImages.map((img, i) => (
-                    <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-ivory-300 shrink-0">
+                    <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-ivory-300 shrink-0 group">
                       <img src={img} alt="" className="w-full h-full object-cover" />
                       {i === 0 && (
                         <span className="absolute bottom-0 inset-x-0 bg-brand-500 text-espresso-950 font-bold text-[8px] text-center">
                           Cover
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setItemImages(itemImages.filter((_, idx) => idx !== i))}
+                        className="absolute top-1 right-1 bg-espresso-950/80 hover:bg-rose-600 text-white rounded-full p-0.5 shadow-sm transition-colors"
+                        title="Remove photo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
 
@@ -624,6 +664,45 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                     <span className="text-[9px] mt-0.5 font-bold">{uploadingImage ? '...' : '+ Photo'}</span>
                     <input type="file" accept="image/*" multiple onChange={handleImageFileChange} className="hidden" />
                   </label>
+                </div>
+              </div>
+
+              {/* LIVE CUSTOMER REPRESENTATION PREVIEW */}
+              <div className="rounded-2xl border border-dashed border-brand-300 bg-brand-50/40 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider flex items-center gap-1">
+                    <Eye className="w-3.5 h-3.5 text-brand-700" />
+                    Customer Storefront Preview
+                  </span>
+                  <span className="text-[10px] text-espresso-400">Live preview</span>
+                </div>
+
+                <div className="bg-white rounded-xl p-3 border border-ivory-200 shadow-xs flex gap-3 items-center">
+                  <img
+                    src={itemImages[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300'}
+                    alt="Preview"
+                    className="w-16 h-16 rounded-xl object-cover border border-ivory-200 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold text-brand-800 uppercase bg-brand-100 px-1.5 py-0.5 rounded">
+                        {categories.find(c => c.id === itemCategory)?.name || 'General'}
+                      </span>
+                    </div>
+                    <p className="font-serif font-bold text-espresso-950 text-sm truncate mt-0.5">
+                      {itemName.trim() || 'Product Name Preview'}
+                    </p>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-sm font-bold text-emerald-700 font-serif">
+                        ₹{itemPrice || '0'}
+                      </span>
+                      {itemOriginalPrice && (
+                        <span className="text-xs text-espresso-400 line-through">
+                          ₹{itemOriginalPrice}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
