@@ -124,33 +124,33 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
   const progressPercent = Math.min(100, Math.max(0, (status.daysRemaining / 30) * 100));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-xl mx-auto space-y-5">
       
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
-          Shop Subscription & Billing
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 tracking-tight">
+          Subscription
         </h1>
-        <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
-          Simple, flat pricing: ₹120/month or ₹1,099/year. Keep your customer storefront & retention billing active.
+        <p className="text-espresso-500 text-xs sm:text-sm mt-0.5 font-normal">
+          Keep your shop page and billing live
         </p>
       </div>
 
       {/* Success alert notification if recharged */}
       {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-800 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-scale-in">
+        <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-3xl text-emerald-800 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-scale-in">
           <Check className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
 
       {/* Current Subscription Status Card */}
-      <div className={`rounded-3xl p-6 border shadow-card transition-all ${
+      <div className={`rounded-3xl p-5 sm:p-6 border shadow-sm transition-all ${
         status.isExpired
           ? 'bg-rose-50/80 border-rose-300'
           : isLowDays 
           ? 'bg-amber-50/80 border-amber-300' 
-          : 'bg-white border-ivory-200'
+          : 'bg-white border-[#EBE5DA]'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
@@ -164,7 +164,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
               }`}>
                 {status.isExpired ? 'Subscription Expired' : isLowDays ? 'Expiring Very Soon' : 'Subscription Active'}
               </span>
-              <span className="text-xs text-espresso-500">Plan: {shop.plan_type.toUpperCase()} Merchant Plan</span>
+              <span className="text-xs text-espresso-500">Plan: Standard Merchant</span>
             </div>
 
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 mt-2">
@@ -180,17 +180,17 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           </div>
 
           <div className="text-left sm:text-right">
-            <span className="text-xs font-bold text-espresso-500 uppercase tracking-wider block">Renewal Base</span>
-            <span className="font-serif font-bold text-2xl text-espresso-950">₹120 / mo</span>
+            <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider block">Base Rate</span>
+            <span className="font-serif font-bold text-2xl text-espresso-950">₹199 / mo</span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-ivory-200 rounded-full h-3 overflow-hidden mb-3">
+        <div className="w-full bg-[#FAF7F2] rounded-full h-2.5 overflow-hidden mb-3 border border-[#E8E2D8]">
           <div
             style={{ width: `${status.isExpired ? 0 : progressPercent}%` }}
             className={`h-full rounded-full transition-all duration-500 ${
-              status.isExpired ? 'bg-rose-600' : isLowDays ? 'bg-amber-500' : 'bg-brand-500'
+              status.isExpired ? 'bg-rose-600' : isLowDays ? 'bg-amber-500' : 'bg-[#C27835]'
             }`}
           />
         </div>
@@ -205,134 +205,119 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         {status.isExpired && (
           <div className="flex items-center gap-2 text-xs font-bold text-rose-800 mt-2 bg-rose-100/70 p-3 rounded-2xl border border-rose-300">
             <Lock className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>Notice: Your customer storefront is paused. Existing product links won't display prices or add-to-cart until recharged.</span>
+            <span>Notice: Your customer storefront is paused. Existing product links won't display prices until recharged.</span>
           </div>
         )}
 
         {/* Info footer */}
-        <div className="mt-4 pt-3 border-t border-ivory-200 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-espresso-500 gap-2">
-          <span>New shops receive a 14-day free trial on initial sign-up.</span>
+        <div className="mt-3 pt-3 border-t border-[#EBE5DA] flex items-center justify-between text-xs text-espresso-500">
+          <span>Auto-renew reminder is active</span>
           <button
             onClick={() => setAutoRenew(!autoRenew)}
-            className="flex items-center gap-1.5 font-semibold text-espresso-800 hover:text-espresso-950"
+            className="font-semibold text-espresso-800 hover:text-espresso-950 flex items-center gap-1"
           >
-            <span>Auto-Renew Reminder:</span>
+            <span>SMS/WhatsApp:</span>
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${autoRenew ? 'bg-emerald-100 text-emerald-800' : 'bg-ivory-200 text-espresso-600'}`}>
-              {autoRenew ? 'ON (SMS/WhatsApp)' : 'OFF'}
+              {autoRenew ? 'ON' : 'OFF'}
             </span>
           </button>
         </div>
       </div>
 
-      {/* Plan Comparison Cards */}
-      <div>
-        <h3 className="font-serif text-xl font-bold text-espresso-950 mb-3">
-          Choose a Recharge Plan
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          {/* Monthly Plan */}
-          <div className="bg-white rounded-3xl p-6 border border-ivory-200 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-espresso-500 uppercase tracking-wider">
-                  Monthly Recharge
-                </span>
-                <span className="text-xs font-bold text-espresso-700 bg-ivory-100 px-2.5 py-1 rounded-lg">
-                  30 Days
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-1 mb-4">
-                <span className="font-serif text-4xl font-bold text-espresso-950">₹120</span>
-                <span className="text-espresso-500 text-xs font-medium">/ month</span>
-              </div>
-
-              <ul className="space-y-2.5 text-xs text-espresso-700 mb-6">
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Unlimited digital catalog products</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Fast 5-second WhatsApp customer billing</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Customer visit tracking & repeat badges</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Automated WhatsApp retention promo messages</span>
-                </li>
-              </ul>
+      {/* PLAN COMPARISON CARDS (MATCHING IMAGE 3) */}
+      <div className="space-y-4">
+        
+        {/* Card 1: Monthly Plan */}
+        <div className="bg-white rounded-3xl p-6 border border-[#EBE5DA] shadow-sm space-y-5">
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="font-serif text-4xl font-bold text-espresso-950">₹199</span>
             </div>
-
-            <button
-              onClick={() => handleCheckout('monthly')}
-              disabled={loadingPlan === 'monthly'}
-              className="w-full py-3.5 rounded-2xl bg-ivory-100 hover:bg-ivory-200 text-espresso-950 font-bold text-xs sm:text-sm border border-ivory-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Zap className="w-4 h-4 text-brand-600" />
-              <span>{loadingPlan === 'monthly' ? 'Preparing Gateway...' : 'Recharge Monthly (₹120)'}</span>
-            </button>
+            <span className="text-espresso-500 text-xs font-medium block mt-0.5">per month</span>
           </div>
 
-          {/* Yearly Plan (Best Savings) */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-brand-500 shadow-card flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-4 right-4 bg-brand-500 text-espresso-950 text-[10px] font-bold px-3 py-1 rounded-full shadow-xs flex items-center gap-1">
-              <Sparkles className="w-3 h-3 fill-current" />
-              <span>SAVE 24% (Save ₹341)</span>
-            </div>
+          <ul className="space-y-3 text-xs text-espresso-700">
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Unlimited catalog items</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Fast counter billing</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Next-visit offers on WhatsApp</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Customer & revenue dashboard</span>
+            </li>
+          </ul>
 
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-brand-900 uppercase tracking-wider">
-                  Annual Best Value
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="font-serif text-4xl font-bold text-espresso-950">₹1,099</span>
-                <span className="text-espresso-400 line-through text-sm">₹1,440</span>
-                <span className="text-espresso-500 text-xs font-medium">/ year</span>
-              </div>
-              <p className="text-[11px] text-emerald-700 font-bold mb-4">
-                Just ₹91.50 per month • 365 Days Uninterrupted
-              </p>
-
-              <ul className="space-y-2.5 text-xs text-espresso-700 mb-6">
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Everything in Monthly plan for a full year</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Priority WhatsApp customer support</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Free printable QR code counter standee kit</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>No price hikes locked for 12 months</span>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => handleCheckout('yearly')}
-              disabled={loadingPlan === 'yearly'}
-              className="w-full py-3.5 rounded-2xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Zap className="w-4 h-4 fill-current" />
-              <span>{loadingPlan === 'yearly' ? 'Preparing Gateway...' : 'Recharge Annual Plan (₹1,099)'}</span>
-            </button>
-          </div>
-
+          <button
+            onClick={() => handleCheckout('monthly')}
+            disabled={loadingPlan === 'monthly'}
+            className="w-full py-3.5 rounded-full bg-white hover:bg-[#FAF7F2] text-espresso-950 font-bold text-xs sm:text-sm border border-[#E5DDD0] shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            <CreditCard className="w-4 h-4 text-espresso-700" />
+            <span>{loadingPlan === 'monthly' ? 'Preparing Gateway...' : 'Recharge Now'}</span>
+          </button>
         </div>
+
+        {/* Card 2: 6 Months Plan (Save 16%) */}
+        <div className="bg-white rounded-3xl p-6 border-2 border-[#C27835] shadow-sm space-y-5 relative">
+          {/* Top-left Save 16% Badge */}
+          <div className="absolute -top-3.5 left-6 bg-[#C27835] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-xs flex items-center gap-1">
+            <Sparkles className="w-3 h-3 fill-white" />
+            <span>Save 16%</span>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-xl font-bold text-espresso-950 mt-1">
+              6 Months
+            </h3>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="font-serif text-4xl font-bold text-espresso-950">₹999</span>
+            </div>
+            <span className="text-espresso-500 text-xs font-medium block mt-0.5">for 6 months</span>
+          </div>
+
+          <ul className="space-y-3 text-xs text-espresso-700">
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Unlimited catalog items</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Fast counter billing</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Next-visit offers on WhatsApp</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Customer & revenue dashboard</span>
+            </li>
+          </ul>
+
+          <button
+            onClick={() => handleCheckout('yearly')}
+            disabled={loadingPlan === 'yearly'}
+            className="w-full py-3.5 rounded-full bg-[#C27835] hover:bg-[#b06a2c] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>{loadingPlan === 'yearly' ? 'Preparing Gateway...' : 'Recharge Now'}</span>
+          </button>
+        </div>
+
+        {/* Free trial footer notice */}
+        <div className="flex items-center justify-center gap-1.5 text-xs text-espresso-500 pt-2">
+          <ShieldCheck className="w-4 h-4 text-espresso-400 shrink-0" />
+          <span>First-time shops get a 14-day free trial</span>
+        </div>
+
       </div>
 
       {/* Demo Controls Section */}

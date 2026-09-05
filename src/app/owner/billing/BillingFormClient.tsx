@@ -264,59 +264,51 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   };
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-1">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
-              <Zap className="w-4 h-4 fill-current" />
-            </span>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
-              Billing Counter
-            </h1>
-          </div>
-          <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
-            Record bill in &lt;5 seconds. Instant customer retention on WhatsApp.
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 tracking-tight">
+            Billing
+          </h1>
+          <p className="text-espresso-500 text-xs sm:text-sm mt-0.5 font-normal">
+            Number first, then amount — that's it
           </p>
         </div>
 
-        <div className="hidden sm:block text-right">
-          <span className="text-[11px] font-semibold text-espresso-500 uppercase tracking-wider block">Store</span>
-          <span className="font-serif font-bold text-espresso-900 text-sm">{shop.name}</span>
+        <div className="text-right">
+          <span className="text-[10px] font-bold text-espresso-400 uppercase tracking-wider block">Shop</span>
+          <span className="font-serif font-bold text-espresso-900 text-xs sm:text-sm truncate max-w-[140px] inline-block">{shop.name}</span>
         </div>
       </div>
 
-      {/* Main Billing Form Card */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 sm:p-7 border border-ivory-200 shadow-card space-y-5">
+      {/* Main Billing Form Cards Stack */}
+      <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Customer Mobile Number */}
-        <div className="relative">
-          <label className="flex items-center justify-between text-xs font-bold text-espresso-800 uppercase tracking-wider mb-2">
-            <span className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-brand-600" />
-              Customer Mobile Number <span className="text-rose-500">*</span>
-            </span>
+        {/* CARD 1: Customer Mobile Number */}
+        <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm relative">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[11px] font-bold text-[#8C827A] uppercase tracking-wider">
+              CUSTOMER MOBILE NUMBER
+            </label>
             {phoneNumber.length === 10 && (
-              <span className="text-emerald-600 font-semibold text-xs flex items-center gap-1 lowercase">
-                <Check className="w-3.5 h-3.5" /> 10-digits verified
+              <span className="text-emerald-700 font-bold text-xs flex items-center gap-1">
+                <Check className="w-3.5 h-3.5 stroke-[3]" /> Verified
               </span>
             )}
-          </label>
+          </div>
 
-          <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 transition-all shadow-inner overflow-hidden">
-            <div className="flex items-center gap-1 pl-4 pr-3 py-4 text-espresso-600 font-mono font-bold text-lg sm:text-xl border-r border-ivory-300 bg-ivory-100/60 select-none shrink-0">
-              <span>+91</span>
-            </div>
+          <div className="relative flex items-center rounded-2xl bg-[#FAF7F2] border border-[#E8E2D8] px-4 py-3 focus-within:border-[#C27835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#C27835]/20 transition-all">
+            <Phone className="w-5 h-5 text-[#8C827A] mr-3 shrink-0" />
             <input
               ref={phoneInputRef}
               type="tel"
               inputMode="numeric"
               maxLength={10}
-              placeholder="98201 44521"
+              placeholder="98542 29199"
               value={phoneNumber}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              className="w-full px-4 py-4 bg-transparent text-espresso-950 font-mono text-xl sm:text-2xl font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
+              className="w-full bg-transparent font-serif font-bold text-2xl sm:text-3xl text-espresso-950 tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
               required
             />
             {phoneNumber && (
@@ -327,19 +319,20 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   setMatchedCustomer(null);
                   phoneInputRef.current?.focus();
                 }}
-                className="pr-4 text-espresso-400 hover:text-espresso-700 p-1 shrink-0"
+                className="text-espresso-400 hover:text-espresso-700 p-1 shrink-0 ml-2"
+                title="Clear number"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
           </div>
 
-          {/* Auto-suggestions */}
+          {/* Auto-suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && phoneNumber.length < 10 && (
-            <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-2xl border border-ivory-300 shadow-xl overflow-hidden divide-y divide-ivory-100 animate-scale-in">
-              <div className="p-2 bg-ivory-50 text-[11px] font-bold text-espresso-500 uppercase tracking-wider flex items-center justify-between">
+            <div className="absolute top-full left-0 right-0 z-30 mt-2 bg-white rounded-2xl border border-ivory-300 shadow-xl overflow-hidden divide-y divide-ivory-100 animate-scale-in">
+              <div className="p-2.5 bg-ivory-50 text-[11px] font-bold text-espresso-500 uppercase tracking-wider flex items-center justify-between">
                 <span>Matching Customers ({suggestions.length})</span>
-                <span>Tap to auto-fill</span>
+                <span>Tap to fill</span>
               </div>
               {suggestions.map((cust) => (
                 <div
@@ -348,7 +341,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   className="p-3 hover:bg-brand-50/50 cursor-pointer flex items-center justify-between transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 shrink-0 aspect-square rounded-full bg-brand-100 text-brand-800 flex items-center justify-center font-bold text-xs ring-1 ring-brand-300/40">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center font-bold text-xs ring-1 ring-brand-300/40">
                       {cust.name ? cust.name[0].toUpperCase() : <User className="w-3.5 h-3.5 shrink-0" />}
                     </div>
                     <div>
@@ -357,7 +350,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-brand-100 text-brand-800">
+                    <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#C27835]/10 text-[#C27835]">
                       {cust.visit_count} Visits
                     </span>
                     <div className="text-[11px] text-espresso-400 mt-0.5">
@@ -370,208 +363,170 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
           )}
         </div>
 
-        {/* Customer Intelligence Snapshot */}
+        {/* CARD 2: Returning Customer Loyalty Snapshot */}
         {phoneNumber.length === 10 && (
-          <div className="bg-gradient-to-br from-ivory-50 via-brand-50/40 to-amber-50/50 rounded-2xl p-4 border border-brand-200/90 space-y-3 animate-slide-up shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 shrink-0 aspect-square rounded-2xl bg-brand-500 text-espresso-950 font-bold flex items-center justify-center text-base shadow-sm ring-2 ring-brand-200">
-                  {matchedCustomer?.name ? (
-                    matchedCustomer.name[0].toUpperCase()
+          <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm animate-slide-up space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  placeholder="Customer Name (optional)"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full bg-transparent font-serif font-bold text-xl sm:text-2xl text-espresso-950 border-b border-dashed border-espresso-300 focus:border-[#C27835] focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-base"
+                />
+                <div className="text-xs text-espresso-500 mt-1 font-medium">
+                  {matchedCustomer ? (
+                    <>
+                      Last visit {new Date(matchedCustomer.last_visit_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {matchedCustomer.last_bill_amount ? ` · last bill ${formatINR(matchedCustomer.last_bill_amount)}` : ''}
+                    </>
                   ) : (
-                    <User className="w-5 h-5 shrink-0" />
+                    'New First-Time Guest'
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <input
-                    type="text"
-                    placeholder="Customer Name (optional)"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full bg-transparent font-serif font-bold text-base sm:text-lg text-espresso-950 border-b border-dashed border-espresso-300 focus:border-brand-600 focus:outline-none placeholder:text-espresso-400 placeholder:font-normal placeholder:text-sm"
-                  />
-                  <span className="text-[11px] font-medium text-espresso-500 block mt-0.5">
-                    {loadingCustomer 
-                      ? 'Checking customer history...' 
-                      : matchedCustomer 
-                      ? 'Registered Regular Customer' 
-                      : 'New First-Time Guest'}
-                  </span>
-                </div>
-              </div>
-
-              {/* VIP Tier Badge */}
-              <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-1 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-brand-100">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-xs shrink-0 whitespace-nowrap ${
-                  (matchedCustomer?.visit_count || 0) >= 5
-                    ? 'bg-amber-400 text-espresso-950 font-black ring-1 ring-amber-500/50'
-                    : (matchedCustomer?.visit_count || 0) >= 2
-                    ? 'bg-brand-500 text-espresso-950 ring-1 ring-brand-600/30'
-                    : 'bg-emerald-600 text-white'
-                }`}>
-                  <Award className="w-3.5 h-3.5 shrink-0" />
-                  <span>
-                    {matchedCustomer 
-                      ? matchedCustomer.visit_count >= 5 
-                        ? `VIP Client (${matchedCustomer.visit_count + 1}th Visit)` 
-                        : `Regular (${matchedCustomer.visit_count + 1}th Visit)`
-                      : '1st Time Guest'}
-                  </span>
-                </span>
                 {matchedCustomer && (
-                  <span className="text-[11px] font-semibold text-espresso-600">
-                    LTV: {formatINR(matchedCustomer.total_spent)}
-                  </span>
+                  <div className="text-xs text-espresso-500 font-medium mt-0.5">
+                    Lifetime spend {formatINR(matchedCustomer.total_spent)}
+                  </div>
                 )}
               </div>
+
+              {/* Visit Pill Badge (Bronze) */}
+              <span className="shrink-0 px-3.5 py-1 rounded-full text-xs font-bold bg-[#C27835] text-white shadow-xs">
+                {matchedCustomer ? `${matchedCustomer.visit_count + 1}th Visit` : '1st Visit'}
+              </span>
             </div>
 
-            {matchedCustomer && (
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-brand-100/70 text-xs">
-                <div className="flex items-center gap-1.5 text-espresso-600">
-                  <Calendar className="w-3.5 h-3.5 text-espresso-400" />
-                  <span>Last Visit: <strong className="text-espresso-900">{new Date(matchedCustomer.last_visit_at).toLocaleDateString('en-IN')}</strong></span>
-                </div>
-                <div className="flex items-center gap-1.5 text-espresso-600 justify-end">
-                  <CreditCard className="w-3.5 h-3.5 text-espresso-400" />
-                  <span>Last Bill: <strong className="text-espresso-900">{formatINR(matchedCustomer.last_bill_amount)}</strong></span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Returning Customer Available Reward from Previous Visit */}
-        {matchedCustomer?.lastOfferAwarded && !isOfferDismissed && (
-          <div className="bg-gradient-to-r from-amber-50 to-brand-50/70 border-2 border-amber-300 rounded-2xl p-4 shadow-sm animate-scale-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="p-2.5 rounded-xl bg-amber-300 text-amber-950 shrink-0 shadow-xs ring-2 ring-amber-400/50">
-                  <Gift className="w-5 h-5" />
-                </span>
+            {/* Offer To Apply Now Banner */}
+            {matchedCustomer?.lastOfferAwarded && !isOfferDismissed && (
+              <div className="mt-3 rounded-2xl bg-[#FDF8F3] border border-[#F0E4D5] p-4 flex items-center justify-between gap-3 animate-scale-in">
                 <div className="min-w-0">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 block">
-                    🎁 Reward from Previous Visit
-                  </span>
-                  <span className="text-sm sm:text-base font-bold text-espresso-950 block truncate">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#C27835] flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 fill-[#C27835]" />
+                    <span>OFFER TO APPLY NOW</span>
+                  </div>
+                  <div className="font-serif font-bold text-sm sm:text-base text-espresso-950 truncate mt-0.5">
                     {matchedCustomer.lastOfferAwarded}
-                  </span>
+                  </div>
+                  {discountInfo && (
+                    <div className="text-xs text-espresso-500 mt-0.5">
+                      {discountInfo.summary}
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAppliedOfferText(matchedCustomer.lastOfferAwarded || '');
-                  }}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
-                    appliedOfferText === matchedCustomer.lastOfferAwarded
-                      ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
-                      : 'bg-amber-400 hover:bg-amber-500 text-espresso-950 active:scale-95'
-                  }`}
-                >
-                  {appliedOfferText === matchedCustomer.lastOfferAwarded ? '✓ Offer Applied' : 'Apply to This Bill'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOfferDismissed(true);
-                    setAppliedOfferText('');
-                  }}
-                  className="p-1.5 rounded-xl hover:bg-amber-200/60 text-espresso-400 hover:text-espresso-700 transition-colors"
-                  title="Dismiss reward"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Calculated Discount Breakdown in Rupees (Informational only, bill amount is untouched) */}
-            {appliedOfferText === matchedCustomer.lastOfferAwarded && discountInfo && (
-              <div className="mt-2.5 pt-2.5 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
-                <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
-                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{discountInfo.summary}</span>
-                </div>
-                <div className="font-serif font-bold text-sm text-espresso-950 bg-emerald-100/70 border border-emerald-300/80 px-2.5 py-1 rounded-xl">
-                  Offer Discount Value: <span className="text-emerald-700 font-black text-base">₹{discountInfo.discountRupees}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (appliedOfferText === matchedCustomer.lastOfferAwarded) {
+                        setAppliedOfferText('');
+                      } else {
+                        setAppliedOfferText(matchedCustomer.lastOfferAwarded || '');
+                      }
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs ${
+                      appliedOfferText === matchedCustomer.lastOfferAwarded
+                        ? 'bg-[#C27835] text-white'
+                        : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:border-[#C27835]'
+                    }`}
+                  >
+                    {appliedOfferText === matchedCustomer.lastOfferAwarded ? 'Applied' : 'Apply'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOfferDismissed(true);
+                      setAppliedOfferText('');
+                    }}
+                    className="text-espresso-400 hover:text-espresso-700 p-1"
+                    title="Dismiss offer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* Bill Amount */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold text-espresso-800 uppercase tracking-wider">
-              Bill Amount (₹ INR)
+        {/* CARD 3: Bill Amount */}
+        <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[11px] font-bold text-[#8C827A] uppercase tracking-wider">
+              BILL AMOUNT (optional)
             </label>
             {discountInfo && (
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                Offer Discount: ₹{discountInfo.discountRupees} ({discountInfo.percent}% OFF)
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Offer Discount: ₹{discountInfo.discountRupees}
               </span>
             )}
           </div>
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-espresso-500 font-serif font-bold text-2xl select-none">
+
+          <div className="relative flex items-center rounded-2xl bg-[#FAF7F2] border-2 border-[#C27835]/60 focus-within:border-[#C27835] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#C27835]/20 px-4 py-3 transition-all">
+            <span className="font-serif text-2xl sm:text-3xl text-espresso-400 select-none mr-2 font-bold">
               ₹
-            </div>
+            </span>
             <input
               ref={amountInputRef}
               type="number"
-              placeholder="0 (or leave blank if free inquiry)"
+              placeholder="0"
               value={billAmount}
               onChange={(e) => setBillAmount(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-serif font-bold text-xl sm:text-2xl focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all"
+              className="w-full bg-transparent font-serif font-bold text-3xl sm:text-4xl text-espresso-950 focus:outline-none placeholder:text-espresso-300"
             />
+          </div>
+
+          {/* Quick Amount Chips */}
+          <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar py-0.5">
+            {[500, 1000, 1500, 2500].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setBillAmount(amt.toString())}
+                className="px-4 py-1.5 rounded-full bg-white border border-[#E8E2D8] text-xs font-serif font-bold text-espresso-800 hover:border-[#C27835] hover:bg-[#FAF7F2] transition-all shadow-2xs active:scale-95 shrink-0"
+              >
+                ₹{amt.toLocaleString('en-IN')}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Next Visit Retention Offer */}
-        <div>
-          <label className="block text-xs font-bold text-espresso-800 uppercase tracking-wider mb-2">
-            Select Next-Visit Loyalty Reward
+        {/* CARD 4: Offer For Next Visit */}
+        <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm">
+          <label className="block text-[11px] font-bold text-[#8C827A] uppercase tracking-wider mb-3">
+            OFFER FOR NEXT VISIT
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="flex flex-wrap gap-2">
             {initialOffers.map((off) => {
               const isSelected = selectedOffer === off.title;
               return (
-                <div
+                <button
                   key={off.id}
+                  type="button"
                   onClick={() => setSelectedOffer(off.title)}
-                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                     isSelected
-                      ? 'border-brand-500 bg-brand-50/50 shadow-xs'
-                      : 'border-ivory-200 hover:border-ivory-300 bg-white'
+                      ? 'bg-[#241E1C] text-white shadow-xs'
+                      : 'bg-white border border-[#E8E2D8] text-espresso-800 hover:border-[#C27835] hover:bg-[#FAF7F2]'
                   }`}
                 >
-                  <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    isSelected ? 'border-brand-600 bg-brand-600' : 'border-espresso-300'
-                  }`}>
-                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-espresso-950 truncate">{off.title}</div>
-                    {off.description && (
-                      <div className="text-[11px] text-espresso-500 line-clamp-1">{off.description}</div>
-                    )}
-                  </div>
-                </div>
+                  {off.title}
+                </button>
               );
             })}
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="pt-3">
+        {/* Primary Action Button */}
+        <div className="pt-2">
           <button
             type="submit"
             disabled={submitting || phoneNumber.length !== 10}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-500 via-amber-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-espresso-950 font-serif font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
+            className="w-full py-4 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white font-serif font-bold text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            <Zap className="w-5 h-5 fill-current" />
+            <Zap className="w-5 h-5 text-amber-400 fill-current" />
             <span>
               {submitting 
                 ? 'Recording...' 

@@ -148,7 +148,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   }, [items, savedItemIds]);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-32">
+    <div className="min-h-screen bg-[#FAF7F2] pb-32">
       {/* SHOP HERO */}
       <ShopHero
         shop={shop}
@@ -157,7 +157,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
       />
 
       {/* FILTER & SORT TOOLBAR */}
-      <div className="bg-white/90 backdrop-blur-md border-b border-ivory-200 sticky top-0 z-20 px-3.5 sm:px-4 py-2">
+      <div className="bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#EBE5DA] sticky top-0 z-20 px-3.5 sm:px-4 py-2">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Sort Toggle */}
@@ -169,8 +169,8 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-all ${
                 priceSort !== 'default'
-                  ? 'bg-espresso-950 text-white shadow-xs'
-                  : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200'
+                  ? 'bg-[#241E1C] text-white shadow-xs'
+                  : 'bg-white border border-[#E5DDD0] text-espresso-700 hover:bg-[#FAF7F2]'
               }`}
             >
               <ArrowDownUp className="w-3 h-3" />
@@ -192,8 +192,8 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                   onClick={() => setMaxBudget(isSelected ? null : b.max)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
                     isSelected
-                      ? 'bg-brand-500 text-espresso-950 font-bold shadow-xs'
-                      : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200'
+                      ? 'bg-[#C27835] text-white font-bold shadow-xs'
+                      : 'bg-white border border-[#E5DDD0] text-espresso-700 hover:bg-[#FAF7F2]'
                   }`}
                 >
                   {b.label}
@@ -225,14 +225,14 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
             </h2>
             <button
               onClick={() => setSearchQuery('')}
-              className="text-xs text-brand-700 font-semibold hover:underline"
+              className="text-xs text-[#C27835] font-semibold hover:underline"
             >
               Clear Search
             </button>
           </div>
 
           {filteredItems.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200">
+            <div className="text-center py-16 bg-white rounded-3xl border border-[#EBE5DA]">
               <Search className="w-8 h-8 text-espresso-300 mx-auto mb-2" />
               <p className="text-sm font-semibold text-espresso-800">No items match your search</p>
               <p className="text-xs text-espresso-500 mt-1">Try another keyword or browse categories</p>
@@ -253,10 +253,37 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       ) : (
         /* STANDARD CATEGORY SECTIONS */
-        <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-5 space-y-8">
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-4 space-y-6">
+          {/* Top Category Filter Pills matching Image 2 */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <button
+              onClick={() => handleCategoryClick('all')}
+              className={`px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
+                activeCategoryId === 'all'
+                  ? 'bg-[#241E1C] text-white shadow-xs font-bold'
+                  : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2]'
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
+                  activeCategoryId === cat.id
+                    ? 'bg-[#241E1C] text-white shadow-xs font-bold'
+                    : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2]'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
           {categorySections.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200">
-              <Sparkles className="w-8 h-8 text-brand-500 mx-auto mb-2" />
+            <div className="text-center py-16 bg-white rounded-3xl border border-[#EBE5DA]">
+              <Sparkles className="w-8 h-8 text-[#C27835] mx-auto mb-2" />
               <h3 className="font-serif text-base font-bold text-espresso-950">Catalog Updating</h3>
               <p className="text-xs text-espresso-500 mt-1">The store owner is currently curating pieces. Check back soon!</p>
             </div>
@@ -294,55 +321,45 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       )}
 
-      {/* STICKY BOTTOM DOCK (Category Menu & Fast Search) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-ivory-300 p-2 sm:p-2.5 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          {isSearchActive && (
-            <div className="mb-2 flex items-center gap-2 animate-scale-in">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-espresso-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Search kurtis, specs, biryani..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-ivory-50 border border-ivory-300 text-xs text-espresso-900 focus:outline-none focus:border-brand-500"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-espresso-400 hover:text-espresso-700"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={() => {
-                  setIsSearchActive(false);
-                  setSearchQuery('');
-                }}
-                className="p-1.5 text-espresso-500 hover:text-espresso-800 rounded-lg hover:bg-ivory-100 text-xs font-semibold"
-              >
-                Cancel
-              </button>
+      {/* FLOATING BOTTOM DOCK (MATCHING SCREENSHOT) */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-[94vw] w-auto">
+        {isSearchActive ? (
+          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-2xl p-1.5 flex items-center gap-2 animate-scale-in">
+            <div className="relative flex-1 min-w-[220px] sm:min-w-[320px]">
+              <Search className="w-3.5 h-3.5 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search items, categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 rounded-full bg-[#FAF7F2] border border-[#E5DDD0] text-xs text-espresso-900 focus:outline-none focus:border-[#C27835]"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-espresso-400 hover:text-espresso-700"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-          )}
 
-          {/* Bottom Category Scrollable Chips */}
-          <div 
-            ref={categoryScrollRef}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5"
-          >
             <button
-              onClick={() => setIsSearchActive(!isSearchActive)}
-              className={`p-2 rounded-xl shrink-0 transition-all ${
-                isSearchActive || searchQuery
-                  ? 'bg-brand-500 text-espresso-950 font-bold shadow-xs'
-                  : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200 border border-ivory-300'
-              }`}
+              onClick={() => {
+                setIsSearchActive(false);
+                setSearchQuery('');
+              }}
+              className="px-3 py-1.5 rounded-full text-espresso-600 hover:text-espresso-950 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1">
+            <button
+              onClick={() => setIsSearchActive(true)}
+              className="p-2.5 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-black/5 transition-all shrink-0"
               title="Search catalog"
             >
               <Search className="w-4 h-4" />
@@ -351,36 +368,34 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
             <button
               id="cat-pill-all"
               onClick={() => handleCategoryClick('all')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
                 activeCategoryId === 'all'
-                  ? 'bg-espresso-950 text-white shadow-sm scale-105'
-                  : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200 border border-ivory-300'
+                  ? 'bg-[#241E1C] text-white shadow-xs'
+                  : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
               }`}
             >
-              All Items ({items.length})
+              All
             </button>
 
             {categories.map((cat) => {
-              const count = items.filter((p) => p.category_id === cat.id && p.is_available).length;
               const isActive = activeCategoryId === cat.id;
-
               return (
                 <button
                   key={cat.id}
                   id={`cat-pill-${cat.id}`}
                   onClick={() => handleCategoryClick(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
                     isActive
-                      ? 'bg-espresso-950 text-white shadow-sm font-bold scale-105 ring-2 ring-brand-400'
-                      : 'bg-ivory-100 text-espresso-700 hover:bg-ivory-200 border border-ivory-300'
+                      ? 'bg-[#241E1C] text-white shadow-xs font-bold'
+                      : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
                   }`}
                 >
-                  {cat.name} ({count})
+                  {cat.name}
                 </button>
               );
             })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Powered By Dynish Footer */}

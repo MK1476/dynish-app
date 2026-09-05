@@ -7,7 +7,7 @@ import type { Database } from '@/types/database';
 import { 
   LayoutDashboard, ShoppingBag, Zap, Users, Gift, 
   CreditCard, Settings, ExternalLink, Menu, X, ShieldAlert, 
-  Terminal, QrCode, Lock, Unlock, Download 
+  Terminal, QrCode, Lock, Unlock, Download, Store, LayoutGrid, ShieldCheck 
 } from 'lucide-react';
 import { signOut } from '@/actions/auth';
 import { BrandLogo } from '@/components/common/BrandLogo';
@@ -245,60 +245,75 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
         </div>
       </aside>
 
-      {/* MOBILE BOTTOM NAVIGATION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-ivory-300 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      {/* MOBILE FLOATING NAVIGATION DOCK (MATCHING SCREENSHOTS) */}
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1">
+        {/* Store / Dashboard */}
         <Link
           href="/owner/dashboard"
           onClick={(e) => handleNavClick(e, '/owner/dashboard')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-semibold ${
-            pathname === '/owner/dashboard' ? 'text-brand-800 font-bold' : 'text-espresso-500'
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+            pathname === '/owner/dashboard'
+              ? 'bg-[#241E1C] text-white shadow-xs'
+              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
           }`}
+          title="Dashboard"
         >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Home</span>
+          <Store className="w-5 h-5" />
         </Link>
 
+        {/* Catalog */}
         <Link
           href="/owner/catalog"
           onClick={(e) => handleNavClick(e, '/owner/catalog')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-semibold ${
-            pathname === '/owner/catalog' ? 'text-brand-800 font-bold' : 'text-espresso-500'
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+            pathname === '/owner/catalog'
+              ? 'bg-[#241E1C] text-white shadow-xs'
+              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
           }`}
+          title="Catalog"
         >
-          <ShoppingBag className="w-4 h-4" />
-          <span>Catalog</span>
+          <LayoutGrid className="w-5 h-5" />
         </Link>
 
-        {/* ELEVATED CENTER BILLING BUTTON */}
+        {/* Billing Counter */}
         <Link
           href="/owner/billing"
-          className="flex flex-col items-center -mt-5"
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+            pathname === '/owner/billing'
+              ? 'bg-[#241E1C] text-white shadow-xs'
+              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
+          }`}
+          title="Billing"
         >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 via-amber-500 to-brand-400 text-espresso-950 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-white active:scale-95 transition-transform">
-            <Zap className="w-6 h-6 fill-current" />
-          </div>
-          <span className="text-[10px] font-extrabold text-espresso-950 mt-0.5">Billing</span>
+          <Zap className="w-5 h-5" />
         </Link>
 
+        {/* Subscription */}
         <Link
-          href="/owner/customers"
-          onClick={(e) => handleNavClick(e, '/owner/customers')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-semibold ${
-            pathname === '/owner/customers' ? 'text-brand-800 font-bold' : 'text-espresso-500'
+          href="/owner/subscription"
+          onClick={(e) => handleNavClick(e, '/owner/subscription')}
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+            pathname === '/owner/subscription'
+              ? 'bg-[#241E1C] text-white shadow-xs'
+              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
           }`}
+          title="Subscription"
         >
-          <Users className="w-4 h-4" />
-          <span>Clients</span>
+          <ShieldCheck className="w-5 h-5" />
         </Link>
 
+        {/* More Drawer Button */}
         <button
+          type="button"
           onClick={() => setIsMobileMoreOpen(true)}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-semibold ${
-            isMobileMoreOpen ? 'text-brand-800 font-bold' : 'text-espresso-500'
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+            isMobileMoreOpen
+              ? 'bg-[#241E1C] text-white shadow-xs'
+              : 'text-espresso-700 hover:text-espresso-950 hover:bg-black/5'
           }`}
+          title="More options"
         >
-          <Menu className="w-4 h-4" />
-          <span>More</span>
+          <Menu className="w-5 h-5" />
         </button>
       </div>
 
