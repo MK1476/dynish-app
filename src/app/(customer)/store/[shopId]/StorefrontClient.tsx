@@ -34,7 +34,6 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   const [maxBudget, setMaxBudget] = useState<number | null>(null);
 
   const isClickScrollingRef = useRef(false);
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
 
   // Load bookmarks from localStorage per shopId
   useEffect(() => {
@@ -104,14 +103,14 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
     return processItems(matched);
   }, [items, searchQuery, priceSort, maxBudget]);
 
-  // SCROLLSPY: Auto-select category chip on scroll
+  // SCROLLSPY: Auto-select category on scroll
   useEffect(() => {
     const handleScroll = () => {
       if (isClickScrollingRef.current || searchQuery.trim() || priceSort !== 'default') return;
 
-      const scrollPos = window.scrollY + 180;
+      const scrollPos = window.scrollY + 140;
       const firstSection = document.getElementById(`cat-sec-${categorySections[0]?.category.id}`);
-      if (firstSection && window.scrollY < firstSection.offsetTop - 150) {
+      if (firstSection && window.scrollY < firstSection.offsetTop - 120) {
         setActiveCategoryId('all');
         return;
       }
@@ -121,11 +120,6 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         if (sec && sec.offsetTop <= scrollPos) {
           const currentId = categorySections[i].category.id;
           setActiveCategoryId(currentId);
-
-          const activePill = document.getElementById(`cat-pill-${currentId}`);
-          if (activePill && categoryScrollRef.current) {
-            activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
           break;
         }
       }
@@ -149,7 +143,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
       setTimeout(() => {
         const targetElement = document.getElementById(`cat-sec-${catId}`);
         if (targetElement) {
-          const headerOffset = 65;
+          const headerOffset = 115;
           const elementPosition = targetElement.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
           window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
@@ -175,9 +169,49 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         onOpenSavedItems={() => setIsSavedDrawerOpen(true)}
       />
 
-      {/* FILTER & SORT TOOLBAR */}
-      <div className="bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#EBE5DA] sticky top-0 z-20 px-3.5 sm:px-4 py-2">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+      {/* STICKY TOP HEADER: SEARCH BAR + FILTER ROW (STICKS ON TOP WHILE SCROLLING) */}
+      <div className="sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#EBE5DA] shadow-xs">
+        {/* ROW 1: SEARCH BAR & QUICK ACCESS */}
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-2.5 pb-2 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={`Search in ${shop.name}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-full bg-white border border-[#E5DDD0] text-xs sm:text-sm text-espresso-950 placeholder:text-espresso-400 focus:outline-none focus:border-[#C27835] focus:ring-2 focus:ring-[#C27835]/15 shadow-2xs transition-all font-medium"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5 transition-colors"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Bookmark / Wishlist Quick Button */}
+          <button
+            type="button"
+            onClick={() => setIsSavedDrawerOpen(true)}
+            className="p-2.5 rounded-full bg-white border border-[#E5DDD0] text-espresso-700 hover:text-[#C27835] hover:border-[#C27835] shadow-2xs transition-all shrink-0 relative"
+            title="Saved items"
+          >
+            <Bookmark className={`w-4 h-4 ${savedItemIds.length > 0 ? 'fill-[#C27835] text-[#C27835]' : ''}`} />
+            {savedItemIds.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#C27835] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono shadow-xs">
+                {savedItemIds.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* ROW 2: FILTERS & SORT ROW */}
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pb-2.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Sort Toggle */}
             <button
@@ -330,7 +364,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
               <section
                 key={section.category.id}
                 id={`cat-sec-${section.category.id}`}
-                className="scroll-mt-20"
+                className="scroll-mt-28"
               >
                 <div className="flex items-center justify-between mb-3 border-b border-ivory-200 pb-1.5">
                   <h2 className="font-sans text-lg sm:text-xl font-extrabold text-espresso-950 flex items-center gap-2">
@@ -360,170 +394,101 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       )}
 
-      {/* FLOATING BOTTOM DOCK */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-[94vw] w-auto">
-        {isSearchActive ? (
-          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-2xl p-1.5 flex items-center gap-2 animate-scale-in">
-            <div className="relative flex-1 min-w-[220px] sm:min-w-[320px]">
-              <Search className="w-3.5 h-3.5 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search items, categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 rounded-full bg-[#FAF7F2] border border-[#E5DDD0] text-xs text-espresso-900 focus:outline-none focus:border-[#C27835]"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-espresso-400 hover:text-espresso-700"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <button
-              onClick={() => {
-                setIsSearchActive(false);
-                setSearchQuery('');
-              }}
-              className="px-3 py-1.5 rounded-full text-espresso-600 hover:text-espresso-950 text-xs font-semibold"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white/95 backdrop-blur-md rounded-full border border-[#E5DDD0] shadow-xl p-1.5 flex items-center gap-1.5">
-            <button
-              onClick={() => setIsSearchActive(true)}
-              className="px-3.5 py-2 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-black/5 transition-all flex items-center gap-1.5 text-xs font-semibold"
-              title="Search catalog"
-            >
-              <Search className="w-4 h-4" />
-              <span>Search</span>
-            </button>
-
-            <button
-              onClick={() => setIsSavedDrawerOpen(true)}
-              className="px-3.5 py-2 rounded-full text-xs font-bold text-espresso-800 hover:bg-[#FAF7F2] transition-all flex items-center gap-1.5 shrink-0"
-              title="Saved items"
-            >
-              <Bookmark className="w-3.5 h-3.5 text-[#C27835] fill-current" />
-              <span>Saved</span>
-              {savedItemIds.length > 0 && (
-                <span className="bg-[#C27835] text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
-                  {savedItemIds.length}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* FLOATING ACTION BUTTON (FAB) FOR CATEGORIES */}
+      {/* FLOATING ACTION BUTTON (FAB) FOR MENU / CLOSE */}
       <button
         type="button"
-        onClick={() => setIsCategoryModalOpen(true)}
-        className="fixed bottom-4 right-4 sm:right-6 z-30 px-4 py-2.5 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white shadow-xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all border border-[#C27835]/40"
+        onClick={() => setIsCategoryModalOpen(!isCategoryModalOpen)}
+        className={`fixed bottom-5 right-4 sm:right-6 z-50 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${
+          isCategoryModalOpen
+            ? 'bg-[#27272A] hover:bg-[#323238] text-white border border-white/20'
+            : 'bg-[#18181B] hover:bg-[#27272A] text-white border border-white/10'
+        }`}
       >
-        <LayoutGrid className="w-4 h-4 text-amber-400" />
-        <span>
-          {activeCategoryId === 'all'
-            ? 'Categories'
-            : (categories.find(c => c.id === activeCategoryId)?.name || 'Categories')}
-        </span>
-        <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
-          {categories.length}
-        </span>
+        {isCategoryModalOpen ? (
+          <>
+            <X className="w-4 h-4" />
+            <span>Close</span>
+          </>
+        ) : (
+          <>
+            <LayoutGrid className="w-4 h-4 text-[#FF4D4D]" />
+            <span>Menu</span>
+            <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+              {categories.length}
+            </span>
+          </>
+        )}
       </button>
 
-      {/* CATEGORY POPUP MODAL (BOTTOM-SHEET) */}
+      {/* CATEGORY POPUP MODAL (REPLICATING SCREENSHOT) */}
       {isCategoryModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs flex items-end sm:items-end justify-end p-4 pb-20 sm:pb-20 sm:pr-6 animate-fade-in"
           onClick={() => setIsCategoryModalOpen(false)}
         >
           <div
-            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"
+            className="w-full max-w-[320px] sm:max-w-[340px] bg-[#1E1D24] text-white rounded-2xl p-3 sm:p-4 shadow-2xl border border-white/10 space-y-1 animate-scale-in max-h-[70vh] overflow-y-auto no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-[#EBE5DA]">
-              <div>
-                <h3 className="font-sans font-bold text-base text-espresso-950">Shop Categories</h3>
-                <p className="text-xs text-espresso-500">Jump directly to any section</p>
-              </div>
-              <button
-                onClick={() => setIsCategoryModalOpen(false)}
-                className="p-1.5 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            {/* All Items Option */}
+            <button
+              type="button"
+              onClick={() => {
+                handleCategoryClick('all');
+                setIsCategoryModalOpen(false);
+              }}
+              className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-left transition-colors ${
+                activeCategoryId === 'all'
+                  ? 'text-[#FF4D4D] font-bold'
+                  : 'text-zinc-200 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <span className="text-sm tracking-tight pr-3 truncate">All Items</span>
+              <span className={`text-xs font-semibold shrink-0 ${activeCategoryId === 'all' ? 'text-[#FF4D4D]' : 'text-zinc-400'}`}>
+                {items.length}
+              </span>
+            </button>
 
-            <div className="space-y-2">
-              {/* All Items Option */}
+            {/* Each Category matching the screenshot style */}
+            {categories.map((cat) => {
+              const catItemCount = items.filter((i) => i.category_id === cat.id).length;
+              const isActive = activeCategoryId === cat.id;
+
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    handleCategoryClick(cat.id);
+                    setIsCategoryModalOpen(false);
+                  }}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-left transition-colors ${
+                    isActive
+                      ? 'text-[#FF4D4D] font-bold'
+                      : 'text-zinc-200 hover:text-white hover:bg-white/5 font-medium'
+                  }`}
+                >
+                  <span className="text-sm tracking-tight pr-3 truncate">{cat.name}</span>
+                  <span className={`text-xs font-semibold shrink-0 ${isActive ? 'text-[#FF4D4D]' : 'text-zinc-400'}`}>
+                    {catItemCount}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Bottom Special Section matching screenshot */}
+            <div className="pt-2 mt-2 border-t border-white/10">
               <button
                 type="button"
                 onClick={() => {
-                  handleCategoryClick('all');
+                  setIsSavedDrawerOpen(true);
                   setIsCategoryModalOpen(false);
                 }}
-                className={`w-full p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-all ${
-                  activeCategoryId === 'all'
-                    ? 'bg-[#241E1C] text-white shadow-xs'
-                    : 'bg-[#FAF7F2] text-espresso-800 hover:bg-[#F2ECE4] border border-[#EBE5DA]'
-                }`}
+                className="w-full py-2 px-3 rounded-xl flex items-center justify-between text-left text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeCategoryId === 'all' ? 'bg-white/10 text-white' : 'bg-white text-espresso-800 shadow-2xs'}`}>
-                    <LayoutGrid className="w-4 h-4" />
-                  </div>
-                  <div className="text-left">
-                    <span className="block font-sans font-bold text-sm">All Products</span>
-                    <span className={`text-[10px] font-normal ${activeCategoryId === 'all' ? 'text-white/70' : 'text-espresso-500'}`}>
-                      {items.length} items cataloged
-                    </span>
-                  </div>
-                </div>
-                {activeCategoryId === 'all' && <Check className="w-4 h-4 text-amber-400" />}
+                <span className="text-xs font-bold uppercase tracking-wider">SAVED WISHLIST</span>
+                <span className="text-xs text-zinc-400">{savedItemIds.length}</span>
               </button>
-
-              {/* Each Category */}
-              {categories.map((cat) => {
-                const catItemCount = items.filter((i) => i.category_id === cat.id).length;
-                const isActive = activeCategoryId === cat.id;
-
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      handleCategoryClick(cat.id);
-                      setIsCategoryModalOpen(false);
-                    }}
-                    className={`w-full p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-all ${
-                      isActive
-                        ? 'bg-[#241E1C] text-white shadow-xs'
-                        : 'bg-[#FAF7F2] text-espresso-800 hover:bg-[#F2ECE4] border border-[#EBE5DA]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/10 text-white' : 'bg-white text-espresso-800 shadow-2xs'}`}>
-                        <Sparkles className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="text-left">
-                        <span className="block font-sans font-bold text-sm">{cat.name}</span>
-                        <span className={`text-[10px] font-normal ${isActive ? 'text-white/70' : 'text-espresso-500'}`}>
-                          {catItemCount} items
-                        </span>
-                      </div>
-                    </div>
-                    {isActive && <Check className="w-4 h-4 text-amber-400" />}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>
