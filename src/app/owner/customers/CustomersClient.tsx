@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { Database } from '@/types/database';
-import { Users, Search, Award, Calendar, CreditCard, ShieldCheck } from 'lucide-react';
+import { Users, Search, Award, Calendar, CreditCard, ShieldCheck, X } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
@@ -42,15 +42,25 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
         </div>
 
         {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-espresso-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search mobile or name..."
+            placeholder="Search mobile or customer name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ivory-200 text-xs text-espresso-900 focus:outline-none focus:border-brand-500 shadow-xs"
+            className="w-full pl-10 pr-9 py-2.5 rounded-2xl bg-white border border-ivory-300 text-xs sm:text-sm font-medium text-espresso-950 placeholder:text-espresso-400 focus:outline-none focus:border-[#C27835] focus:ring-2 focus:ring-[#C27835]/15 shadow-2xs transition-all"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5 transition-colors"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: '5-second WhatsApp counter billing, instant customer retention, and digital catalog storefront.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/dynish-logo.png',
+    icon: '/icon-512.png',
     shortcut: '/favicon.png',
     apple: '/apple-touch-icon.png',
   },

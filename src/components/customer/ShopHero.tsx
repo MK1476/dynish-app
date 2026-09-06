@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import type { Database } from '@/types/database';
 import { 
   MessageCircle, Instagram, Youtube, MapPin, Share2, 
-  Bookmark, Sparkles, CheckCircle2, Phone 
+  Bookmark, Sparkles, CheckCircle2, Phone, Search 
 } from 'lucide-react';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
@@ -17,21 +17,18 @@ interface ShopHeroProps {
   };
   savedCount: number;
   onOpenSavedItems: () => void;
+  onSearchClick?: () => void;
 }
 
 import { copyTextToClipboard } from '@/lib/utils';
 
-export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSavedItems }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
+export const ShopHero: React.FC<ShopHeroProps> = ({ 
+  shop, 
+  savedCount, 
+  onOpenSavedItems, 
+  onSearchClick 
+}) => {
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 130);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const handleShare = async () => {
     const shareUrl = typeof window !== 'undefined' 
@@ -75,41 +72,6 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
   return (
     <div className="relative bg-[#FAF7F2]">
       
-      {/* SCROLL-TRIGGERED STICKY TOP BAR */}
-      <div 
-        className={`fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md px-3.5 sm:px-4 py-2.5 border-b border-[#EBE5DA] shadow-sm transition-all duration-300 transform ${
-          isScrolled 
-            ? 'translate-y-0 opacity-100' 
-            : '-translate-y-full opacity-0 pointer-events-none'
-        }`}
-      >
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <img 
-              src={logoUrl} 
-              alt={shop.name} 
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-cover ring-1 ring-[#C27835] shrink-0"
-            />
-            <div className="min-w-0">
-              <span className="font-sans font-bold text-espresso-950 text-xs sm:text-sm truncate block">
-                {shop.name}
-              </span>
-              <span className="text-[10px] text-espresso-500 font-medium truncate block">
-                {shop.category_label || shop.category || 'Store'}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={onOpenSavedItems}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E5DDD0] text-espresso-900 text-xs font-bold transition-all shrink-0 active:scale-95 shadow-2xs"
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${savedCount > 0 ? 'fill-[#C27835] text-[#C27835]' : 'text-espresso-700'}`} />
-            <span>{savedCount > 0 ? `${savedCount} Saved` : 'Saved'}</span>
-          </button>
-        </div>
-      </div>
-
       {/* FULL IMMERSION COVER BANNER WITH GLASS FLOATING CONTROLS */}
       <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-espresso-950">
         <img
@@ -119,7 +81,7 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" />
 
-        {/* Floating Glass Top Bar */}
+        {/* Floating Glass Top Bar with Back, Search, and Saved Buttons */}
         <div className="absolute top-3 inset-x-3 sm:inset-x-6 flex items-center justify-between z-20">
           <button
             type="button"
@@ -133,19 +95,32 @@ export const ShopHero: React.FC<ShopHeroProps> = ({ shop, savedCount, onOpenSave
             </svg>
           </button>
 
-          <button
-            type="button"
-            onClick={onOpenSavedItems}
-            className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center transition-all shadow-md active:scale-95 relative"
-            title="Saved items"
-          >
-            <Bookmark className={`w-4 h-4 ${savedCount > 0 ? 'fill-[#C27835] text-[#C27835]' : ''}`} />
-            {savedCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#C27835] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
-                {savedCount}
-              </span>
+          <div className="flex items-center gap-2">
+            {onSearchClick && (
+              <button
+                type="button"
+                onClick={onSearchClick}
+                className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center transition-all shadow-md active:scale-95"
+                title="Search catalog"
+              >
+                <Search className="w-4 h-4" />
+              </button>
             )}
-          </button>
+
+            <button
+              type="button"
+              onClick={onOpenSavedItems}
+              className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-white flex items-center justify-center transition-all shadow-md active:scale-95 relative"
+              title="Saved items"
+            >
+              <Bookmark className={`w-4 h-4 ${savedCount > 0 ? 'fill-[#C27835] text-[#C27835]' : ''}`} />
+              {savedCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#C27835] text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
+                  {savedCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Bottom-Left Info Overlay inside Banner */}

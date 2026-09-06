@@ -34,6 +34,18 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   const [maxBudget, setMaxBudget] = useState<number | null>(null);
 
   const isClickScrollingRef = useRef(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearchFocus = () => {
+    const header = document.getElementById('storefront-sticky-header');
+    if (header) {
+      const topPos = header.getBoundingClientRect().top + window.pageYOffset - 10;
+      window.scrollTo({ top: topPos, behavior: 'smooth' });
+    }
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 450);
+  };
 
   // Load bookmarks from localStorage per shopId
   useEffect(() => {
@@ -167,15 +179,20 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         shop={shop}
         savedCount={savedItemIds.length}
         onOpenSavedItems={() => setIsSavedDrawerOpen(true)}
+        onSearchClick={handleSearchFocus}
       />
 
       {/* STICKY TOP HEADER: SEARCH BAR + FILTER ROW (STICKS ON TOP WHILE SCROLLING) */}
-      <div className="sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#EBE5DA] shadow-xs">
+      <div 
+        id="storefront-sticky-header" 
+        className="sticky top-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#EBE5DA] shadow-xs"
+      >
         {/* ROW 1: SEARCH BAR & QUICK ACCESS */}
         <div className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-2.5 pb-2 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder={`Search in ${shop.name}...`}
               value={searchQuery}
@@ -394,40 +411,55 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         </div>
       )}
 
-      {/* FLOATING ACTION BUTTON (FAB) FOR MENU / CLOSE */}
-      <button
-        type="button"
-        onClick={() => setIsCategoryModalOpen(!isCategoryModalOpen)}
-        className={`fixed bottom-5 right-4 sm:right-6 z-50 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${
-          isCategoryModalOpen
-            ? 'bg-[#27272A] hover:bg-[#323238] text-white border border-white/20'
-            : 'bg-[#18181B] hover:bg-[#27272A] text-white border border-white/10'
-        }`}
-      >
-        {isCategoryModalOpen ? (
-          <>
-            <X className="w-4 h-4" />
-            <span>Close</span>
-          </>
-        ) : (
-          <>
-            <LayoutGrid className="w-4 h-4 text-[#FF4D4D]" />
-            <span>Menu</span>
-            <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
-              {categories.length}
-            </span>
-          </>
+      {/* FLOATING ACTION DOCK: QUICK SEARCH + MENU / CLOSE FAB */}
+      <div className="fixed bottom-5 right-4 sm:right-6 z-50 flex items-center gap-2">
+        {/* Quick Search Floating Button (when modal is closed) */}
+        {!isCategoryModalOpen && (
+          <button
+            type="button"
+            onClick={handleSearchFocus}
+            className="w-10 h-10 rounded-full bg-[#241E1C] hover:bg-[#342D2B] text-white border border-[#EBE5DA]/20 shadow-2xl flex items-center justify-center active:scale-95 transition-all"
+            title="Search products"
+          >
+            <Search className="w-4 h-4 text-[#D99706]" />
+          </button>
         )}
-      </button>
 
-      {/* CATEGORY POPUP MODAL (REPLICATING SCREENSHOT) */}
+        {/* Menu / Close FAB */}
+        <button
+          type="button"
+          onClick={() => setIsCategoryModalOpen(!isCategoryModalOpen)}
+          className={`px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold active:scale-95 transition-all ${
+            isCategoryModalOpen
+              ? 'bg-[#342D2B] hover:bg-[#433B38] text-white border border-[#EBE5DA]/30'
+              : 'bg-[#241E1C] hover:bg-[#342D2B] text-white border border-[#EBE5DA]/20'
+          }`}
+        >
+          {isCategoryModalOpen ? (
+            <>
+              <X className="w-4 h-4" />
+              <span>Close</span>
+            </>
+          ) : (
+            <>
+              <LayoutGrid className="w-4 h-4 text-[#D99706]" />
+              <span>Menu</span>
+              <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+                {categories.length}
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* CATEGORY POPUP MODAL (REFINED LUXURY THEME) */}
       {isCategoryModalOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs flex items-end sm:items-end justify-end p-4 pb-20 sm:pb-20 sm:pr-6 animate-fade-in"
           onClick={() => setIsCategoryModalOpen(false)}
         >
           <div
-            className="w-full max-w-[320px] sm:max-w-[340px] bg-[#1E1D24] text-white rounded-2xl p-3 sm:p-4 shadow-2xl border border-white/10 space-y-1 animate-scale-in max-h-[70vh] overflow-y-auto no-scrollbar"
+            className="w-full max-w-[320px] sm:max-w-[340px] bg-[#1C1816] text-[#FAF7F2] rounded-3xl p-3.5 sm:p-4 shadow-2xl border border-white/15 space-y-1 animate-scale-in max-h-[70vh] overflow-y-auto no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
             {/* All Items Option */}
@@ -437,19 +469,19 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                 handleCategoryClick('all');
                 setIsCategoryModalOpen(false);
               }}
-              className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-left transition-colors ${
+              className={`w-full py-2.5 px-3 rounded-2xl flex items-center justify-between text-left transition-colors ${
                 activeCategoryId === 'all'
-                  ? 'text-[#FF4D4D] font-bold'
-                  : 'text-zinc-200 hover:text-white hover:bg-white/5 font-medium'
+                  ? 'bg-white/10 text-[#D99706] font-bold shadow-2xs'
+                  : 'text-[#EDE4DC] hover:text-white hover:bg-white/5 font-medium'
               }`}
             >
-              <span className="text-sm tracking-tight pr-3 truncate">All Items</span>
-              <span className={`text-xs font-semibold shrink-0 ${activeCategoryId === 'all' ? 'text-[#FF4D4D]' : 'text-zinc-400'}`}>
+              <span className="text-sm tracking-tight pr-3 truncate">All Products</span>
+              <span className={`text-xs font-semibold font-mono shrink-0 ${activeCategoryId === 'all' ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
                 {items.length}
               </span>
             </button>
 
-            {/* Each Category matching the screenshot style */}
+            {/* Each Category */}
             {categories.map((cat) => {
               const catItemCount = items.filter((i) => i.category_id === cat.id).length;
               const isActive = activeCategoryId === cat.id;
@@ -462,14 +494,14 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                     handleCategoryClick(cat.id);
                     setIsCategoryModalOpen(false);
                   }}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-left transition-colors ${
+                  className={`w-full py-2.5 px-3 rounded-2xl flex items-center justify-between text-left transition-colors ${
                     isActive
-                      ? 'text-[#FF4D4D] font-bold'
-                      : 'text-zinc-200 hover:text-white hover:bg-white/5 font-medium'
+                      ? 'bg-white/10 text-[#D99706] font-bold shadow-2xs'
+                      : 'text-[#EDE4DC] hover:text-white hover:bg-white/5 font-medium'
                   }`}
                 >
                   <span className="text-sm tracking-tight pr-3 truncate">{cat.name}</span>
-                  <span className={`text-xs font-semibold shrink-0 ${isActive ? 'text-[#FF4D4D]' : 'text-zinc-400'}`}>
+                  <span className={`text-xs font-semibold font-mono shrink-0 ${isActive ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
                     {catItemCount}
                   </span>
                 </button>
@@ -484,10 +516,10 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                   setIsSavedDrawerOpen(true);
                   setIsCategoryModalOpen(false);
                 }}
-                className="w-full py-2 px-3 rounded-xl flex items-center justify-between text-left text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+                className="w-full py-2 px-3 rounded-2xl flex items-center justify-between text-left text-[#DDD0C3] hover:text-white hover:bg-white/5 transition-colors"
               >
                 <span className="text-xs font-bold uppercase tracking-wider">SAVED WISHLIST</span>
-                <span className="text-xs text-zinc-400">{savedItemIds.length}</span>
+                <span className="text-xs font-mono text-[#A89F91]">{savedItemIds.length}</span>
               </button>
             </div>
           </div>

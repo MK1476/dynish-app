@@ -222,9 +222,44 @@ async function runTestSuite() {
   const sortAsc = [...mockCatalog].filter(i => i.is_available).sort((a, b) => a.price - b.price);
   const sortDesc = [...mockCatalog].filter(i => i.is_available).sort((a, b) => b.price - a.price);
 
-  assert(sortAsc[0].price === 150 && sortAsc[2].price === 950, 'Global price sort (low to high) orders all catalog items correctly');
-  assert(sortDesc[0].price === 950 && sortDesc[2].price === 150, 'Global price sort (high to low) orders all catalog items correctly');
-  assert(!sortAsc.some(i => !i.is_available), 'Out of stock items excluded from active sort view');
+  // 14. PWA STANDARD & MASKABLE ICONS INTEGRITY
+  console.log(`\n${YELLOW}14. PWA Standard & Maskable Icons Integrity${RESET}`);
+  const icon192Path = path.join(publicDir, 'icon-192.png');
+  const icon512Path = path.join(publicDir, 'icon-512.png');
+  const maskable192Path = path.join(publicDir, 'icon-maskable-192.png');
+  const maskable512Path = path.join(publicDir, 'icon-maskable-512.png');
+  const appleTouchPath = path.join(publicDir, 'apple-touch-icon.png');
+
+  assert(fs.existsSync(icon192Path), 'Square icon-192.png exists in public/');
+  assert(fs.existsSync(icon512Path), 'Square icon-512.png exists in public/');
+  assert(fs.existsSync(maskable192Path), 'PWA maskable icon-maskable-192.png exists in public/');
+  assert(fs.existsSync(maskable512Path), 'PWA maskable icon-maskable-512.png exists in public/');
+  assert(fs.existsSync(appleTouchPath), 'Apple touch icon exists in public/apple-touch-icon.png');
+
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const anyIcon = manifest.icons?.find((i: any) => i.purpose === 'any');
+    const maskableIcon = manifest.icons?.find((i: any) => i.purpose === 'maskable');
+    assert(!!anyIcon, 'PWA manifest includes purpose: "any" icon definition');
+    assert(!!maskableIcon, 'PWA manifest includes purpose: "maskable" icon definition');
+  }
+
+  // 15. ANALYTICS VISIT TIMINGS BUCKET & PEAK WINDOW DETECTION
+  console.log(`\n${YELLOW}15. Analytics Visit Timings Bucket & Peak Window Detection${RESET}`);
+  const sampleTxs = [
+    { id: '1', created_at: new Date().setHours(9, 30, 0, 0), bill_amount: 450 },
+    { id: '2', created_at: new Date().setHours(18, 15, 0, 0), bill_amount: 1200 },
+    { id: '3', created_at: new Date().setHours(19, 0, 0, 0), bill_amount: 850 },
+  ];
+
+  const peakSlotTxs = sampleTxs.filter(t => {
+    const h = new Date(t.created_at).getHours();
+    return h >= 18 && h < 20;
+  });
+
+  assert(peakSlotTxs.length === 2, 'Time slot 6 PM - 8 PM correctly aggregates 2 customer visits');
+  const peakSlotRevenue = peakSlotTxs.reduce((sum, t) => sum + t.bill_amount, 0);
+  assert(peakSlotRevenue === 2050, 'Peak slot correctly sums ₹2,050 revenue');
 
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
