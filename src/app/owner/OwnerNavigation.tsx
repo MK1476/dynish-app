@@ -36,6 +36,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
   // PWA install prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   const { isStaffMode, enableStaffMode, unlockOwnerMode } = useStaffMode();
 
@@ -50,11 +51,19 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
   }, []);
 
   const handleInstallApp = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setCanInstall(false);
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setCanInstall(false);
+          setDeferredPrompt(null);
+        }
+      } catch {
+        setShowInstallGuide(true);
+      }
+    } else {
+      setShowInstallGuide(true);
     }
   };
 
@@ -120,17 +129,28 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
           )}
 
           {/* Shop Header */}
-          <div className="flex items-center gap-3 p-2 rounded-2xl bg-ivory-50 border border-ivory-200">
+          <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-ivory-50 border border-ivory-200">
             <img
               src={shop?.logo_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=100'}
               alt={shop?.name || 'Shop'}
-              className="w-10 h-10 rounded-xl object-cover ring-1 ring-brand-400"
+              className="w-10 h-10 rounded-xl object-cover ring-1 ring-brand-400 shrink-0"
             />
-            <div className="min-w-0">
-              <h3 className="font-sans font-bold text-sm text-espresso-950 truncate">
-                {shop?.name || 'My Store'}
-              </h3>
-              <span className="text-[10px] uppercase font-bold text-brand-800 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200 block truncate">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <h3 className="font-sans font-bold text-sm text-espresso-950 truncate">
+                  {shop?.name || 'My Store'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleInstallApp}
+                  className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 shadow-2xs flex items-center justify-center transition-all active:scale-90 shrink-0"
+                  title="Install Dynish App"
+                  aria-label="Install Dynish App"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-700 stroke-[2.5]" />
+                </button>
+              </div>
+              <span className="text-[10px] uppercase font-bold text-brand-800 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200 block truncate mt-0.5">
                 {shop?.category || 'Retail Outlet'}
               </span>
             </div>
@@ -317,18 +337,29 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
             className="w-full bg-white rounded-t-3xl p-5 shadow-2xl space-y-4 animate-slide-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header: Avatar, Name, Management subtitle, Close button */}
+            {/* Header: Avatar, Name with Download Icon, Management subtitle, Close button */}
             <div className="flex items-center justify-between pb-3 border-b border-[#EBE5DA]">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                 <img
                   src={shop?.logo_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=100'}
                   alt={shop?.name || 'Shop'}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#EBE5DA]"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#EBE5DA] shrink-0"
                 />
-                <div>
-                  <h3 className="font-sans font-bold text-sm sm:text-base text-espresso-950">
-                    {shop?.name || 'Aadya Couture & Kurtis'}
-                  </h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-sans font-bold text-sm sm:text-base text-espresso-950 truncate">
+                      {shop?.name || 'Aadya Couture & Kurtis'}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={handleInstallApp}
+                      className="p-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 shadow-2xs flex items-center justify-center transition-all active:scale-90 shrink-0"
+                      title="Install Dynish PWA App"
+                      aria-label="Install Dynish App"
+                    >
+                      <Download className="w-3.5 h-3.5 text-amber-700 stroke-[2.5]" />
+                    </button>
+                  </div>
                   <p className="text-[11px] text-espresso-500">
                     Shop Menu &amp; Management
                   </p>
@@ -336,7 +367,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               </div>
               <button 
                 onClick={() => setIsMobileMoreOpen(false)}
-                className="p-1.5 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5"
+                className="p-1.5 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -502,6 +533,50 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
         onSuccess={handlePinSuccess}
         unlockOwnerMode={unlockOwnerMode}
       />
+
+      {/* PWA INSTALL GUIDE MODAL */}
+      {showInstallGuide && (
+        <div 
+          className="fixed inset-0 z-60 bg-espresso-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowInstallGuide(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-ivory-200 text-center space-y-4 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-900 flex items-center justify-center mx-auto shadow-xs">
+              <Download className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="font-sans font-extrabold text-base sm:text-lg text-espresso-950">
+                Install Dynish App
+              </h3>
+              <p className="text-xs text-espresso-500 mt-1">
+                Install on your phone or tablet for instant 1-tap counter access and ultra-fast billing.
+              </p>
+            </div>
+
+            <div className="bg-ivory-50 rounded-2xl p-3.5 text-left border border-ivory-200 space-y-2.5 text-xs text-espresso-700">
+              <div className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-brand-500 text-espresso-950 flex items-center justify-center font-bold text-[11px] shrink-0">1</span>
+                <span><strong>Android / Chrome:</strong> Tap the browser menu (<strong>⋮</strong>) and choose <strong>&quot;Install app&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-brand-500 text-espresso-950 flex items-center justify-center font-bold text-[11px] shrink-0">2</span>
+                <span><strong>iPhone / Safari:</strong> Tap the Share button (<strong>⎋</strong>) at the bottom, then choose <strong>&quot;Add to Home Screen&quot;</strong>.</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowInstallGuide(false)}
+              className="w-full py-2.5 rounded-xl bg-espresso-950 text-white font-bold text-xs hover:bg-espresso-900 transition-colors shadow-xs"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
