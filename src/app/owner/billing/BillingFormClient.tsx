@@ -49,6 +49,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
   const [btError, setBtError] = useState<string | null>(null);
+  const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
 
   const getReceiptData = (): ReceiptData | null => {
     if (!completedDetails) return null;
@@ -312,6 +313,28 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     }, 100);
   };
 
+  // Auto-close confirmation modal within 5 seconds and return cleanly to billing page
+  useEffect(() => {
+    if (!completedDetails) {
+      setAutoCloseSeconds(5);
+      return;
+    }
+
+    setAutoCloseSeconds(5);
+    const timer = setInterval(() => {
+      setAutoCloseSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleReset();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [completedDetails]);
+
   return (
     <div className="max-w-xl mx-auto space-y-4">
       {/* Header */}
@@ -395,7 +418,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                     </div>
                     <div>
                       <div className="text-sm font-bold text-espresso-950">{cust.name || 'Valued Guest'}</div>
-                      <div className="text-xs font-mono text-espresso-500">+91 {cust.phone_number}</div>
+                      <div className="text-xs font-sans font-semibold text-espresso-500">+91 {cust.phone_number}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -611,10 +634,51 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
         </div>
       </div>
 
-      {/* WHATSAPP CONFIRMATION MODAL */}
+      {/* WHATSAPP CONFIRMATION MODAL WITH 5-SECOND AUTO-DISMISS */}
       {completedDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-espresso-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 shadow-2xl border border-ivory-200 relative animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-espresso-950/80 backdrop-blur-sm animate-fade-in"
+          onClick={handleReset}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 shadow-2xl border border-ivory-200 relative animate-scale-in max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Instant Close Button */}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="absolute top-4 right-4 p-2 rounded-full text-espresso-400 hover:text-espresso-950 hover:bg-ivory-100 transition-colors"
+              title="Close and return to counter"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* 5-Second Auto-Close Countdown Banner */}
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-espresso-950 font-semibold">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-espresso-950 flex items-center justify-center font-bold text-[11px] font-sans shrink-0">
+                  {autoCloseSeconds}
+                </span>
+                <span>Auto-closing in <strong>{autoCloseSeconds}s</strong> to return to billing page</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-[11px] font-bold text-[#C27835] hover:underline shrink-0"
+              >
+                Close Now &gt;
+              </button>
+            </div>
+
+            {/* Animated Progress Bar */}
+            <div className="w-full bg-ivory-200 h-1 rounded-full mb-4 overflow-hidden">
+              <div 
+                className="bg-amber-500 h-full transition-all duration-1000 ease-linear"
+                style={{ width: `${(autoCloseSeconds / 5) * 100}%` }}
+              />
+            </div>
+
             <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center text-emerald-700 mb-3 shadow-xs">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -691,9 +755,9 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-2.5 rounded-xl bg-espresso-950 hover:bg-espresso-900 text-white text-xs font-semibold"
+                className="w-full py-3 rounded-xl bg-espresso-950 hover:bg-espresso-900 text-white text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center justify-center gap-1.5"
               >
-                Next Customer &gt;
+                <span>Back to Billing Counter ({autoCloseSeconds}s) →</span>
               </button>
             </div>
 

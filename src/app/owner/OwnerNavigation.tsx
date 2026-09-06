@@ -195,7 +195,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               {isStaffMode ? <Lock className="w-3.5 h-3.5 text-rose-600" /> : <Unlock className="w-3.5 h-3.5 text-espresso-500" />}
               <span>{isStaffMode ? 'Staff Mode (Locked)' : 'Lock Staff Mode (PIN)'}</span>
             </span>
-            <span className="text-[10px] text-espresso-400 font-mono">1234</span>
+            <span className="text-[10px] text-espresso-400 font-sans font-bold">1234</span>
           </button>
 
           {/* PWA Install Button */}

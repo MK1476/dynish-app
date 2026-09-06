@@ -10,6 +10,11 @@
 
   body {
     @apply bg-ivory text-espresso font-sans antialiased selection:bg-brand-200 selection:text-espresso-950;
+    font-family: var(--font-jakarta), Inter, system-ui, -apple-system, sans-serif;
+  }
+
+  body, h1, h2, h3, h4, h5, h6, p, span, div, input, button, select, textarea, text, tspan, svg text {
+    font-family: var(--font-jakarta), Inter, system-ui, -apple-system, sans-serif !important;
   }
 }
 

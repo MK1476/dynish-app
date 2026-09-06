@@ -220,7 +220,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
           >
             <Bookmark className={`w-4 h-4 ${savedItemIds.length > 0 ? 'fill-[#C27835] text-[#C27835]' : ''}`} />
             {savedItemIds.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#C27835] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-mono shadow-xs">
+              <span className="absolute -top-1 -right-1 bg-[#C27835] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center font-sans shadow-xs">
                 {savedItemIds.length}
               </span>
             )}
@@ -444,7 +444,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
             <>
               <LayoutGrid className="w-4 h-4 text-[#D99706]" />
               <span>Menu</span>
-              <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+              <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-sans font-bold">
                 {categories.length}
               </span>
             </>
@@ -476,7 +476,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
               }`}
             >
               <span className="text-sm tracking-tight pr-3 truncate">All Products</span>
-              <span className={`text-xs font-semibold font-mono shrink-0 ${activeCategoryId === 'all' ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
+              <span className={`text-xs font-semibold font-sans shrink-0 ${activeCategoryId === 'all' ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
                 {items.length}
               </span>
             </button>
@@ -501,7 +501,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                   }`}
                 >
                   <span className="text-sm tracking-tight pr-3 truncate">{cat.name}</span>
-                  <span className={`text-xs font-semibold font-mono shrink-0 ${isActive ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
+                  <span className={`text-xs font-semibold font-sans shrink-0 ${isActive ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
                     {catItemCount}
                   </span>
                 </button>
@@ -519,7 +519,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                 className="w-full py-2 px-3 rounded-2xl flex items-center justify-between text-left text-[#DDD0C3] hover:text-white hover:bg-white/5 transition-colors"
               >
                 <span className="text-xs font-bold uppercase tracking-wider">SAVED WISHLIST</span>
-                <span className="text-xs font-mono text-[#A89F91]">{savedItemIds.length}</span>
+                <span className="text-xs font-sans font-bold text-[#A89F91]">{savedItemIds.length}</span>
               </button>
             </div>
           </div>

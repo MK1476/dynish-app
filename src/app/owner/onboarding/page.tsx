@@ -78,7 +78,7 @@ export default function OnboardingPage() {
               14-Day Free Trial Included
             </span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
             Create Your Digital Storefront
           </h1>
           <p className="text-xs sm:text-sm text-espresso-500 mt-1">
@@ -105,7 +105,7 @@ export default function OnboardingPage() {
               placeholder="e.g. Aadya Couture, Royal Zafran"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-serif font-bold text-base focus:outline-none focus:border-brand-500 focus:bg-white"
+              className="w-full px-4 py-3 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans font-bold text-base focus:outline-none focus:border-brand-500 focus:bg-white"
             />
           </div>
 
@@ -162,7 +162,7 @@ export default function OnboardingPage() {
                 placeholder="10-digit mobile"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-mono text-sm font-bold focus:outline-none focus:border-brand-500"
+                className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans text-sm font-bold focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -176,7 +176,7 @@ export default function OnboardingPage() {
                 placeholder="Same as mobile if blank"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-mono text-sm font-bold focus:outline-none focus:border-brand-500"
+                className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans text-sm font-bold focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function OnboardingPage() {
               placeholder="https://maps.app.goo.gl/..."
               value={mapsLink}
               onChange={(e) => setMapsLink(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-xs font-mono focus:outline-none focus:border-brand-500"
+              className="w-full px-4 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-xs font-sans focus:outline-none focus:border-brand-500"
             />
           </div>
 
@@ -242,7 +242,7 @@ export default function OnboardingPage() {
           <button
             type="submit"
             disabled={loading || !name || phone.length !== 10}
-            className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-serif font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
+            className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-sans font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
           >
             <span>{loading ? 'Setting Up Store...' : 'Launch Store (14 Days Free)'}</span>
             <ArrowRight className="w-4 h-4" />

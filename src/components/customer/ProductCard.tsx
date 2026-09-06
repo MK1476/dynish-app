@@ -69,7 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             
             {/* Elegant Monogram Medallion */}
             <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/90 backdrop-blur-xs border border-brand-200/90 shadow-xs flex items-center justify-center group-hover:scale-110 group-hover:border-brand-400 group-hover:shadow-sm transition-all duration-300">
-              <span className="font-serif font-extrabold text-lg sm:text-xl text-brand-900 tracking-wider">
+              <span className="font-sans font-black text-lg sm:text-xl text-brand-900 tracking-wider">
                 {initials}
               </span>
             </div>

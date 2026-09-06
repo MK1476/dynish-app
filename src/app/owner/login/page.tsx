@@ -55,7 +55,7 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center justify-center text-center">
           <BrandLogo size="lg" subtext="Merchant Operating System" className="justify-center mb-2" />
-          <h1 className="font-serif text-2xl font-bold text-espresso-950 mt-2">
+          <h1 className="font-sans text-2xl font-extrabold text-espresso-950 mt-2">
             Shop Owner Portal
           </h1>
           <p className="text-xs text-espresso-500 mt-1">
@@ -83,7 +83,7 @@ export default function LoginPage() {
                 Mobile Number
               </label>
               <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 transition-all shadow-inner overflow-hidden">
-                <div className="flex items-center gap-1 pl-4 pr-3 py-3.5 text-espresso-600 font-mono font-bold text-base border-r border-ivory-300 bg-ivory-100/60 select-none shrink-0">
+                <div className="flex items-center gap-1 pl-4 pr-3 py-3.5 text-espresso-600 font-sans font-bold text-base border-r border-ivory-300 bg-ivory-100/60 select-none shrink-0">
                   <span>+91</span>
                 </div>
                 <input
@@ -95,7 +95,7 @@ export default function LoginPage() {
                   placeholder="98201 44521"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-4 py-3.5 bg-transparent text-espresso-950 font-mono text-lg font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
+                  className="w-full px-4 py-3.5 bg-transparent text-espresso-950 font-sans text-lg font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || phoneNumber.length !== 10}
-              className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-serif font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
+              className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-sans font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
             >
               <span>{loading ? 'Sending OTP...' : 'Get OTP on SMS'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 placeholder="123456"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-4 py-3.5 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-mono text-2xl font-bold tracking-widest text-center focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all shadow-inner"
+                className="w-full px-4 py-3.5 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-sans text-2xl font-bold tracking-widest text-center focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all shadow-inner"
               />
             </div>
 
@@ -152,7 +152,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || otp.length < 6}
-              className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-serif font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
+              className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-sans font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
             >
               <span>{loading ? 'Verifying...' : 'Verify & Continue'}</span>
               <ArrowRight className="w-4 h-4" />

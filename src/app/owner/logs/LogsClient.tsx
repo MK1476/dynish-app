@@ -94,7 +94,7 @@ export const LogsClient: React.FC<LogsClientProps> = ({ initialLogs }) => {
             <span className="p-1.5 rounded-lg bg-espresso-900 text-brand-400">
               <Terminal className="w-4 h-4" />
             </span>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+            <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
               System Logs & Diagnostics
             </h1>
           </div>
@@ -142,15 +142,15 @@ export const LogsClient: React.FC<LogsClientProps> = ({ initialLogs }) => {
       <div className="grid grid-cols-3 gap-3">
         <div className="p-4 rounded-2xl bg-white border border-ivory-200 shadow-soft">
           <span className="text-[11px] font-bold uppercase tracking-wider text-espresso-500 block">Total Logs</span>
-          <span className="font-serif font-black text-2xl text-espresso-950">{logs.length}</span>
+          <span className="font-sans font-black text-2xl text-espresso-950">{logs.length}</span>
         </div>
         <div className="p-4 rounded-2xl bg-white border border-ivory-200 shadow-soft">
           <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block">Errors</span>
-          <span className="font-serif font-black text-2xl text-rose-600">{errorCount}</span>
+          <span className="font-sans font-black text-2xl text-rose-600">{errorCount}</span>
         </div>
         <div className="p-4 rounded-2xl bg-white border border-ivory-200 shadow-soft">
           <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 block">Warnings</span>
-          <span className="font-serif font-black text-2xl text-amber-600">{warnCount}</span>
+          <span className="font-sans font-black text-2xl text-amber-600">{warnCount}</span>
         </div>
       </div>
 
@@ -280,10 +280,10 @@ export const LogsClient: React.FC<LogsClientProps> = ({ initialLogs }) => {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-ivory-200 text-espresso-700">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-sans font-bold uppercase bg-ivory-200 text-espresso-700">
                           {entry.source}
                         </span>
-                        <span className="text-xs text-espresso-400 font-mono">
+                        <span className="text-xs text-espresso-400 font-sans">
                           {dateFormatted} {timeFormatted}
                         </span>
                       </div>

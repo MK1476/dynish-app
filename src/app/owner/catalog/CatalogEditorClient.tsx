@@ -284,7 +284,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
             Catalog Management
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -411,7 +411,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
       {filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200 p-6">
           <ImageIcon className="w-10 h-10 text-espresso-300 mx-auto mb-2" />
-          <h3 className="font-serif text-base font-bold text-espresso-950">
+          <h3 className="font-sans text-base font-bold text-espresso-950">
             {activeTab === 'all' ? 'No items in your catalog yet' : 'No items in this category'}
           </h3>
           <p className="text-xs text-espresso-500 mt-1 mb-4">Add your first product to display on your digital storefront.</p>
@@ -438,7 +438,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                   />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-ivory-100 to-brand-50 border border-ivory-200 shrink-0 flex flex-col items-center justify-center p-1 select-none">
-                    <span className="font-serif font-extrabold text-brand-900 text-sm">
+                    <span className="font-sans font-black text-brand-900 text-sm">
                       {prod.name.trim().slice(0, 2).toUpperCase()}
                     </span>
                     <span className="text-[8px] text-espresso-400 font-bold uppercase mt-0.5">No photo</span>
@@ -448,7 +448,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                   <span className="text-[10px] font-bold text-brand-800 uppercase bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200">
                     {categories.find(c => c.id === prod.category_id)?.name || 'General'}
                   </span>
-                  <h4 className="font-serif font-bold text-espresso-950 text-sm truncate mt-1">
+                  <h4 className="font-sans font-bold text-espresso-950 text-sm truncate mt-1">
                     {prod.name}
                   </h4>
                   {prod.description && (
@@ -469,7 +469,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                         autoFocus
                         value={inlinePriceVal}
                         onChange={(e) => setInlinePriceVal(e.target.value)}
-                        className="w-20 px-1.5 py-0.5 rounded-lg border-2 border-brand-500 font-serif font-bold text-sm text-espresso-950 focus:outline-none"
+                        className="w-20 px-1.5 py-0.5 rounded-lg border-2 border-brand-500 font-sans font-bold text-sm text-espresso-950 focus:outline-none"
                       />
                       <button
                         onClick={() => handleSaveInlinePrice(prod.id)}
@@ -493,7 +493,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                       className="cursor-pointer hover:bg-ivory-100 px-1.5 py-0.5 rounded-lg flex items-baseline gap-1"
                       title="Click to quickly edit price"
                     >
-                      <span className="font-serif font-bold text-base text-espresso-950">
+                      <span className="font-sans font-bold text-base text-espresso-950">
                         {formatINR(prod.price)}
                       </span>
                       <span className="text-[9px] text-brand-700 font-sans font-semibold">edit</span>
@@ -739,7 +739,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] via-[#F5EFE4] to-[#EAE1D1] flex flex-col items-center justify-center p-6 text-center select-none">
                         <div className="w-16 h-16 rounded-2xl bg-white shadow-xs border border-brand-200/90 flex items-center justify-center mb-2">
-                          <span className="font-serif font-extrabold text-xl text-brand-900">
+                          <span className="font-sans font-black text-xl text-brand-900">
                             {(itemName.trim() || 'Item').slice(0, 2).toUpperCase()}
                           </span>
                         </div>
@@ -797,7 +797,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
       {deletingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-espresso-950/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-ivory-200 animate-scale-in">
-            <h3 className="font-serif text-lg font-bold text-espresso-950 mb-2">
+            <h3 className="font-sans text-lg font-bold text-espresso-950 mb-2">
               Delete "{deletingItem.name}"?
             </h3>
             <p className="text-xs text-espresso-500 mb-6">
@@ -828,7 +828,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-serif text-lg font-bold text-espresso-950">Bulk Import Catalog</h3>
+                <h3 className="font-sans text-lg font-bold text-espresso-950">Bulk Import Catalog</h3>
               </div>
               <button onClick={() => setIsExcelModalOpen(false)} className="p-1 text-espresso-400 hover:text-espresso-800">
                 <X className="w-5 h-5" />

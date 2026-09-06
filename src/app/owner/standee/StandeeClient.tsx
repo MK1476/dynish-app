@@ -216,7 +216,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
       <div className="print:hidden space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+            <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
               Counter QR Standee
             </h1>
             <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -270,7 +270,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
 
           <div className="text-xs text-espresso-500 shrink-0">
             <span>Links to: </span>
-            <span className="font-mono font-bold text-espresso-950 truncate max-w-[200px] inline-block align-bottom">
+            <span className="font-sans font-bold text-espresso-950 truncate max-w-[200px] inline-block align-bottom">
               /store/{shop.slug || shop.id}
             </span>
           </div>
@@ -295,7 +295,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
                   <img src={shop.logo_url} alt="" className="w-full h-full object-cover rounded-[10px]" />
                 </div>
               )}
-              <h2 className="font-serif text-xl sm:text-2xl font-black text-espresso-950 tracking-tight leading-tight">
+              <h2 className="font-sans text-xl sm:text-2xl font-black text-espresso-950 tracking-tight leading-tight">
                 {shop.name}
               </h2>
               <span className="text-[10px] uppercase font-extrabold text-amber-950/80 tracking-wider mt-0.5">
@@ -311,7 +311,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
                 {headline.includes('&') ? (
                   <>
                     <span>{headline.split('&')[0].trim()}</span>
-                    <span className="block font-serif italic text-amber-600 text-base font-normal my-0.5">&amp;</span>
+                    <span className="block font-sans italic text-amber-600 text-base font-bold my-0.5">&amp;</span>
                     <span>{headline.split('&')[1].trim()}</span>
                   </>
                 ) : (
@@ -345,7 +345,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
             <p className="text-[11px] font-medium text-espresso-500 mt-2">
               Scan with any phone camera
             </p>
-            <p className="text-[10px] font-mono font-bold text-espresso-600 mt-0.5">
+            <p className="text-[10px] font-sans font-bold text-espresso-600 mt-0.5">
               {storeUrl.replace(/^https?:\/\//, '')}
             </p>
           </div>
@@ -357,7 +357,7 @@ export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
             </span>
             <div className="flex items-center gap-1.5">
               <img src="/dynish-logo.png" alt="Dynish" className="w-5 h-5 object-contain" />
-              <span className="font-serif font-black text-sm tracking-wider text-espresso-950">
+              <span className="font-sans font-black text-sm tracking-wider text-espresso-950">
                 DYNISH
               </span>
             </div>

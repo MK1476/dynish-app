@@ -69,7 +69,7 @@ export const OffersClient: React.FC<OffersClientProps> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
             Next-Visit Loyalty Offers
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -116,7 +116,7 @@ export const OffersClient: React.FC<OffersClientProps> = ({
                 )}
               </div>
 
-              <h3 className="font-serif font-bold text-base text-espresso-950 mb-1">
+              <h3 className="font-sans font-bold text-base text-espresso-950 mb-1">
                 {offer.title}
               </h3>
               {offer.description && (
@@ -146,7 +146,7 @@ export const OffersClient: React.FC<OffersClientProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-espresso-950/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-ivory-200 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-ivory-200 mb-4">
-              <h3 className="font-serif text-xl font-bold text-espresso-950">
+              <h3 className="font-sans text-xl font-extrabold text-espresso-950">
                 New Retention Reward
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg text-espresso-400 hover:text-espresso-800">
@@ -165,7 +165,7 @@ export const OffersClient: React.FC<OffersClientProps> = ({
                   placeholder="e.g. Flat 15% OFF on Next Kurti Set"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-serif font-bold text-sm focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-espresso-950 font-sans font-bold text-sm focus:outline-none focus:border-brand-500"
                 />
               </div>
 

@@ -38,7 +38,7 @@ export default async function AdminPage() {
             <span className="p-1.5 rounded-lg bg-brand-500 text-espresso-950 font-bold">
               <ShieldCheck className="w-5 h-5" />
             </span>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+            <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
               Dynish Admin Operations
             </h1>
           </div>
@@ -61,7 +61,7 @@ export default async function AdminPage() {
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
             Active Stores
           </span>
-          <div className="font-serif text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-3xl font-extrabold text-espresso-950">
             {activeShops.length} <span className="text-xs font-normal text-espresso-400">/ {shops.length}</span>
           </div>
           <span className="text-[10px] text-emerald-700 font-bold mt-1 block">
@@ -73,7 +73,7 @@ export default async function AdminPage() {
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
             Registered Patrons
           </span>
-          <div className="font-serif text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-3xl font-extrabold text-espresso-950">
             {customers.length}
           </div>
           <span className="text-[10px] text-espresso-400 mt-1 block">
@@ -85,7 +85,7 @@ export default async function AdminPage() {
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
             Total Bills Logged
           </span>
-          <div className="font-serif text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-3xl font-extrabold text-espresso-950">
             {transactions.length}
           </div>
           <span className="text-[10px] text-brand-800 font-bold mt-1 block">
@@ -97,7 +97,7 @@ export default async function AdminPage() {
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
             Platform GMV
           </span>
-          <div className="font-serif text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-3xl font-extrabold text-espresso-950">
             {formatINR(totalPlatformRevenue)}
           </div>
           <span className="text-[10px] text-espresso-400 mt-1 block">
@@ -109,7 +109,7 @@ export default async function AdminPage() {
       {/* SHOPS TABLE */}
       <div className="bg-white rounded-3xl border border-ivory-200 shadow-soft overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-ivory-100 flex items-center justify-between">
-          <h3 className="font-serif text-lg font-bold text-espresso-950">
+          <h3 className="font-sans text-lg font-bold text-espresso-950">
             Registered Vendor Outlets ({shops.length})
           </h3>
           <span className="text-xs text-espresso-500">Live Supabase Database Records</span>
@@ -135,7 +135,7 @@ export default async function AdminPage() {
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-serif font-bold text-sm text-espresso-950 truncate">
+                        <h4 className="font-sans font-bold text-sm text-espresso-950 truncate">
                           {s.name}
                         </h4>
                         <span className="text-[10px] font-bold text-brand-800 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200">

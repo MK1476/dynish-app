@@ -212,7 +212,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
       {/* Header & Date Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
         <div className="min-w-0">
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 truncate">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 truncate tracking-tight">
             {shop.name} Analytics
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -305,7 +305,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
             {formatINR(totalRevenue)}
           </div>
           <span className="text-[10px] text-espresso-400 mt-1">In selected timeframe</span>
@@ -319,7 +319,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <div className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
             {totalBills}
           </div>
           <span className="text-[10px] text-espresso-400 mt-1">Logged at counter</span>
@@ -333,7 +333,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <div className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
             {customers.length}
           </div>
           <span className="text-[10px] text-espresso-400 mt-1">Registered patrons</span>
@@ -347,7 +347,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <Repeat className="w-4 h-4" />
             </div>
           </div>
-          <div className="font-serif text-2xl sm:text-3xl font-bold text-brand-800">
+          <div className="font-sans text-2xl sm:text-3xl font-extrabold text-brand-800 tracking-tight">
             {repeatRate}%
           </div>
           <span className="text-[10px] text-espresso-400 mt-1">{repeatCustomersCount} returning guests</span>
@@ -363,7 +363,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <span className="p-1.5 rounded-xl bg-amber-50 text-[#C27835]">
                 <BarChart3 className="w-4 h-4" />
               </span>
-              <h3 className="font-serif text-lg sm:text-xl font-bold text-espresso-950">
+              <h3 className="font-sans text-lg sm:text-xl font-extrabold text-espresso-950 tracking-tight">
                 {dateFilter === 'today'
                   ? 'Today’s Customer Footfall & Peak Hours'
                   : dateFilter === 'yesterday'
@@ -484,7 +484,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
                           x="38"
                           y={y + 3}
                           textAnchor="end"
-                          className="text-[9px] fill-espresso-400 font-mono font-medium"
+                          className="text-[9px] fill-espresso-400 font-sans font-medium"
                         >
                           {formattedVal}
                         </text>
@@ -565,7 +565,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
                               x={barX + barW / 2}
                               y={barY - 6}
                               textAnchor="middle"
-                              className={`text-[10px] font-mono font-bold transition-all ${
+                              className={`text-[10px] font-sans font-bold transition-all ${
                                 isHovered ? 'fill-espresso-950 font-black scale-110' : 'fill-espresso-700'
                               }`}
                             >
@@ -609,19 +609,19 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               <div className="flex items-center gap-4 text-espresso-200">
                 <span>
                   Footfall:{' '}
-                  <strong className="text-white font-mono">{chartData[hoveredIndex].visits}</strong>
+                  <strong className="text-white font-sans font-bold">{chartData[hoveredIndex].visits}</strong>
                 </span>
                 <span>•</span>
                 <span>
                   Sales:{' '}
-                  <strong className="text-amber-400 font-mono">
+                  <strong className="text-amber-400 font-sans font-bold">
                     {formatINR(chartData[hoveredIndex].revenue)}
                   </strong>
                 </span>
                 <span>•</span>
                 <span>
                   Avg Ticket:{' '}
-                  <strong className="text-emerald-400 font-mono">
+                  <strong className="text-emerald-400 font-sans font-bold">
                     {formatINR(
                       chartData[hoveredIndex].visits > 0
                         ? Math.round(chartData[hoveredIndex].revenue / chartData[hoveredIndex].visits)
@@ -683,7 +683,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
       {/* RECENT TRANSACTIONS LOG */}
       <div className="bg-white rounded-3xl border border-ivory-200 p-5 shadow-soft space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-ivory-100">
-          <h3 className="font-serif text-lg font-bold text-espresso-950">
+          <h3 className="font-sans text-lg font-extrabold text-espresso-950">
             Recent Counter Transactions
           </h3>
           <span className="text-xs text-espresso-500">
@@ -703,7 +703,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
               return (
                 <div key={tx.id} className="py-3 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-ivory-100 text-brand-800 flex items-center justify-center font-bold font-serif text-sm shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-ivory-100 text-brand-800 flex items-center justify-center font-bold font-sans text-sm shrink-0">
                       {customer?.name ? customer.name[0] : 'G'}
                     </div>
                     <div>
@@ -725,7 +725,7 @@ export const DashboardClient: React.FC<DashboardProps> = ({
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-serif font-bold text-sm text-espresso-950 block">
+                    <span className="font-sans font-bold text-sm text-espresso-950 block">
                       {formatINR(tx.bill_amount)}
                     </span>
                     <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">

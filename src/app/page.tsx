@@ -43,7 +43,7 @@ export default async function HomePage() {
           <span>Full-Stack Next.js 14 + Supabase + Razorpay</span>
         </div>
 
-        <h1 className="font-serif text-4xl sm:text-5xl font-bold text-espresso-950 tracking-tight leading-tight">
+        <h1 className="font-sans text-4xl sm:text-5xl font-extrabold text-espresso-950 tracking-tight leading-tight">
           The 5-Second Catalog & Smart Retention Platform
         </h1>
 
@@ -61,7 +61,7 @@ export default async function HomePage() {
             <div className="w-10 h-10 rounded-2xl bg-brand-500 text-espresso-950 flex items-center justify-center mb-3 shadow-xs">
               <Zap className="w-5 h-5 fill-current" />
             </div>
-            <h3 className="font-serif font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
+            <h3 className="font-sans font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
               Vendor Counter & Dashboard
             </h3>
             <p className="text-xs text-espresso-500 mt-1">
@@ -82,7 +82,7 @@ export default async function HomePage() {
               <div className="w-10 h-10 rounded-2xl bg-ivory-100 text-espresso-800 flex items-center justify-center mb-3">
                 <ShoppingBag className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
+              <h3 className="font-sans font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
                 Public Customer Storefront
               </h3>
               <p className="text-xs text-espresso-500 mt-1">
@@ -101,7 +101,7 @@ export default async function HomePage() {
               <div className="w-10 h-10 rounded-2xl bg-ivory-100 text-espresso-800 flex items-center justify-center mb-3">
                 <Store className="w-5 h-5" />
               </div>
-              <h3 className="font-serif font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
+              <h3 className="font-sans font-bold text-lg text-espresso-950 group-hover:text-brand-800 transition-colors">
                 Create First Store
               </h3>
               <p className="text-xs text-espresso-500 mt-1">

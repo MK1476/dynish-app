@@ -46,7 +46,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
               <Bookmark className="w-5 h-5 fill-current" />
             </div>
             <div>
-              <h2 className="font-serif text-lg font-bold text-espresso-950">Saved Wishlist</h2>
+              <h2 className="font-sans text-lg font-extrabold text-espresso-950">Saved Wishlist</h2>
               <p className="text-xs text-espresso-500">
                 Shortlisted at <span className="font-semibold text-espresso-900">{shop.name}</span>
               </p>
@@ -68,7 +68,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
               <div className="w-20 h-20 rounded-3xl bg-ivory-100 border border-ivory-300 flex items-center justify-center text-brand-700 mb-4 shadow-inner">
                 <Bookmark className="w-9 h-9 stroke-1 text-brand-600" />
               </div>
-              <h3 className="font-serif text-xl font-bold text-espresso-950 mb-1">
+              <h3 className="font-sans text-xl font-extrabold text-espresso-950 mb-1">
                 Your wishlist is empty
               </h3>
               <p className="text-espresso-500 text-xs sm:text-sm max-w-xs mb-6 leading-relaxed">
@@ -112,7 +112,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
                       }}
                       className="w-16 h-16 rounded-xl bg-gradient-to-br from-ivory-100 to-brand-50 border border-ivory-200 shrink-0 flex items-center justify-center cursor-pointer select-none"
                     >
-                      <span className="font-serif font-extrabold text-brand-900 text-sm">
+                      <span className="font-sans font-black text-brand-900 text-sm">
                         {product.name.trim().slice(0, 2).toUpperCase()}
                       </span>
                     </div>
@@ -125,7 +125,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
                       onClose();
                     }}
                   >
-                    <h4 className="font-serif font-bold text-espresso-950 text-sm truncate group-hover:text-brand-700 transition-colors">
+                    <h4 className="font-sans font-bold text-espresso-950 text-sm truncate group-hover:text-brand-700 transition-colors">
                       {product.name}
                     </h4>
                     {product.description && (
@@ -134,7 +134,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
                       </p>
                     )}
                     <div className="flex items-baseline gap-2">
-                      <span className="font-serif font-bold text-espresso-950 text-sm">
+                      <span className="font-sans font-bold text-espresso-950 text-sm">
                         {formatINR(product.price)}
                       </span>
                       {product.original_price && product.original_price > product.price && (
@@ -165,7 +165,7 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
               <span className="text-xs font-semibold text-espresso-600">
                 Estimated Total ({savedProducts.length} items):
               </span>
-              <span className="font-serif font-bold text-base sm:text-lg text-espresso-950">
+              <span className="font-sans font-bold text-base sm:text-lg text-espresso-950">
                 {formatINR(totalEstimate)}
               </span>
             </div>

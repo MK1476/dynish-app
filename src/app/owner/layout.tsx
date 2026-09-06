@@ -43,7 +43,7 @@ export default async function OwnerLayout({
             <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8" />
             </div>
-            <h2 className="font-serif text-2xl font-bold text-espresso-950 mb-2">
+            <h2 className="font-sans text-2xl font-extrabold text-espresso-950 mb-2">
               Subscription Expired
             </h2>
             <p className="text-espresso-600 text-xs sm:text-sm mb-6 leading-relaxed">
@@ -52,7 +52,7 @@ export default async function OwnerLayout({
 
             <Link
               href="/owner/subscription"
-              className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-serif font-bold text-sm block shadow-md"
+              className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-sans font-bold text-sm block shadow-md"
             >
               Recharge for ₹120 / month →
             </Link>

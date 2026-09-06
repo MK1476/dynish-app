@@ -45,8 +45,9 @@ module.exports = {
         },
       },
       fontFamily: {
-        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
-        sans: ['var(--font-jakarta)', 'Inter', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-jakarta)', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jakarta)', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'soft': '0 4px 20px -2px rgba(36, 30, 28, 0.05)',

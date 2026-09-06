@@ -44,7 +44,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {showText && (
         <div className="flex flex-col leading-none">
           <div className="flex items-center gap-1.5">
-            <span className={`font-serif font-black tracking-tight ${current.text} ${
+            <span className={`font-sans font-black tracking-tight ${current.text} ${
               inverted ? 'text-white' : 'text-espresso-950'
             }`}>
               Dynish

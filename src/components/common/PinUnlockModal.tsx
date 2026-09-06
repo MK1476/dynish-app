@@ -58,7 +58,7 @@ export const PinUnlockModal: React.FC<PinUnlockModalProps> = ({
           <Lock className="w-6 h-6" />
         </div>
 
-        <h3 className="font-serif font-bold text-xl text-espresso-950">
+        <h3 className="font-sans font-extrabold text-xl text-espresso-950">
           Owner PIN Required
         </h3>
         <p className="text-xs text-espresso-500 mt-1 mb-4">
@@ -93,7 +93,7 @@ export const PinUnlockModal: React.FC<PinUnlockModalProps> = ({
               key={digit}
               type="button"
               onClick={() => handleDigit(digit)}
-              className="w-16 h-12 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-950 font-serif font-bold text-lg border border-ivory-300 active:scale-95 transition-all"
+              className="w-16 h-12 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-950 font-sans font-bold text-lg border border-ivory-300 active:scale-95 transition-all"
             >
               {digit}
             </button>
@@ -108,7 +108,7 @@ export const PinUnlockModal: React.FC<PinUnlockModalProps> = ({
           <button
             type="button"
             onClick={() => handleDigit('0')}
-            className="w-16 h-12 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-950 font-serif font-bold text-lg border border-ivory-300 active:scale-95 transition-all"
+            className="w-16 h-12 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-950 font-sans font-bold text-lg border border-ivory-300 active:scale-95 transition-all"
           >
             0
           </button>
@@ -122,7 +122,7 @@ export const PinUnlockModal: React.FC<PinUnlockModalProps> = ({
         </div>
 
         <p className="text-[10px] text-espresso-400 mt-4">
-          Default Owner PIN is <span className="font-mono font-bold text-espresso-700">1234</span>
+          Default Owner PIN is <span className="font-sans font-bold text-espresso-700">1234</span>
         </p>
       </div>
     </div>

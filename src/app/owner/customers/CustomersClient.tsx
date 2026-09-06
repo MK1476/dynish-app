@@ -33,7 +33,7 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
             Customer Retention Directory
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -78,7 +78,7 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
             return (
               <div key={cust.id} className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-ivory-50/50 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold font-serif text-sm shrink-0 shadow-xs ${
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold font-sans text-sm shrink-0 shadow-xs ${
                     isVip 
                       ? 'bg-amber-400 text-espresso-950 font-black ring-2 ring-amber-300' 
                       : isRegular 
@@ -90,10 +90,10 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-serif font-bold text-espresso-950 text-sm truncate">
+                      <h4 className="font-sans font-bold text-espresso-950 text-sm truncate">
                         {cust.name || 'Valued Guest'}
                       </h4>
-                      <span className="font-mono text-xs text-espresso-500">
+                      <span className="font-sans font-semibold text-xs text-espresso-500">
                         +91 {cust.phone_number}
                       </span>
                     </div>
@@ -124,7 +124,7 @@ export const CustomersClient: React.FC<CustomersClientProps> = ({
                     <Award className="w-3 h-3" />
                     <span>{cust.visit_count} {cust.visit_count === 1 ? 'Visit' : 'Visits'}</span>
                   </span>
-                  <div className="font-serif font-bold text-xs sm:text-sm text-espresso-950 mt-1">
+                  <div className="font-sans font-bold text-xs sm:text-sm text-espresso-950 mt-1">
                     LTV: {formatINR(cust.total_spent)}
                   </div>
                 </div>

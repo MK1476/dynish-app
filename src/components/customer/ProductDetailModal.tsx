@@ -162,7 +162,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <ChevronRight className="w-5 h-5" />
                     </button>
 
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-mono">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-sans font-bold">
                       {activeImageIndex + 1} / {validImages.length}
                     </div>
                   </>
@@ -190,7 +190,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="relative bg-gradient-to-br from-[#FAF6EE] via-[#F5EFE4] to-[#EAE1D1] flex flex-col justify-center items-center p-8 select-none aspect-square overflow-hidden">
               <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#241E1C_1px,transparent_1px)] [background-size:16px_16px]" />
               <div className="relative z-10 w-24 h-24 rounded-3xl bg-white/95 backdrop-blur-xs border-2 border-brand-200/90 shadow-sm flex items-center justify-center">
-                <span className="font-serif font-extrabold text-3xl text-brand-900 tracking-wider">
+                <span className="font-sans font-black text-3xl text-brand-900 tracking-wider">
                   {initials}
                 </span>
               </div>
@@ -229,7 +229,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 )}
               </div>
 
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-espresso-950 leading-snug mb-1.5">
+              <h2 className="font-sans text-xl sm:text-2xl font-extrabold text-espresso-950 leading-snug mb-1.5">
                 {product.name}
               </h2>
               {product.description && (
@@ -240,7 +240,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Pricing */}
               <div className="flex items-baseline gap-2.5 mb-4 p-3 bg-ivory-50 rounded-2xl border border-ivory-200">
-                <span className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+                <span className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
                   {formatINR(product.price)}
                 </span>
                 {product.original_price && product.original_price > product.price && (

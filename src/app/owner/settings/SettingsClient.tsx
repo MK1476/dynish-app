@@ -234,7 +234,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-espresso-950">
+          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950">
             Shop Profile & Branding
           </h1>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5">
@@ -290,7 +290,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 <LinkIcon className="w-4 h-4" />
               </span>
               <div>
-                <h2 className="font-serif font-bold text-lg text-espresso-950">
+                <h2 className="font-sans font-bold text-lg text-espresso-950">
                   Custom Store URL Handle
                 </h2>
                 <p className="text-xs text-espresso-500">
@@ -313,7 +313,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 Your permanent public storefront link is live:
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="font-mono text-sm sm:text-base font-bold text-emerald-950 truncate">
+                <span className="font-sans text-sm sm:text-base font-bold text-emerald-950 truncate">
                   https://dynish.vercel.app/store/{slug}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
@@ -347,7 +347,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
           ) : (
             <div className="space-y-3">
               <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 overflow-hidden transition-all">
-                <span className="px-3.5 py-3 text-espresso-500 font-mono text-xs sm:text-sm font-semibold border-r border-ivory-300 bg-ivory-100/70 select-none">
+                <span className="px-3.5 py-3 text-espresso-500 font-sans text-xs sm:text-sm font-semibold border-r border-ivory-300 bg-ivory-100/70 select-none">
                   dynish.vercel.app/store/
                 </span>
                 <input
@@ -355,7 +355,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   placeholder="e.g. royal-boutique"
                   value={slugInput}
                   onChange={(e) => setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                  className="w-full px-3.5 py-3 bg-transparent text-sm sm:text-base font-mono font-bold text-espresso-950 focus:outline-none placeholder:text-espresso-300"
+                  className="w-full px-3.5 py-3 bg-transparent text-sm sm:text-base font-sans font-bold text-espresso-950 focus:outline-none placeholder:text-espresso-300"
                 />
               </div>
 
@@ -399,7 +399,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   <p className="text-xs text-amber-800 leading-relaxed">
                     The <code>slug</code> column is not yet enabled in your Supabase database table. Copy and run this 1-line command in your <strong>Supabase Dashboard → SQL Editor</strong>:
                   </p>
-                  <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-amber-200 font-mono text-xs overflow-x-auto">
+                  <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-amber-200 font-sans text-xs overflow-x-auto">
                     <code className="text-espresso-950 font-bold whitespace-nowrap">
                       ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE; NOTIFY pgrst, 'reload schema';
                     </code>
@@ -435,7 +435,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
             <span className="p-1.5 rounded-lg bg-brand-100 text-brand-800">
               <ImageIcon className="w-4 h-4" />
             </span>
-            <h2 className="font-serif font-bold text-lg text-espresso-950">
+            <h2 className="font-sans font-bold text-lg text-espresso-950">
               Storefront Banner & Logo
             </h2>
           </div>
@@ -530,7 +530,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
             <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
               <Store className="w-4 h-4" />
             </span>
-            <h2 className="font-serif font-bold text-lg text-espresso-950">
+            <h2 className="font-sans font-bold text-lg text-espresso-950">
               Store Identity
             </h2>
           </div>
@@ -627,7 +627,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
             <span className="p-1.5 rounded-lg bg-blue-100 text-blue-800">
               <Phone className="w-4 h-4" />
             </span>
-            <h2 className="font-serif font-bold text-lg text-espresso-950">
+            <h2 className="font-sans font-bold text-lg text-espresso-950">
               Contact & Store Location
             </h2>
           </div>
@@ -638,7 +638,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 Counter Phone (10 Digits)
               </label>
               <div className="flex items-center rounded-xl bg-ivory-50 border border-ivory-300 focus-within:border-brand-500 focus-within:bg-white overflow-hidden">
-                <span className="px-3 py-2.5 text-espresso-500 font-mono text-xs font-bold border-r border-ivory-300 bg-ivory-100 select-none">
+                <span className="px-3 py-2.5 text-espresso-500 font-sans text-xs font-bold border-r border-ivory-300 bg-ivory-100 select-none">
                   +91
                 </span>
                 <input
@@ -647,7 +647,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-3 py-2.5 bg-transparent text-sm font-mono font-bold text-espresso-950 focus:outline-none"
+                  className="w-full px-3 py-2.5 bg-transparent text-sm font-sans font-bold text-espresso-950 focus:outline-none"
                 />
               </div>
             </div>
@@ -657,7 +657,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 WhatsApp Orders Number
               </label>
               <div className="flex items-center rounded-xl bg-ivory-50 border border-ivory-300 focus-within:border-brand-500 focus-within:bg-white overflow-hidden">
-                <span className="px-3 py-2.5 text-espresso-500 font-mono text-xs font-bold border-r border-ivory-300 bg-ivory-100 select-none">
+                <span className="px-3 py-2.5 text-espresso-500 font-sans text-xs font-bold border-r border-ivory-300 bg-ivory-100 select-none">
                   +91
                 </span>
                 <input
@@ -666,7 +666,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   required
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="w-full px-3 py-2.5 bg-transparent text-sm font-mono font-bold text-espresso-950 focus:outline-none"
+                  className="w-full px-3 py-2.5 bg-transparent text-sm font-sans font-bold text-espresso-950 focus:outline-none"
                 />
               </div>
             </div>
@@ -720,7 +720,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                 <MessageCircle className="w-4 h-4 fill-current" />
               </span>
               <div>
-                <h2 className="font-serif font-bold text-lg text-espresso-950">
+                <h2 className="font-sans font-bold text-lg text-espresso-950">
                   Custom WhatsApp Receipt Message
                 </h2>
                 <p className="text-xs text-espresso-500">
@@ -753,7 +753,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               placeholder={`Hi {customer_name}! Thank you for visiting *{shop_name}* (Visit #{visit_count}).\n\nYour bill: *{bill_amount}*\n\n🎁 *Special offer for your next visit:* {next_offer}\n\nCheck out our catalog & new arrivals here: {store_link}\n\nSee you again soon! ✨`}
               value={whatsappTemplate}
               onChange={(e) => setWhatsappTemplate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-2xl bg-ivory-50 border border-ivory-300 text-xs sm:text-sm text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white font-mono leading-relaxed"
+              className="w-full px-3.5 py-2.5 rounded-2xl bg-ivory-50 border border-ivory-300 text-xs sm:text-sm text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white font-sans leading-relaxed"
             />
 
             {/* Variable Tag Insertion Chips */}
@@ -802,7 +802,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
             <span className="p-1.5 rounded-lg bg-purple-100 text-purple-800">
               <Palette className="w-4 h-4" />
             </span>
-            <h2 className="font-serif font-bold text-lg text-espresso-950">
+            <h2 className="font-sans font-bold text-lg text-espresso-950">
               Visual Palette & Theme
             </h2>
           </div>
@@ -837,7 +837,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               <Lock className="w-4 h-4" />
             </span>
             <div>
-              <h2 className="font-serif font-bold text-lg text-espresso-950">
+              <h2 className="font-sans font-bold text-lg text-espresso-950">
                 Cashier Staff Security PIN
               </h2>
               <p className="text-xs text-espresso-500">
@@ -860,7 +860,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   const val = e.target.value.replace(/\D/g, '').slice(0, 4);
                   setStaffPin(val);
                 }}
-                className="w-24 px-3 py-2 text-center font-mono font-bold text-lg rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-ivory-50"
+                className="w-24 px-3 py-2 text-center font-sans font-bold text-lg rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-ivory-50"
                 placeholder="1234"
               />
               <button
@@ -887,7 +887,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
           <button
             type="submit"
             disabled={saving || uploadingLogo || uploadingBanner}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-serif font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-sans font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
           >
             {saving ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
