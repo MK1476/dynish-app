@@ -7,7 +7,7 @@ import type { Database } from '@/types/database';
 import { 
   LayoutDashboard, ShoppingBag, Zap, Users, Gift, 
   CreditCard, Settings, ExternalLink, Menu, X, ShieldAlert, 
-  Terminal, QrCode, Lock, Unlock, Download, Store, LayoutGrid, ShieldCheck 
+  Terminal, QrCode, Lock, Unlock, Download, Store, LayoutGrid, ShieldCheck, MessageCircle 
 } from 'lucide-react';
 import { signOut } from '@/actions/auth';
 import { BrandLogo } from '@/components/common/BrandLogo';
@@ -98,6 +98,12 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
       router.push(pendingHref);
       setPendingHref(null);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/owner/login');
+    router.refresh();
   };
 
   return (
@@ -256,9 +262,28 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
             </div>
           )}
 
+          {/* WhatsApp Merchant Support */}
+          <a
+            href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all shadow-xs group"
+          >
+            <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="block truncate font-bold text-emerald-950 text-[11px]">WhatsApp Support</span>
+                <span className="text-[9px] font-extrabold bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded-full">24/7</span>
+              </div>
+              <span className="text-[10px] text-emerald-700 font-semibold block truncate">+91 97041 00544</span>
+            </div>
+          </a>
+
           <button
-            onClick={() => signOut()}
-            className="w-full py-1 text-center text-xs text-rose-600 hover:underline"
+            onClick={handleSignOut}
+            className="w-full py-1 text-center text-xs text-rose-600 hover:underline font-bold"
           >
             Sign Out
           </button>
@@ -511,10 +536,31 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               </Link>
             </div>
 
+            {/* WhatsApp Support Button */}
+            <a
+              href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 transition-all hover:bg-emerald-100"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-4 h-4 fill-current" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-emerald-950">Need Help? WhatsApp Support</div>
+                  <div className="text-[11px] text-emerald-700 font-semibold">Direct assistance • +91 97041 00544</div>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full">
+                24/7
+              </span>
+            </a>
+
             {/* Red Sign Out Link (Matching Screenshot) */}
             <div className="pt-2 text-center">
               <button
-                onClick={() => signOut()}
+                onClick={handleSignOut}
                 className="inline-flex items-center justify-center gap-2 text-rose-600 hover:text-rose-700 text-xs font-bold hover:underline py-1"
               >
                 <ExternalLink className="w-3.5 h-3.5 rotate-90" />

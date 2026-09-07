@@ -29,6 +29,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [copiedShare, setCopiedShare] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
+  const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
 
   if (!product) return null;
 
@@ -36,6 +38,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     (url) => typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')
   );
   const hasImages = validImages.length > 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const diffX = touchStartX.current - e.changedTouches[0].clientX;
+    const diffY = touchStartY.current - e.changedTouches[0].clientY;
+
+    if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
+      e.stopPropagation();
+      if (diffX > 0) {
+        setActiveImageIndex((prev) => (prev + 1) % validImages.length);
+      } else {
+        setActiveImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   const initials = product.name
     .trim()
@@ -140,7 +164,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Gallery Carousel or Artisan Canvas */}
           {hasImages ? (
             <div className="relative bg-espresso-950 flex flex-col justify-center items-center select-none">
-              <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center">
+              <div 
+                onTouchStart={validImages.length > 1 ? handleTouchStart : undefined}
+                onTouchEnd={validImages.length > 1 ? handleTouchEnd : undefined}
+                className="relative w-full aspect-square overflow-hidden flex items-center justify-center"
+              >
                 <img
                   src={validImages[activeImageIndex] || validImages[0]}
                   alt={product.name}

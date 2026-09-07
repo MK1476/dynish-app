@@ -113,6 +113,8 @@ export async function getCurrentVendorSession(): Promise<{ phone: string | null;
 export async function signOut(): Promise<void> {
   const supabase = createClient();
   await supabase.auth.signOut();
-  cookies().delete('dynish_phone');
-  cookies().delete('dynish_uid');
+  const cookieStore = cookies();
+  cookieStore.delete('dynish_phone');
+  cookieStore.delete('dynish_uid');
+  cookieStore.delete('dynish_shop_id');
 }

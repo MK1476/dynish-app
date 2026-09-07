@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentVendorSession } from './auth';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 import { isValidUUID } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -12,9 +13,28 @@ export type ShopRow = Database['public']['Tables']['shops']['Row'];
 
 export async function getOwnerShop(): Promise<ShopRow | null> {
   const { phone, userId } = await getCurrentVendorSession();
-  if (!phone && !userId) return null;
+  const cookieStore = cookies();
+  const explicitShopId = cookieStore.get('dynish_shop_id')?.value;
 
   const admin = createAdminClient();
+
+  // If a specific shop ID is stored in the session cookie, prioritize fetching that shop
+  if (explicitShopId && isValidUUID(explicitShopId)) {
+    const { data: explicitShop } = await admin
+      .from('shops')
+      .select('*')
+      .eq('id', explicitShopId)
+      .maybeSingle();
+
+    if (explicitShop) {
+      if (!phone || explicitShop.owner_phone === phone || explicitShop.phone === phone) {
+        return explicitShop;
+      }
+    }
+  }
+
+  if (!phone && !userId) return null;
+
   let query = admin.from('shops').select('*');
 
   if (phone) {
@@ -58,10 +78,20 @@ export async function createShop(formData: {
   bannerUrl?: string;
   theme?: 'heritage' | 'minimal' | 'artisanal';
 }): Promise<{ success: boolean; shop?: ShopRow; error?: string }> {
+  const trimmedName = (formData.name || '').trim();
+  if (!trimmedName) {
+    return { success: false, error: 'Store name is required.' };
+  }
+
+  const cleanPhone = (formData.phone || '').replace(/\D/g, '').slice(-10);
+  if (!cleanPhone || cleanPhone.length !== 10) {
+    return { success: false, error: 'A valid 10-digit mobile number is required.' };
+  }
+
   const { phone, userId } = await getCurrentVendorSession();
   const admin = createAdminClient();
 
-  const ownerPhone = phone || formData.phone.replace(/\D/g, '').slice(-10);
+  const ownerPhone = cleanPhone || phone || '';
   const now = new Date();
   const trialEndsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -83,14 +113,21 @@ export async function createShop(formData: {
     }
   }
 
-  const insertData = {
+  const cleanSlug = trimmedName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 30);
+
+  const baseInsertData: any = {
     owner_id: validOwnerId,
     owner_phone: ownerPhone,
-    name: formData.name.trim(),
+    name: trimmedName,
     category: formData.category || 'Boutique',
     category_label: formData.category || 'Ethnic Wear & Boutiques',
-    phone: formData.phone.replace(/\D/g, '').slice(-10),
-    whatsapp_number: (formData.whatsappNumber || formData.phone).replace(/\D/g, '').slice(-10),
+    phone: cleanPhone,
+    whatsapp_number: (formData.whatsappNumber || cleanPhone).replace(/\D/g, '').slice(-10),
     address: formData.address?.trim() || 'Main Market Plaza',
     maps_link: formData.mapsLink?.trim() || null,
     tagline: formData.tagline?.trim() || 'Premium Quality Handcrafted Collections',
@@ -103,16 +140,57 @@ export async function createShop(formData: {
     is_active: true,
   };
 
-  const { data, error } = await admin
+  // Attempt insert with slug if candidate is at least 3 characters
+  let insertPayload = { ...baseInsertData };
+  if (cleanSlug && cleanSlug.length >= 3) {
+    insertPayload.slug = cleanSlug;
+  }
+
+  let { data, error } = await admin
     .from('shops')
-    .insert(insertData)
+    .insert(insertPayload)
     .select()
     .single();
 
-  if (error) {
-    logger.error('shop', `createShop error for ${formData.name}`, { error: error.message, details: error.details }, null);
+  // Defensive fallback: If database schema cache lacks 'slug', retry insert without slug
+  if (error && (error.message.includes('slug') || error.code === 'PGRST204' || error.code === '42703' || error.code === '23505')) {
+    const fallbackPayload = { ...baseInsertData };
+    const retryRes = await admin
+      .from('shops')
+      .insert(fallbackPayload)
+      .select()
+      .single();
+    data = retryRes.data;
+    error = retryRes.error;
+  }
+
+  if (error || !data) {
+    logger.error('shop', `createShop error for ${trimmedName}`, { error: error?.message, details: error?.details }, null);
     console.error('createShop error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'Failed to create shop.' };
+  }
+
+  // Establish persistent session cookies for the new shop owner
+  const cookieStore = cookies();
+  cookieStore.set('dynish_phone', ownerPhone, { 
+    path: '/', 
+    maxAge: 60 * 60 * 24 * 365,
+    httpOnly: false,
+    sameSite: 'lax',
+  });
+  cookieStore.set('dynish_shop_id', data.id, { 
+    path: '/', 
+    maxAge: 60 * 60 * 24 * 365,
+    httpOnly: false,
+    sameSite: 'lax',
+  });
+  if (validOwnerId) {
+    cookieStore.set('dynish_uid', validOwnerId, { 
+      path: '/', 
+      maxAge: 60 * 60 * 24 * 365,
+      httpOnly: false,
+      sameSite: 'lax',
+    });
   }
 
   logger.info('shop', `Shop created successfully: ${data.name} (${data.id})`, { category: data.category }, data.id);

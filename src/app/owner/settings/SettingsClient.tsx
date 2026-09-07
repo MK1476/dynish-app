@@ -898,6 +898,40 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
           </button>
         </div>
       </form>
+
+      {/* 24/7 DEDICATED MERCHANT SUPPORT */}
+      <div className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 p-6 sm:p-7 rounded-3xl border border-emerald-200 shadow-soft space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <MessageCircle className="w-6 h-6 fill-current" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-sans font-bold text-base sm:text-lg text-emerald-950">
+                  Direct Founder &amp; Merchant Support
+                </h3>
+                <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                  Live on WhatsApp
+                </span>
+              </div>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                Have a question about billing, catalog setup, or your subscription? We are always here to help you grow your business.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Team! I need support for my store: ${shop.name} (+91 ${shop.phone})`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-sans font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+          >
+            <MessageCircle className="w-4 h-4 fill-current" />
+            <span>Chat on WhatsApp (+91 97041 00544)</span>
+          </a>
+        </div>
+      </div>
     </div>
   );
 };

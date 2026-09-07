@@ -23,11 +23,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onOpenDetail,
 }) => {
   const [imageIdx, setImageIdx] = useState(0);
+  const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
 
   const validImages = (product.image_urls || []).filter(
     (url) => typeof url === 'string' && url.trim().length > 0 && !url.includes('undefined')
   );
   const hasImages = validImages.length > 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const diffX = touchStartX.current - e.changedTouches[0].clientX;
+    const diffY = touchStartY.current - e.changedTouches[0].clientY;
+
+    if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
+      e.stopPropagation();
+      if (diffX > 0) {
+        setImageIdx((prev) => (prev + 1) % validImages.length);
+      } else {
+        setImageIdx((prev) => (prev - 1 + validImages.length) % validImages.length);
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   const discountPercent = product.original_price && product.original_price > product.price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
@@ -52,8 +76,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       }}
       className="group relative bg-white rounded-3xl overflow-hidden border border-[#EBE5DA] shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer select-none"
     >
-      {/* 2-Column Square Visual Container */}
-      <div className="relative w-full aspect-square overflow-hidden bg-[#FAF7F2]">
+      {/* 2-Column Square Visual Container with Touch Swipe */}
+      <div 
+        onTouchStart={validImages.length > 1 ? handleTouchStart : undefined}
+        onTouchEnd={validImages.length > 1 ? handleTouchEnd : undefined}
+        className="relative w-full aspect-square overflow-hidden bg-[#FAF7F2]"
+      >
         {hasImages ? (
           <img
             src={validImages[imageIdx] || validImages[0]}
