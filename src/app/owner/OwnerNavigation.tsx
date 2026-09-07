@@ -7,7 +7,7 @@ import type { Database } from '@/types/database';
 import { 
   LayoutDashboard, ShoppingBag, Zap, Users, Gift, 
   CreditCard, Settings, ExternalLink, Menu, X, ShieldAlert, 
-  Terminal, QrCode, Lock, Unlock, Download, Store, LayoutGrid, ShieldCheck, MessageCircle 
+  Terminal, QrCode, Lock, Unlock, Download, Store, LayoutGrid, ShieldCheck, MessageCircle, Info 
 } from 'lucide-react';
 import { signOut } from '@/actions/auth';
 import { BrandLogo } from '@/components/common/BrandLogo';
@@ -262,31 +262,26 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
             </div>
           )}
 
-          {/* WhatsApp Merchant Support */}
-          <a
-            href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all shadow-xs group"
-          >
-            <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-              <MessageCircle className="w-3.5 h-3.5 fill-current" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="block truncate font-bold text-emerald-950 text-[11px]">WhatsApp Support</span>
-                <span className="text-[9px] font-extrabold bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded-full">24/7</span>
-              </div>
-              <span className="text-[10px] text-emerald-700 font-semibold block truncate">Contact Us</span>
-            </div>
-          </a>
+          {/* Subtle Help & Sign Out Row */}
+          <div className="flex items-center justify-between px-1 text-xs pt-2 border-t border-ivory-100">
+            <a
+              href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-espresso-400 hover:text-espresso-800 text-xs transition-colors py-1"
+              title="Help & Contact Us"
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>Help</span>
+            </a>
 
-          <button
-            onClick={handleSignOut}
-            className="w-full py-1 text-center text-xs text-rose-600 hover:underline font-bold"
-          >
-            Sign Out
-          </button>
+            <button
+              onClick={handleSignOut}
+              className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-medium py-1"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -536,35 +531,27 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
               </Link>
             </div>
 
-            {/* WhatsApp Support Button */}
-            <a
-              href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 transition-all hover:bg-emerald-100"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-bold text-emerald-950">Need Help? WhatsApp Support</div>
-                  <div className="text-[11px] text-emerald-700 font-semibold">Direct assistance • Contact Us</div>
-                </div>
-              </div>
-              <span className="text-[10px] font-extrabold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full">
-                24/7
-              </span>
-            </a>
+            {/* Subtle Help & Sign Out Row */}
+            <div className="pt-3 border-t border-ivory-200/80 flex items-center justify-center gap-5 text-xs text-espresso-500">
+              <a
+                href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-espresso-400 hover:text-espresso-700 transition-colors py-1"
+                title="Help & Support"
+              >
+                <Info className="w-3.5 h-3.5 text-espresso-400" />
+                <span>Help</span>
+              </a>
 
-            {/* Red Sign Out Link (Matching Screenshot) */}
-            <div className="pt-2 text-center">
+              <span className="text-espresso-200">•</span>
+
               <button
                 onClick={handleSignOut}
-                className="inline-flex items-center justify-center gap-2 text-rose-600 hover:text-rose-700 text-xs font-bold hover:underline py-1"
+                className="inline-flex items-center gap-1.5 text-rose-600 hover:text-rose-700 text-xs font-semibold hover:underline py-1"
               >
                 <ExternalLink className="w-3.5 h-3.5 rotate-90" />
-                <span>Sign Out of Shop Owner</span>
+                <span>Sign Out</span>
               </button>
             </div>
 
