@@ -38,10 +38,10 @@ export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
       };
     }
 
-    return { success: true, message: 'OTP sent to ' + fullPhone };
+    return { success: true, message: 'OTP sent successfully via SMS.' };
   } catch (err: any) {
     logger.error('auth', `Exception in sendOtp for ${fullPhone}`, { error: err.message });
-    return { success: true, message: 'OTP sent! (Test mode fallback: 123456)' };
+    return { success: true, message: 'OTP sent! (Test mode code: 123456)' };
   }
 }
 

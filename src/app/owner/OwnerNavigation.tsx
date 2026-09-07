@@ -277,7 +277,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
                 <span className="block truncate font-bold text-emerald-950 text-[11px]">WhatsApp Support</span>
                 <span className="text-[9px] font-extrabold bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded-full">24/7</span>
               </div>
-              <span className="text-[10px] text-emerald-700 font-semibold block truncate">+91 97041 00544</span>
+              <span className="text-[10px] text-emerald-700 font-semibold block truncate">Contact Us</span>
             </div>
           </a>
 
@@ -549,7 +549,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-bold text-emerald-950">Need Help? WhatsApp Support</div>
-                  <div className="text-[11px] text-emerald-700 font-semibold">Direct assistance • +91 97041 00544</div>
+                  <div className="text-[11px] text-emerald-700 font-semibold">Direct assistance • Contact Us</div>
                 </div>
               </div>
               <span className="text-[10px] font-extrabold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full">

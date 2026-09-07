@@ -103,13 +103,6 @@ export const LandingPageClient: React.FC<LandingPageClientProps> = ({ showcaseSh
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              href="/admin"
-              className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-700 text-xs font-bold border border-ivory-300 transition-colors"
-            >
-              Admin Ops
-            </Link>
-
-            <Link
               href="/owner/login"
               className="px-3.5 py-2 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-900 text-xs font-bold border border-ivory-300 transition-colors"
             >
@@ -637,7 +630,6 @@ export const LandingPageClient: React.FC<LandingPageClientProps> = ({ showcaseSh
             </span>
             <div><Link href="/owner/onboarding" className="hover:text-espresso-950 transition-colors">Start Free Trial</Link></div>
             <div><Link href="/owner/login" className="hover:text-espresso-950 transition-colors">Merchant Login</Link></div>
-            <div><Link href="/admin" className="hover:text-espresso-950 transition-colors">Admin Console</Link></div>
             <div>
               <a 
                 href="https://wa.me/919704100544" 
@@ -645,7 +637,7 @@ export const LandingPageClient: React.FC<LandingPageClientProps> = ({ showcaseSh
                 rel="noopener noreferrer"
                 className="text-emerald-700 font-bold hover:underline"
               >
-                Founder Support (+91 97041 00544)
+                Contact Us (WhatsApp Support)
               </a>
             </div>
           </div>

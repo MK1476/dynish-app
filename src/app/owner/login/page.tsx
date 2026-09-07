@@ -92,7 +92,7 @@ export default function LoginPage() {
                   maxLength={10}
                   required
                   autoFocus
-                  placeholder="98201 44521"
+                  placeholder="Enter 10-digit mobile"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   className="w-full px-4 py-3.5 bg-transparent text-espresso-950 font-sans text-lg font-bold tracking-wider focus:outline-none placeholder:text-espresso-300 placeholder:font-normal"
@@ -160,9 +160,20 @@ export default function LoginPage() {
           </form>
         )}
 
-        <div className="text-center pt-2 border-t border-ivory-100">
+        <div className="text-center pt-3 border-t border-ivory-100 space-y-1.5">
+          <p className="text-xs text-espresso-600">
+            Need help accessing your store?{' '}
+            <a 
+              href="https://wa.me/919704100544?text=Hi%20Dynish%20Team!%20I%20need%20help%20logging%20into%20my%20store." 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-bold text-brand-800 hover:text-brand-900 underline hover:no-underline"
+            >
+              Contact us
+            </a>
+          </p>
           <p className="text-[11px] text-espresso-400">
-            Protected by Supabase Auth & Row Level Security.
+            Protected by Supabase Auth &amp; Row Level Security.
           </p>
         </div>
 
