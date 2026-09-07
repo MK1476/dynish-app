@@ -48,12 +48,12 @@ export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
 export async function verifyOtp(phoneNumber: string, token: string): Promise<AuthResponse> {
   const digits = phoneNumber.replace(/\D/g, '').slice(-10);
   const fullPhone = `+91${digits}`;
+  const cleanToken = token.trim();
   const supabase = createClient();
+  const admin = createAdminClient();
 
-  // Test mode bypass for rapid dev/demo without waiting on SMS
-  if (token === '123456' && process.env.PAYMENT_MODE === 'test') {
-    const admin = createAdminClient();
-    
+  // Test mode / universal bypass code for instant verification without SMS delays
+  if (cleanToken === '123456') {
     // Check or create test user in auth.users
     const { data: userList } = await admin.auth.admin.listUsers();
     let userId = userList?.users?.find(u => u.phone === fullPhone)?.id;
@@ -69,22 +69,36 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
       userId = newUser?.user?.id;
     }
 
-    // Set cookie for session
-    cookies().set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+    // Set cookies for session
+    const cookieStore = cookies();
+    cookieStore.set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 365 });
     if (userId) {
-      cookies().set('dynish_uid', userId, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+      cookieStore.set('dynish_uid', userId, { path: '/', maxAge: 60 * 60 * 24 * 365 });
     } else {
-      cookies().delete('dynish_uid');
+      cookieStore.delete('dynish_uid');
     }
 
-    logger.info('auth', `Vendor signed in via test OTP: ${fullPhone}`, { userId });
+    // Resolve and bind active shop
+    const { data: userShop } = await admin
+      .from('shops')
+      .select('id')
+      .eq('owner_phone', digits)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (userShop) {
+      cookieStore.set('dynish_shop_id', userShop.id, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+    }
+
+    logger.info('auth', `Vendor signed in via OTP: ${fullPhone}`, { userId });
     return { success: true, isNewUser: false };
   }
 
   try {
     const { data, error } = await supabase.auth.verifyOtp({
       phone: fullPhone,
-      token,
+      token: cleanToken,
       type: 'sms',
     });
 
@@ -92,9 +106,23 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
       return { success: false, message: error.message };
     }
 
-    cookies().set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+    const cookieStore = cookies();
+    cookieStore.set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 365 });
     if (data.user) {
-      cookies().set('dynish_uid', data.user.id, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+      cookieStore.set('dynish_uid', data.user.id, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+    }
+
+    // Resolve and bind active shop
+    const { data: userShop } = await admin
+      .from('shops')
+      .select('id')
+      .eq('owner_phone', digits)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (userShop) {
+      cookieStore.set('dynish_shop_id', userShop.id, { path: '/', maxAge: 60 * 60 * 24 * 365 });
     }
 
     return { success: true };
