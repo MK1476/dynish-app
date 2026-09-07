@@ -90,6 +90,14 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
 
     if (typeof window !== 'undefined' && (window as any).Razorpay) {
       const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        setLoadingPlan(null);
+        console.error('Razorpay Payment Failed:', response.error);
+        const errDesc = response.error?.description || response.error?.reason || 'Payment could not be completed';
+        alert(
+          `${errDesc}\n\nNote: If your Razorpay merchant account is pending KYC or document verification, log into dashboard.razorpay.com to activate live payments.`
+        );
+      });
       rzp.open();
     } else {
       // Direct instant simulation fallback for test/dev environments
