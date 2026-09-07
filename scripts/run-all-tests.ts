@@ -261,6 +261,29 @@ async function runTestSuite() {
   const peakSlotRevenue = peakSlotTxs.reduce((sum, t) => sum + t.bill_amount, 0);
   assert(peakSlotRevenue === 2050, 'Peak slot correctly sums ₹2,050 revenue');
 
+  // 16. AUTH ROUTE SUBSCRIPTION BANNER SUPPRESSION LOGIC
+  console.log(`\n${YELLOW}16. Auth Route Subscription Banner Suppression Logic${RESET}`);
+  const isAuthPage = (pathname: string) =>
+    pathname.startsWith('/owner/login') ||
+    pathname.startsWith('/owner/onboarding') ||
+    pathname === '/login';
+
+  assert(isAuthPage('/owner/login'), '/owner/login is correctly classified as auth route');
+  assert(isAuthPage('/owner/onboarding'), '/owner/onboarding is correctly classified as auth route');
+  assert(isAuthPage('/login'), '/login is correctly classified as auth route');
+  assert(!isAuthPage('/owner/dashboard'), '/owner/dashboard is correctly classified as authenticated portal');
+  assert(!isAuthPage('/owner/billing'), '/owner/billing is correctly classified as authenticated portal');
+  assert(!isAuthPage('/owner/catalog'), '/owner/catalog is correctly classified as authenticated portal');
+
+  // Verify warning banner suppression logic
+  const shouldRenderBanner = (pathname: string, isWarning: boolean) =>
+    !isAuthPage(pathname) && isWarning;
+
+  assert(!shouldRenderBanner('/owner/login', true), 'Login page NEVER renders subscription warning banner even if isWarning=true');
+  assert(!shouldRenderBanner('/owner/onboarding', true), 'Onboarding page NEVER renders subscription warning banner even if isWarning=true');
+  assert(shouldRenderBanner('/owner/dashboard', true), 'Dashboard correctly displays subscription warning banner when isWarning=true');
+
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

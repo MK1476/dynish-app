@@ -13,6 +13,10 @@ export type ShopRow = Database['public']['Tables']['shops']['Row'];
 
 export async function getOwnerShop(): Promise<ShopRow | null> {
   const { phone, userId } = await getCurrentVendorSession();
+  
+  // An unauthenticated session can never own a shop
+  if (!phone && !userId) return null;
+
   const cookieStore = cookies();
   const explicitShopId = cookieStore.get('dynish_shop_id')?.value;
 
@@ -27,13 +31,14 @@ export async function getOwnerShop(): Promise<ShopRow | null> {
       .maybeSingle();
 
     if (explicitShop) {
-      if (!phone || explicitShop.owner_phone === phone || explicitShop.phone === phone) {
+      // Must verify ownership with authenticated credentials
+      const matchesPhone = phone && (explicitShop.owner_phone === phone || explicitShop.phone === phone);
+      const matchesUser = userId && explicitShop.owner_id === userId;
+      if (matchesPhone || matchesUser) {
         return explicitShop;
       }
     }
   }
-
-  if (!phone && !userId) return null;
 
   let query = admin.from('shops').select('*');
 

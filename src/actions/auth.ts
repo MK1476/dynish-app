@@ -142,6 +142,9 @@ export async function signOut(): Promise<void> {
   const supabase = createClient();
   await supabase.auth.signOut();
   const cookieStore = cookies();
+  cookieStore.set('dynish_phone', '', { path: '/', maxAge: 0 });
+  cookieStore.set('dynish_uid', '', { path: '/', maxAge: 0 });
+  cookieStore.set('dynish_shop_id', '', { path: '/', maxAge: 0 });
   cookieStore.delete('dynish_phone');
   cookieStore.delete('dynish_uid');
   cookieStore.delete('dynish_shop_id');

@@ -102,6 +102,11 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
 
   const handleSignOut = async () => {
     await signOut();
+    if (typeof document !== 'undefined') {
+      document.cookie = 'dynish_phone=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'dynish_uid=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'dynish_shop_id=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
     router.push('/owner/login');
     router.refresh();
   };
