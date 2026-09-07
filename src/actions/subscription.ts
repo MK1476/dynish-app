@@ -25,12 +25,19 @@ export async function createSubscriptionOrder(
 
     const order = await razorpay.orders.create(options);
 
+    const envKey = process.env.RAZORPAY_KEY_ID?.trim();
+    const envPublicKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
+    const activeKey = (envKey?.startsWith('rzp_live') ? envKey : null) ||
+      (envPublicKey?.startsWith('rzp_live') ? envPublicKey : null) ||
+      envKey ||
+      envPublicKey;
+
     return {
       success: true,
       orderId: order.id,
       amount: plan.amountInPaise,
       currency: 'INR',
-      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+      keyId: activeKey,
     };
   } catch (err: any) {
     console.error('createSubscriptionOrder error:', err);

@@ -48,7 +48,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       amount: orderRes.amount,
       currency: 'INR',
       name: 'Dynish Subscriptions',
-      description: planType === 'monthly' ? '₹120 / Month Plan (30 Days)' : '₹1,099 / Year Plan (365 Days)',
+      description: planType === 'monthly' ? '₹199 / Month Plan (30 Days)' : '₹1,999 / Year Plan (365 Days)',
       order_id: orderRes.orderId,
       prefill: {
         contact: `+91${shop.phone}`,
@@ -93,7 +93,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       rzp.open();
     } else {
       // Direct instant simulation fallback for test/dev environments
-      if (confirm(`Test Environment: Simulate successful Razorpay payment of ${planType === 'monthly' ? '₹120' : '₹1,099'}?`)) {
+      if (confirm(`Test Environment: Simulate successful Razorpay payment of ${planType === 'monthly' ? '₹199' : '₹1,999'}?`)) {
         const verifyRes = await verifyPaymentAndRenew(shop.id, {
           orderId: orderRes.orderId,
           paymentId: `pay_test_${Date.now()}`,

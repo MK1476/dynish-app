@@ -2,11 +2,19 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
 export function getRazorpayClient() {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const envKey = process.env.RAZORPAY_KEY_ID?.trim();
+  const envPublicKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
+
+  // Prefer live key if available, otherwise any provided key
+  const keyId = (envKey?.startsWith('rzp_live') ? envKey : null) ||
+    (envPublicKey?.startsWith('rzp_live') ? envPublicKey : null) ||
+    envKey ||
+    envPublicKey;
+
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
 
   if (!keyId || !keySecret) {
-    throw new Error('Missing Razorpay credentials');
+    throw new Error('Missing Razorpay credentials. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
   }
 
   return new Razorpay({

@@ -1,19 +1,19 @@
 export const PLANS = {
   monthly: {
     id: 'monthly',
-    name: 'Monthly Plan',
-    price: 120,
-    amountInPaise: 120 * 100,
+    name: 'Monthly Pro',
+    price: 199,
+    amountInPaise: 199 * 100,
     durationDays: 30,
-    description: 'Billed monthly. Auto-renewal available.',
+    description: 'Billed monthly. Unlimited counter billing & catalog.',
   },
   yearly: {
     id: 'yearly',
     name: 'Yearly Super Saver',
-    price: 1099,
-    amountInPaise: 1099 * 100,
+    price: 1999,
+    amountInPaise: 1999 * 100,
     durationDays: 365,
-    description: 'Save ₹341 compared to monthly. Best value for retail.',
+    description: 'Save 16% compared to monthly. Best value for retail.',
   },
 } as const;
 

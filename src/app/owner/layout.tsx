@@ -54,7 +54,7 @@ export default async function OwnerLayout({
               href="/owner/subscription"
               className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-espresso-950 font-sans font-bold text-sm block shadow-md"
             >
-              Recharge for ₹120 / month →
+              Recharge for ₹199 / month →
             </Link>
           </div>
         </div>
