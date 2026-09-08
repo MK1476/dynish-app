@@ -25,6 +25,26 @@ export async function getShopCatalog(shopId: string): Promise<{
   };
 }
 
+async function revalidateStorefront(shopId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data: shop } = await admin
+      .from('shops')
+      .select('slug')
+      .eq('id', shopId)
+      .maybeSingle();
+
+    if (shop?.slug) {
+      revalidatePath(`/store/${shop.slug}`);
+    }
+  } catch {
+    // Ignore fallback
+  }
+  revalidatePath(`/store/${shopId}`);
+  revalidatePath('/store/[shopId]', 'page');
+  revalidatePath('/owner/catalog');
+}
+
 export async function createCategory(
   shopId: string,
   name: string
@@ -55,8 +75,7 @@ export async function createCategory(
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath(`/store/${shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(shopId);
   return { success: true, category: data };
 }
 
@@ -72,8 +91,7 @@ export async function reorderCategories(
 
   await Promise.all(updates);
 
-  revalidatePath(`/store/${shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(shopId);
   return { success: true };
 }
 
@@ -86,8 +104,7 @@ export async function deleteCategory(
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath(`/store/${shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(shopId);
   return { success: true };
 }
 
@@ -126,8 +143,7 @@ export async function createItem(itemData: {
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath(`/store/${itemData.shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(itemData.shopId);
   return { success: true, item: data };
 }
 
@@ -145,8 +161,7 @@ export async function updateItem(
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath(`/store/${shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(shopId);
   return { success: true };
 }
 
@@ -159,8 +174,7 @@ export async function deleteItem(
 
   if (error) return { success: false, error: error.message };
 
-  revalidatePath(`/store/${shopId}`);
-  revalidatePath('/owner/catalog');
+  await revalidateStorefront(shopId);
   return { success: true };
 }
 
@@ -223,8 +237,7 @@ export async function bulkUploadCatalog(
     const { error: insertError } = await admin.from('items').insert(itemsToInsert);
     if (insertError) throw insertError;
 
-    revalidatePath(`/store/${shopId}`);
-    revalidatePath('/owner/catalog');
+    await revalidateStorefront(shopId);
     return { success: true, count: itemsToInsert.length };
   } catch (err: any) {
     console.error('bulkUploadCatalog error:', err);

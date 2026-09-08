@@ -1,10 +1,16 @@
 import React from 'react';
+import { getCurrentVendorSession } from '@/actions/auth';
 import { getOwnerShop } from '@/actions/shop';
 import { getShopCatalog } from '@/actions/catalog';
 import { CatalogEditorClient } from './CatalogEditorClient';
 import { redirect } from 'next/navigation';
 
 export default async function CatalogPage() {
+  const { phone, userId } = await getCurrentVendorSession();
+  if (!phone && !userId) {
+    redirect('/owner/login');
+  }
+
   const shop = await getOwnerShop();
   if (!shop) {
     redirect('/owner/onboarding');

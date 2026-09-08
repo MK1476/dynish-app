@@ -1,10 +1,16 @@
 import React from 'react';
+import { getCurrentVendorSession } from '@/actions/auth';
 import { getOwnerShop } from '@/actions/shop';
 import { calculateSubscriptionStatus } from '@/lib/utils';
 import { redirect } from 'next/navigation';
 import { SubscriptionClient } from './SubscriptionClient';
 
 export default async function SubscriptionPage() {
+  const { phone, userId } = await getCurrentVendorSession();
+  if (!phone && !userId) {
+    redirect('/owner/login');
+  }
+
   const shop = await getOwnerShop();
   if (!shop) {
     redirect('/owner/onboarding');

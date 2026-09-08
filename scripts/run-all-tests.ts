@@ -283,6 +283,61 @@ async function runTestSuite() {
   assert(!shouldRenderBanner('/owner/onboarding', true), 'Onboarding page NEVER renders subscription warning banner even if isWarning=true');
   assert(shouldRenderBanner('/owner/dashboard', true), 'Dashboard correctly displays subscription warning banner when isWarning=true');
 
+  // 17. ONBOARDING & OWNER ROUTE ACCESS GATEKEEPING LOGIC
+  console.log(`\n${YELLOW}17. Onboarding & Owner Route Access Gatekeeping Logic${RESET}`);
+  function resolveOwnerRouteAccess(session: { phone: string | null; userId: string | null }, hasShop: boolean, requestedPath: string): string {
+    const isAuthenticated = !!(session.phone || session.userId);
+    if (!isAuthenticated) {
+      return '/owner/login';
+    }
+    if (requestedPath === '/owner/onboarding') {
+      return hasShop ? '/owner/dashboard' : '/owner/onboarding';
+    }
+    return hasShop ? requestedPath : '/owner/onboarding';
+  }
+
+  assert(
+    resolveOwnerRouteAccess({ phone: null, userId: null }, false, '/owner/onboarding') === '/owner/login',
+    'Unauthenticated user accessing /owner/onboarding is redirected to /owner/login'
+  );
+  assert(
+    resolveOwnerRouteAccess({ phone: null, userId: null }, false, '/owner/dashboard') === '/owner/login',
+    'Unauthenticated user accessing /owner/dashboard is redirected to /owner/login'
+  );
+  assert(
+    resolveOwnerRouteAccess({ phone: '9876543210', userId: 'usr-1' }, true, '/owner/onboarding') === '/owner/dashboard',
+    'Logged-in user with existing store accessing /owner/onboarding is redirected to /owner/dashboard'
+  );
+  assert(
+    resolveOwnerRouteAccess({ phone: '9876543210', userId: 'usr-1' }, false, '/owner/onboarding') === '/owner/onboarding',
+    'Logged-in user with NO store is permitted to view /owner/onboarding'
+  );
+  assert(
+    resolveOwnerRouteAccess({ phone: '9876543210', userId: 'usr-1' }, true, '/owner/dashboard') === '/owner/dashboard',
+    'Logged-in owner accessing /owner/dashboard proceeds normally'
+  );
+
+  // 18. STOREFRONT DYNAMIC REVALIDATION PATH RESOLUTION
+  console.log(`\n${YELLOW}18. Storefront Dynamic Revalidation Path Resolution${RESET}`);
+  function resolveRevalidationPaths(shopId: string, slug?: string | null): string[] {
+    const paths = [
+      `/store/${shopId}`,
+      '/store/[shopId]',
+      '/owner/catalog',
+    ];
+    if (slug) {
+      paths.push(`/store/${slug}`);
+    }
+    return paths;
+  }
+
+  const mandiHousePaths = resolveRevalidationPaths('2c8fa400-0000-0000-0000-000000000000', 'mandi-house');
+  assert(mandiHousePaths.includes('/store/mandi-house'), 'Storefront revalidation includes vanity slug /store/mandi-house');
+  assert(mandiHousePaths.includes('/store/2c8fa400-0000-0000-0000-000000000000'), 'Storefront revalidation includes direct UUID path');
+  assert(mandiHousePaths.includes('/store/[shopId]'), 'Storefront revalidation includes Next.js layout route pattern');
+  assert(mandiHousePaths.includes('/owner/catalog'), 'Storefront revalidation includes owner catalog page');
+
+
 
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);

@@ -5,6 +5,10 @@ import { notFound } from 'next/navigation';
 import { StorefrontClient } from './StorefrontClient';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 interface StorePageProps {
   params: {
     shopId: string;

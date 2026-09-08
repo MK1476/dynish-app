@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCurrentVendorSession } from '@/actions/auth';
 import { getOwnerShop } from '@/actions/shop';
 import { StandeeClient } from './StandeeClient';
 import { redirect } from 'next/navigation';
@@ -9,6 +10,11 @@ export const metadata = {
 };
 
 export default async function StandeePage() {
+  const { phone, userId } = await getCurrentVendorSession();
+  if (!phone && !userId) {
+    redirect('/owner/login');
+  }
+
   const shop = await getOwnerShop();
   if (!shop) {
     redirect('/owner/onboarding');

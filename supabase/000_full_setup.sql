@@ -226,3 +226,13 @@ create policy "Owners can view subscriptions"
 on public.subscriptions for select
 to authenticated
 using (exists (select 1 from public.shops where shops.id = subscriptions.shop_id and (shops.owner_id = auth.uid() or shops.owner_phone = (auth.jwt()->>'phone'))));
+
+-- 11. REALTIME PUBLICATIONS
+do $$
+begin
+  alter publication supabase_realtime add table public.items, public.categories, public.shops;
+exception
+  when duplicate_object then null;
+  when others then null;
+end $$;
+

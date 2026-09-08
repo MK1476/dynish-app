@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Database } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 import { ShopHero } from '@/components/customer/ShopHero';
 import { ProductCard } from '@/components/customer/ProductCard';
 import { ProductDetailModal } from '@/components/customer/ProductDetailModal';
@@ -20,9 +21,21 @@ interface StorefrontClientProps {
 
 export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   shop,
-  categories,
-  items,
+  categories: initialCategories,
+  items: initialItems,
 }) => {
+  const [currentCategories, setCurrentCategories] = useState<CategoryRow[]>(initialCategories);
+  const [currentItems, setCurrentItems] = useState<ItemRow[]>(initialItems);
+
+  // Sync if initial server props change
+  useEffect(() => {
+    setCurrentCategories(initialCategories);
+  }, [initialCategories]);
+
+  useEffect(() => {
+    setCurrentItems(initialItems);
+  }, [initialItems]);
+
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -35,6 +48,112 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
 
   const isClickScrollingRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // REALTIME SYNCHRONIZATION: Sub-second Supabase channel + focus sync + fallback poll
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchLatestCatalog = async () => {
+      try {
+        const [itemRes, catRes] = await Promise.all([
+          supabase
+            .from('items')
+            .select('*')
+            .eq('shop_id', shop.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('categories')
+            .select('*')
+            .eq('shop_id', shop.id)
+            .order('sort_order', { ascending: true }),
+        ]);
+
+        if (itemRes.data) {
+          setCurrentItems(itemRes.data);
+        }
+        if (catRes.data) {
+          setCurrentCategories(catRes.data);
+        }
+      } catch (e) {
+        console.error('Realtime sync error:', e);
+      }
+    };
+
+    const channel = supabase
+      .channel(`storefront-live-${shop.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'items',
+          filter: `shop_id=eq.${shop.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newItem = payload.new as ItemRow;
+            setCurrentItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedItem = payload.new as ItemRow;
+            setCurrentItems((prev) =>
+              prev.map((i) => (i.id === updatedItem.id ? updatedItem : i))
+            );
+            setSelectedProduct((curr) =>
+              curr?.id === updatedItem.id ? updatedItem : curr
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as any).id;
+            setCurrentItems((prev) => prev.filter((i) => i.id !== deletedId));
+            setSelectedProduct((curr) =>
+              curr?.id === deletedId ? null : curr
+            );
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'categories',
+          filter: `shop_id=eq.${shop.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newCat = payload.new as CategoryRow;
+            setCurrentCategories((prev) => [...prev.filter((c) => c.id !== newCat.id), newCat]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedCat = payload.new as CategoryRow;
+            setCurrentCategories((prev) =>
+              prev.map((c) => (c.id === updatedCat.id ? updatedCat : c))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as any).id;
+            setCurrentCategories((prev) => prev.filter((c) => c.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLatestCatalog();
+      }
+    };
+
+    window.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', fetchLatestCatalog);
+
+    // Fallback periodic sync every 8 seconds
+    const interval = setInterval(fetchLatestCatalog, 8000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', fetchLatestCatalog);
+      clearInterval(interval);
+    };
+  }, [shop.id]);
 
   const handleSearchFocus = () => {
     const header = document.getElementById('storefront-sticky-header');
@@ -88,32 +207,32 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   // Category ID -> Name lookup map
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
-    categories.forEach((c) => map.set(c.id, c.name));
+    currentCategories.forEach((c) => map.set(c.id, c.name));
     return map;
-  }, [categories]);
+  }, [currentCategories]);
 
   // Global sorted items across the entire catalog (used when priceSort !== 'default')
   const globalSortedItems = useMemo(() => {
-    return processItems(items);
-  }, [items, priceSort, maxBudget]);
+    return processItems(currentItems);
+  }, [currentItems, priceSort, maxBudget]);
 
   // Group items by category (used for default categorized view)
   const categorySections = useMemo(() => {
-    return categories.map((cat) => ({
+    return currentCategories.map((cat) => ({
       category: cat,
-      items: processItems(items.filter((p) => p.category_id === cat.id)),
+      items: processItems(currentItems.filter((p) => p.category_id === cat.id)),
     })).filter((sec) => sec.items.length > 0);
-  }, [categories, items, priceSort, maxBudget]);
+  }, [currentCategories, currentItems, priceSort, maxBudget]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
-    const matched = items.filter((p) => 
+    const matched = currentItems.filter((p) => 
       p.name.toLowerCase().includes(q) ||
       (p.description && p.description.toLowerCase().includes(q))
     );
     return processItems(matched);
-  }, [items, searchQuery, priceSort, maxBudget]);
+  }, [currentItems, searchQuery, priceSort, maxBudget]);
 
   // SCROLLSPY: Auto-select category on scroll
   useEffect(() => {
@@ -169,8 +288,8 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   };
 
   const savedProducts = useMemo(() => {
-    return items.filter((item) => savedItemIds.includes(item.id));
-  }, [items, savedItemIds]);
+    return currentItems.filter((item) => savedItemIds.includes(item.id));
+  }, [currentItems, savedItemIds]);
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] pb-32">
@@ -445,7 +564,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
               <LayoutGrid className="w-4 h-4 text-[#D99706]" />
               <span>Menu</span>
               <span className="bg-white/15 text-white text-[10px] px-1.5 py-0.2 rounded-full font-sans font-bold">
-                {categories.length}
+                {currentCategories.length}
               </span>
             </>
           )}
@@ -477,13 +596,13 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
             >
               <span className="text-sm tracking-tight pr-3 truncate">All Products</span>
               <span className={`text-xs font-semibold font-sans shrink-0 ${activeCategoryId === 'all' ? 'text-[#D99706]' : 'text-[#A89F91]'}`}>
-                {items.length}
+                {currentItems.length}
               </span>
             </button>
 
             {/* Each Category */}
-            {categories.map((cat) => {
-              const catItemCount = items.filter((i) => i.category_id === cat.id).length;
+            {currentCategories.map((cat) => {
+              const catItemCount = currentItems.filter((i) => i.category_id === cat.id).length;
               const isActive = activeCategoryId === cat.id;
 
               return (

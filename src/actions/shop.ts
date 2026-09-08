@@ -248,7 +248,12 @@ export async function updateShop(
   }
 
   logger.info('shop', `Shop settings updated for shop ${shopId}`, { updatedFields: Object.keys(updateData) }, shopId);
+  try {
+    const { data: s } = await admin.from('shops').select('slug').eq('id', shopId).maybeSingle();
+    if (s?.slug) revalidatePath(`/store/${s.slug}`);
+  } catch {}
   revalidatePath(`/store/${shopId}`);
+  revalidatePath('/store/[shopId]', 'page');
   revalidatePath('/owner/settings');
   return { success: true };
 }
