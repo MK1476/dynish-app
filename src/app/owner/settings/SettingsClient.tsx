@@ -110,7 +110,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
     if (slug) return;
     if (!slugAvailable || !slugInput.trim()) return;
 
-    if (!confirm(`Confirm permanent store URL: https://dynish.vercel.app/store/${slugInput.toLowerCase().trim()}\n\nNote: Once confirmed, this URL handle CANNOT be changed.`)) {
+    if (!confirm(`Confirm permanent store URL: https://dynish.com/store/${slugInput.toLowerCase().trim()}\n\nNote: Once confirmed, this URL handle CANNOT be changed.`)) {
       return;
     }
 
@@ -314,13 +314,13 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="font-sans text-sm sm:text-base font-bold text-emerald-950 truncate">
-                  https://dynish.vercel.app/store/{slug}
+                  https://dynish.com/store/{slug}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={async () => {
-                      await copyTextToClipboard(`https://dynish.vercel.app/store/${slug}`);
+                      await copyTextToClipboard(`https://dynish.com/store/${slug}`);
                       setCopiedUrl(true);
                       setTimeout(() => setCopiedUrl(false), 2000);
                     }}
@@ -348,7 +348,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
             <div className="space-y-3">
               <div className="relative flex items-center rounded-2xl bg-ivory-50 border-2 border-ivory-300 focus-within:border-brand-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-100 overflow-hidden transition-all">
                 <span className="px-3.5 py-3 text-espresso-500 font-sans text-xs sm:text-sm font-semibold border-r border-ivory-300 bg-ivory-100/70 select-none">
-                  dynish.vercel.app/store/
+                  dynish.com/store/
                 </span>
                 <input
                   type="text"
@@ -791,8 +791,8 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
                   .replace(/\{bill_amount\}/g, '₹1,450')
                   .replace(/\{visit_count\}/g, '3')
                   .replace(/\{next_offer\}/g, 'Flat 10% OFF on Next Visit')
-                  .replace(/\{store_link\}/g, `https://dynish.vercel.app/store/${slug || shop.id}`)
-              : `Hi Priya Sharma! Thank you for visiting *${name || 'Your Store'}* (Visit #3).\n\nYour bill: *₹1,450*\n\n🎁 *Special offer for your next visit:* Flat 10% OFF on Next Visit\nJust show this message at our counter on your next visit!\n\nCheck out our catalog & new arrivals here: https://dynish.vercel.app/store/${slug || shop.id}\n\nSee you again soon! ✨`}
+                  .replace(/\{store_link\}/g, `https://dynish.com/store/${slug || shop.id}`)
+              : `Hi Priya Sharma! Thank you for visiting *${name || 'Your Store'}* (Visit #3).\n\nYour bill: *₹1,450*\n\n🎁 *Special offer for your next visit:* Flat 10% OFF on Next Visit\nJust show this message at our counter on your next visit!\n\nCheck out our catalog & new arrivals here: https://dynish.com/store/${slug || shop.id}\n\nSee you again soon! ✨`}
           </div>
         </div>
 

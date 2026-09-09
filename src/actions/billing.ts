@@ -12,6 +12,7 @@ export type TransactionRow = Database['public']['Tables']['transactions']['Row']
 export interface CustomerWithOffer extends CustomerRow {
   lastOfferAwarded?: string | null;
   lastBillDate?: string | null;
+  availableLoyaltyDiscount?: number | null;
 }
 
 export async function searchCustomers(
@@ -67,10 +68,34 @@ export async function getCustomerByPhone(
     .limit(1)
     .maybeSingle();
 
+  const rawOffer = lastTx?.next_visit_offer || null;
+  let availableLoyaltyDiscount: number | null = null;
+
+  if (rawOffer) {
+    const flatMatch = rawOffer.match(/(?:₹|rs\.?|flat\s*)(\d+)/i);
+    if (flatMatch) {
+      availableLoyaltyDiscount = parseInt(flatMatch[1], 10);
+    } else {
+      const pctMatch = rawOffer.match(/(\d+(\.\d+)?)\s*%/);
+      if (pctMatch && customer.last_bill_amount && Number(customer.last_bill_amount) > 0) {
+        const pct = parseFloat(pctMatch[1]);
+        availableLoyaltyDiscount = Math.round((Number(customer.last_bill_amount) * pct) / 100);
+      }
+    }
+  }
+
+  // Fallback: Default 10% next-visit loyalty reward from previous bill
+  if ((availableLoyaltyDiscount === null || isNaN(availableLoyaltyDiscount)) && 
+      customer.last_bill_amount && 
+      Number(customer.last_bill_amount) > 0) {
+    availableLoyaltyDiscount = Math.round(Number(customer.last_bill_amount) * 0.10);
+  }
+
   return {
     ...customer,
-    lastOfferAwarded: lastTx?.next_visit_offer || null,
+    lastOfferAwarded: rawOffer,
     lastBillDate: lastTx?.created_at || null,
+    availableLoyaltyDiscount: availableLoyaltyDiscount && availableLoyaltyDiscount > 0 ? availableLoyaltyDiscount : null,
   };
 }
 
@@ -167,7 +192,29 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
       customer = newCustomer;
     }
 
-    // 3. Log transaction
+    // 3. Resolve dynamic next-visit loyalty offer (e.g. 10% of today's bill)
+    let resolvedNextOffer = input.nextVisitOffer?.trim() || null;
+    if (amountNum && amountNum > 0) {
+      const isTenPercent = !resolvedNextOffer || 
+        resolvedNextOffer.includes('10%') || 
+        resolvedNextOffer.toLowerCase().includes('cashback') || 
+        resolvedNextOffer === 'Flat 10% OFF on Next Visit' ||
+        resolvedNextOffer === '10% Cashback on Next Visit';
+
+      if (isTenPercent) {
+        const rewardAmount = Math.round(amountNum * 0.10);
+        resolvedNextOffer = `₹${rewardAmount} OFF on Next Visit (10% of today's bill ₹${amountNum})`;
+      } else if (resolvedNextOffer) {
+        const pctMatch = resolvedNextOffer.match(/(\d+(\.\d+)?)\s*%/);
+        if (pctMatch) {
+          const pct = parseFloat(pctMatch[1]);
+          const rewardAmount = Math.round((amountNum * pct) / 100);
+          resolvedNextOffer = `₹${rewardAmount} OFF on Next Visit (${pct}% of today's bill ₹${amountNum})`;
+        }
+      }
+    }
+
+    // 4. Log transaction
     const { data: transaction, error: txError } = await admin
       .from('transactions')
       .insert({
@@ -175,7 +222,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
         customer_id: customer.id,
         bill_amount: amountNum,
         applied_offer: input.appliedOffer || null,
-        next_visit_offer: input.nextVisitOffer || null,
+        next_visit_offer: resolvedNextOffer,
         visit_number: customer.visit_count,
         created_at: nowIso,
       })
@@ -184,7 +231,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
 
     if (txError) throw txError;
 
-    // 4. Generate WhatsApp Receipt Payload
+    // 5. Generate WhatsApp Receipt Payload
     const rawMsg = generateWhatsAppBillMessage({
       shopName: shop.name,
       ownerName: shop.name,
@@ -192,7 +239,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
       customerPhone: digits,
       billAmount: amountNum,
       visitNumber: customer.visit_count,
-      nextOfferTitle: input.nextVisitOffer || undefined,
+      nextOfferTitle: resolvedNextOffer || undefined,
       shopAddress: shop.address || undefined,
       shopId: input.shopId,
       shopSlug: (shop as any)?.slug || undefined,
@@ -207,7 +254,7 @@ export async function recordBill(input: RecordBillInput): Promise<RecordBillResu
     logger.info('billing', `Bill recorded: ₹${amountNum || 0} for customer +91 ${digits} (Visit #${customer.visit_count})`, {
       billAmount: amountNum,
       visitNumber: customer.visit_count,
-      nextOffer: input.nextVisitOffer,
+      nextOffer: resolvedNextOffer,
       appliedOffer: input.appliedOffer
     }, input.shopId);
 

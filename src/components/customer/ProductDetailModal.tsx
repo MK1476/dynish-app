@@ -6,7 +6,7 @@ import {
   X, Bookmark, Share2, MessageCircle, ChevronLeft, 
   ChevronRight, Check, ArrowLeft, Sparkles, Flame 
 } from 'lucide-react';
-import { formatINR, copyTextToClipboard } from '@/lib/utils';
+import { formatINR, copyTextToClipboard, getAppBaseUrl } from '@/lib/utils';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type ItemRow = Database['public']['Tables']['items']['Row'];
@@ -81,7 +81,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleShareProduct = async () => {
-    const productUrl = `${window.location.origin}/store/${shop.id}#item-${product.id}`;
+    const productUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}?item=${product.id}`;
     const shareData = {
       title: product.name,
       text: `Check out ${product.name} at ${shop.name} for ${formatINR(product.price)}!`,

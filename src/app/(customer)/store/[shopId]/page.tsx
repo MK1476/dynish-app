@@ -13,6 +13,9 @@ interface StorePageProps {
   params: {
     shopId: string;
   };
+  searchParams?: {
+    item?: string;
+  };
 }
 
 export async function generateMetadata({ params }: StorePageProps): Promise<Metadata> {
@@ -30,7 +33,7 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
   };
 }
 
-export default async function StorePage({ params }: StorePageProps) {
+export default async function StorePage({ params, searchParams }: StorePageProps) {
   const shop = await getShopBySlugOrId(params.shopId);
 
   if (!shop) {
@@ -44,6 +47,7 @@ export default async function StorePage({ params }: StorePageProps) {
       shop={shop} 
       categories={catalog.categories} 
       items={catalog.items} 
+      initialItemId={searchParams?.item || null}
     />
   );
 }

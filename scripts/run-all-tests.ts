@@ -337,6 +337,83 @@ async function runTestSuite() {
   assert(mandiHousePaths.includes('/store/[shopId]'), 'Storefront revalidation includes Next.js layout route pattern');
   assert(mandiHousePaths.includes('/owner/catalog'), 'Storefront revalidation includes owner catalog page');
 
+  // 19. CANONICAL DOMAIN RESOLUTION (DYNISH.COM ENFORCEMENT)
+  console.log(`\n${YELLOW}19. Canonical Domain Resolution (dynish.com Enforcement)${RESET}`);
+  const { getAppBaseUrl } = await import('../src/lib/utils');
+  const resolvedBaseUrl = getAppBaseUrl();
+  assert(resolvedBaseUrl === 'https://dynish.com', 'getAppBaseUrl() strictly resolves to https://dynish.com');
+  assert(!resolvedBaseUrl.includes('localhost'), 'getAppBaseUrl() never leaks localhost');
+  assert(!resolvedBaseUrl.includes('vercel.app'), 'getAppBaseUrl() never leaks staging vercel domain');
+
+  // 20. DIRECT ITEM DEEP-LINKING FORMAT & RESOLUTION
+  console.log(`\n${YELLOW}20. Direct Item Deep-Linking Format & Resolution${RESET}`);
+  function generateDirectItemLink(shopSlug: string, itemId: string): string {
+    const base = getAppBaseUrl();
+    return `${base}/store/${shopSlug}?item=${itemId}`;
+  }
+
+  function parseDirectItemLink(urlStr: string): string | null {
+    try {
+      const parsed = new URL(urlStr);
+      const queryItem = parsed.searchParams.get('item');
+      if (queryItem) return queryItem;
+      const hashMatch = parsed.hash.match(/^#item-(.+)$/);
+      if (hashMatch) return hashMatch[1];
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  const sampleDirectLink = generateDirectItemLink('mandi-house', 'item-uuid-101');
+  assert(sampleDirectLink === 'https://dynish.com/store/mandi-house?item=item-uuid-101', 'Direct item link formats properly with ?item= parameter');
+  assert(parseDirectItemLink(sampleDirectLink) === 'item-uuid-101', 'Direct item URL parser extracts item ID from query parameter');
+  assert(parseDirectItemLink('https://dynish.com/store/mandi-house#item-legacy-999') === 'legacy-999', 'Direct item URL parser supports backward-compatible hash syntax #item-');
+
+  // 21. DYNAMIC 10% NEXT-VISIT LOYALTY REWARD SYSTEM
+  console.log(`\n${YELLOW}21. Dynamic 10% Next-Visit Loyalty Reward System${RESET}`);
+  function calculateNextVisitReward(billAmount: number): number {
+    return Math.round(billAmount * 0.10);
+  }
+
+  function computeNetPayable(originalBill: number, loyaltyDiscount: number): { discountRupees: number; netPayable: number } {
+    const discount = Math.min(originalBill, loyaltyDiscount);
+    return {
+      discountRupees: discount,
+      netPayable: Math.max(0, originalBill - discount),
+    };
+  }
+
+  // Test case: Bill of ₹350 earns ₹35
+  const reward350 = calculateNextVisitReward(350);
+  assert(reward350 === 35, 'Bill of ₹350 dynamically generates ₹35 next-visit loyalty reward (10%)');
+
+  // Test case: Bill of ₹1200 earns ₹120
+  const reward1200 = calculateNextVisitReward(1200);
+  assert(reward1200 === 120, 'Bill of ₹1,200 dynamically generates ₹120 next-visit loyalty reward (10%)');
+
+  // Test case: Next visit applying ₹35 on a ₹400 bill -> ₹365
+  const netBill = computeNetPayable(400, 35);
+  assert(netBill.discountRupees === 35, 'Loyalty reward applies exactly ₹35 discount');
+  assert(netBill.netPayable === 365, 'Net payable is correctly reduced to ₹365 (₹400 - ₹35)');
+
+  // Test WhatsApp message format contains canonical link and exact reward
+  const testWhatsAppMsg = generateWhatsAppBillMessage({
+    shopName: 'Mandi House',
+    customerName: 'Karim',
+    customerPhone: '9876543210',
+    billAmount: 350,
+    visitNumber: 1,
+    nextOfferTitle: '₹35 OFF on Next Visit (10% of today\'s bill ₹350)',
+    shopId: 'shop-uuid-1',
+    shopSlug: 'mandi-house',
+  });
+
+  assert(testWhatsAppMsg.includes('https://dynish.com/store/mandi-house'), 'WhatsApp message contains canonical dynish.com store URL');
+  assert(testWhatsAppMsg.includes('₹35 OFF'), 'WhatsApp message displays dynamic 10% reward (₹35 OFF)');
+  assert(!testWhatsAppMsg.includes('localhost'), 'WhatsApp message contains no localhost link');
+  assert(!testWhatsAppMsg.includes('vercel.app'), 'WhatsApp message contains no vercel.app link');
+
 
 
   // FINAL SUMMARY

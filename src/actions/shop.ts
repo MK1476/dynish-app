@@ -210,8 +210,8 @@ export async function createShop(formData: {
   await admin.from('offers').insert([
     {
       shop_id: data.id,
-      title: 'Flat 10% OFF on Next Visit',
-      description: 'Show WhatsApp receipt at counter to claim discount on any purchase.',
+      title: '10% Cashback on Next Visit',
+      description: 'Earn 10% of today’s bill as flat discount on your next visit.',
       discount_type: 'percentage',
       discount_value: 10,
       is_default: true,

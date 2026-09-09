@@ -14,6 +14,10 @@ import { formatPlainTextReceipt, printViaBluetooth, type ReceiptData } from '@/l
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type OfferRow = Database['public']['Tables']['offers']['Row'];
 type CustomerRow = Database['public']['Tables']['customers']['Row'];
+type MatchedCustomerType = CustomerRow & {
+  lastOfferAwarded?: string | null;
+  availableLoyaltyDiscount?: number | null;
+};
 
 interface BillingFormProps {
   shop: ShopRow;
@@ -25,10 +29,10 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const [billAmount, setBillAmount] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [selectedOffer, setSelectedOffer] = useState<string>(
-    initialOffers.find(o => o.is_default)?.title || 'Flat 10% OFF on Next Visit'
+    initialOffers.find(o => o.is_default)?.title || '10% Cashback on Next Visit'
   );
 
-  const [matchedCustomer, setMatchedCustomer] = useState<(CustomerRow & { lastOfferAwarded?: string | null }) | null>(null);
+  const [matchedCustomer, setMatchedCustomer] = useState<MatchedCustomerType | null>(null);
   const [suggestions, setSuggestions] = useState<CustomerRow[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [appliedOfferText, setAppliedOfferText] = useState<string>('');
@@ -40,6 +44,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     phone: string;
     name: string;
     amount: number | null;
+    discountApplied?: number;
+    finalAmount?: number | null;
     nextOffer: string;
     visitNumber: number;
     rawText: string;
@@ -60,8 +66,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       billId: `INV-${Date.now().toString().slice(-6)}`,
       customerPhone: completedDetails.phone,
       amount: completedDetails.amount || 0,
-      discountApplied: 0,
-      finalAmount: completedDetails.amount || 0,
+      discountApplied: completedDetails.discountApplied || 0,
+      finalAmount: completedDetails.finalAmount ?? completedDetails.amount ?? 0,
       loyaltyOfferText: completedDetails.nextOffer || undefined,
       timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }),
     };
@@ -89,7 +95,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const latestPhoneQuery = useRef('');
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
-  const customerCacheRef = useRef<Map<string, CustomerRow & { lastOfferAwarded?: string | null }>>(new Map());
+  const customerCacheRef = useRef<Map<string, MatchedCustomerType>>(new Map());
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -112,6 +118,25 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const calculateDiscountBreakdown = (offerText: string | null | undefined, amount: number | null) => {
     if (!offerText || !amount || amount <= 0) return null;
 
+    // 1. Check for explicit rupee discount first (e.g. ₹35 OFF earned from previous visit)
+    const flatMatch = offerText.match(/(?:₹|rs\.?|flat\s*)(\d+)(?:\s*(?:off|\/-|\/|discount))?/i);
+    if (flatMatch) {
+      const flatDiscount = parseFloat(flatMatch[1]);
+      if (!isNaN(flatDiscount) && flatDiscount > 0) {
+        const discount = Math.min(amount, flatDiscount);
+        const finalAmount = Math.max(0, amount - discount);
+        return {
+          type: 'flat' as const,
+          percent: Math.round((discount / amount) * 100),
+          discountRupees: discount,
+          originalAmount: amount,
+          finalAmount,
+          summary: `₹${discount}/- discount applied on ₹${amount} (Net: ₹${finalAmount})`,
+        };
+      }
+    }
+
+    // 2. Check for percentage discount (e.g. 10% on current bill)
     const percentMatch = offerText.match(/(\d+(\.\d+)?)\s*%/);
     if (percentMatch) {
       const percent = parseFloat(percentMatch[1]);
@@ -124,24 +149,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
           discountRupees: discount,
           originalAmount: amount,
           finalAmount,
-          summary: `${percent}% on ₹${amount} is ₹${discount}/- discount`,
-        };
-      }
-    }
-
-    const flatMatch = offerText.match(/(?:₹|rs\.?|flat\s*)(\d+)/i);
-    if (flatMatch) {
-      const flatDiscount = parseFloat(flatMatch[1]);
-      if (!isNaN(flatDiscount) && flatDiscount > 0) {
-        const discount = Math.min(amount, flatDiscount);
-        const finalAmount = Math.max(0, amount - discount);
-        return {
-          type: 'flat' as const,
-          percent: Math.round((discount / amount) * 100),
-          discountRupees: discount,
-          originalAmount: amount,
-          finalAmount,
-          summary: `Flat ₹${discount}/- discount on ₹${amount}`,
+          summary: `${percent}% on ₹${amount} is ₹${discount}/- discount (Net: ₹${finalAmount})`,
         };
       }
     }
@@ -154,6 +162,15 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     !isOfferDismissed && appliedOfferText ? appliedOfferText : null, 
     billNum
   );
+
+  const availableReward = matchedCustomer?.availableLoyaltyDiscount || (
+    matchedCustomer?.last_bill_amount && Number(matchedCustomer.last_bill_amount) > 0
+      ? Math.round(Number(matchedCustomer.last_bill_amount) * 0.10)
+      : null
+  );
+
+  const effectiveBillAmount = discountInfo ? discountInfo.finalAmount : billNum;
+  const isTenPercentSelected = selectedOffer.includes('10%') || selectedOffer.toLowerCase().includes('cashback');
 
   const handlePhoneChange = (val: string) => {
     const numeric = val.replace(/\D/g, '').slice(0, 10);
@@ -262,13 +279,15 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     if (phoneNumber.length !== 10) return;
 
     setSubmitting(true);
-    const amountVal = billAmount ? parseFloat(billAmount) : null;
+    const rawAmountVal = billAmount ? parseFloat(billAmount) : null;
+    const discountRupees = discountInfo ? discountInfo.discountRupees : 0;
+    const finalAmountToRecord = discountInfo ? discountInfo.finalAmount : rawAmountVal;
 
     const result = await recordBill({
       shopId: shop.id,
       phoneNumber,
       customerName: customerName.trim() || undefined,
-      billAmount: amountVal,
+      billAmount: finalAmountToRecord,
       appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
       nextVisitOffer: selectedOffer,
     });
@@ -289,8 +308,10 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       setCompletedDetails({
         phone: phoneNumber,
         name: result.customer.name || 'Guest',
-        amount: amountVal,
-        nextOffer: selectedOffer,
+        amount: rawAmountVal,
+        discountApplied: discountRupees,
+        finalAmount: finalAmountToRecord,
+        nextOffer: (result.transaction as any)?.next_visit_offer || selectedOffer,
         visitNumber: result.customer.visit_count,
         rawText: result.whatsAppText || '',
         waUrl: result.whatsAppUrl,
@@ -470,20 +491,26 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               </span>
             </div>
 
-            {/* Offer To Apply Now Banner */}
-            {matchedCustomer?.lastOfferAwarded && !isOfferDismissed && (
-              <div className="mt-3 rounded-2xl bg-[#FDF8F3] border border-[#F0E4D5] p-4 flex items-center justify-between gap-3 animate-scale-in">
+            {/* Offer To Apply Now Banner / 10% Loyalty Reward */}
+            {(availableReward || matchedCustomer?.lastOfferAwarded) && !isOfferDismissed && (
+              <div className="mt-3 rounded-2xl bg-[#FDF8F3] border-2 border-[#C27835]/40 p-4 flex items-center justify-between gap-3 animate-scale-in">
                 <div className="min-w-0">
-                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#C27835] flex items-center gap-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#C27835] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 fill-[#C27835]" />
-                    <span>OFFER TO APPLY NOW</span>
+                    <span>10% LOYALTY REWARD AVAILABLE</span>
                   </div>
-                  <div className="font-sans font-bold text-sm sm:text-base text-espresso-950 truncate mt-0.5">
-                    {matchedCustomer.lastOfferAwarded}
+                  <div className="font-sans font-bold text-base sm:text-lg text-espresso-950 truncate mt-0.5">
+                    {availableReward ? `₹${availableReward} OFF on this visit` : matchedCustomer?.lastOfferAwarded}
+                  </div>
+                  <div className="text-xs text-espresso-500 mt-0.5">
+                    {matchedCustomer?.last_bill_amount 
+                      ? `10% reward earned from previous bill of ${formatINR(matchedCustomer.last_bill_amount)}`
+                      : 'Special customer reward'}
                   </div>
                   {discountInfo && (
-                    <div className="text-xs text-espresso-500 mt-0.5">
-                      {discountInfo.summary}
+                    <div className="text-xs text-emerald-700 font-bold mt-1 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>{discountInfo.summary}</span>
                     </div>
                   )}
                 </div>
@@ -492,19 +519,22 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                   <button
                     type="button"
                     onClick={() => {
-                      if (appliedOfferText === matchedCustomer.lastOfferAwarded) {
+                      if (appliedOfferText) {
                         setAppliedOfferText('');
                       } else {
-                        setAppliedOfferText(matchedCustomer.lastOfferAwarded || '');
+                        const offerStringToApply = availableReward
+                          ? `₹${availableReward} OFF (10% reward from previous bill ${formatINR(matchedCustomer?.last_bill_amount)})`
+                          : (matchedCustomer?.lastOfferAwarded || '');
+                        setAppliedOfferText(offerStringToApply);
                       }
                     }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs ${
-                      appliedOfferText === matchedCustomer.lastOfferAwarded
+                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-xs ${
+                      appliedOfferText
                         ? 'bg-[#C27835] text-white'
-                        : 'bg-white border border-[#E5DDD0] text-espresso-800 hover:border-[#C27835]'
+                        : 'bg-white border-2 border-[#C27835] text-[#C27835] hover:bg-[#C27835] hover:text-white'
                     }`}
                   >
-                    {appliedOfferText === matchedCustomer.lastOfferAwarded ? 'Applied' : 'Apply'}
+                    {appliedOfferText ? 'Applied ✓' : availableReward ? `Apply ₹${availableReward}` : 'Apply'}
                   </button>
                   <button
                     type="button"
@@ -561,9 +591,16 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
 
         {/* CARD 4: Offer For Next Visit */}
         <div className="rounded-3xl bg-white border border-[#EBE5DA] p-5 sm:p-6 shadow-sm">
-          <label className="block text-[11px] font-bold text-[#8C827A] uppercase tracking-wider mb-3">
-            OFFER FOR NEXT VISIT
-          </label>
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-[11px] font-bold text-[#8C827A] uppercase tracking-wider">
+              OFFER FOR NEXT VISIT
+            </label>
+            {isTenPercentSelected && effectiveBillAmount > 0 && (
+              <span className="text-xs font-bold text-[#C27835] bg-[#FDF8F3] px-2.5 py-0.5 rounded-full border border-[#F0E4D5]">
+                Earns: ₹{Math.round(effectiveBillAmount * 0.10)} OFF
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             {initialOffers.map((off) => {
               const isSelected = selectedOffer === off.title;
@@ -583,6 +620,19 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               );
             })}
           </div>
+
+          {/* Dynamic 10% next-visit loyalty reward calculation preview */}
+          {isTenPercentSelected && effectiveBillAmount > 0 && (
+            <div className="mt-3.5 px-3.5 py-2.5 rounded-2xl bg-[#FDF8F3] border border-[#F0E4D5] flex items-center justify-between text-xs animate-fade-in">
+              <div className="flex items-center gap-2 text-espresso-950 font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-[#C27835] fill-[#C27835]" />
+                <span>Next-visit gift earned today:</span>
+              </div>
+              <span className="font-sans font-extrabold text-[#C27835] bg-white px-2.5 py-1 rounded-xl border border-[#F0E4D5] shadow-2xs">
+                ₹{Math.round(effectiveBillAmount * 0.10)} OFF (10% of ₹{effectiveBillAmount.toLocaleString('en-IN')})
+              </span>
+            </div>
+          )}
         </div>
 
         {/* In-Form Primary Action Button */}
@@ -596,6 +646,8 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
             <span>
               {submitting 
                 ? 'Recording...' 
+                : discountInfo && discountInfo.discountRupees > 0
+                ? `Confirm Bill: ₹${discountInfo.finalAmount.toLocaleString('en-IN')} (₹${discountInfo.discountRupees} off) & Open WhatsApp`
                 : billNum > 0 
                 ? `Confirm Bill (₹${billNum.toLocaleString('en-IN')}) & Open WhatsApp` 
                 : 'Record Bill & Open WhatsApp'}
@@ -624,7 +676,9 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
               {submitting
                 ? 'Recording Bill & Launching...'
                 : phoneNumber.length === 10
-                ? billNum > 0
+                ? discountInfo && discountInfo.discountRupees > 0
+                  ? `Confirm Bill: ₹${discountInfo.finalAmount.toLocaleString('en-IN')} (₹${discountInfo.discountRupees} off) & Open WhatsApp 💬`
+                  : billNum > 0
                   ? `Confirm Bill (₹${billNum.toLocaleString('en-IN')}) & Open WhatsApp 💬`
                   : 'Record Bill & Open WhatsApp 💬'
                 : 'Enter 10-Digit Mobile Number to Bill'}
@@ -696,13 +750,30 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
                 <span className="text-espresso-500">Customer:</span>
                 <span className="font-bold text-espresso-950">+91 {completedDetails.phone} ({completedDetails.name})</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-espresso-500">Bill Amount:</span>
-                <span className="font-bold font-sans text-sm text-espresso-950">{formatINR(completedDetails.amount)}</span>
-              </div>
-              <div className="flex justify-between">
+              {completedDetails.discountApplied && completedDetails.discountApplied > 0 ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-espresso-500">Gross Total:</span>
+                    <span className="font-medium text-espresso-700 line-through">{formatINR(completedDetails.amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700 font-bold">
+                    <span>Loyalty Reward Applied:</span>
+                    <span>-{formatINR(completedDetails.discountApplied)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-ivory-200 pt-1.5">
+                    <span className="font-bold text-espresso-900">Net Amount Paid:</span>
+                    <span className="font-bold font-sans text-sm text-espresso-950">{formatINR(completedDetails.finalAmount)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-espresso-500">Bill Amount:</span>
+                  <span className="font-bold font-sans text-sm text-espresso-950">{formatINR(completedDetails.amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-ivory-200 pt-1.5">
                 <span className="text-espresso-500">Next-Visit Gift:</span>
-                <span className="font-bold text-brand-800">{completedDetails.nextOffer}</span>
+                <span className="font-bold text-[#C27835]">{completedDetails.nextOffer}</span>
               </div>
             </div>
 

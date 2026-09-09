@@ -18,7 +18,23 @@ export async function getShopOffers(shopId: string): Promise<OfferRow[]> {
     console.error('getShopOffers error:', error);
     return [];
   }
-  return data || [];
+
+  if (!data || data.length === 0) {
+    return [
+      {
+        id: `default-${shopId}`,
+        shop_id: shopId,
+        title: '10% Cashback on Next Visit',
+        description: 'Earn 10% of today’s bill as flat discount on your next visit.',
+        discount_type: 'percentage',
+        discount_value: 10,
+        is_default: true,
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  return data;
 }
 
 export async function createOffer(

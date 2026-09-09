@@ -18,6 +18,14 @@ export function formatIndianPhone(phone: string): string {
   return phone;
 }
 
+export function getAppBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  return 'https://dynish.com';
+}
+
 export interface WhatsAppBillPayload {
   shopName: string;
   ownerName?: string;
@@ -33,7 +41,7 @@ export interface WhatsAppBillPayload {
 }
 
 export function generateWhatsAppBillMessage(payload: WhatsAppBillPayload): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dynish.vercel.app';
+  const appUrl = getAppBaseUrl();
   const storeUrl = `${appUrl}/store/${payload.shopSlug || payload.shopId}`;
   const amountFormatted = payload.billAmount && payload.billAmount > 0 
     ? formatINR(payload.billAmount) 

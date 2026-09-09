@@ -8,6 +8,7 @@ import {
   ExternalLink, QrCode as QrCodeIcon, Image as ImageIcon, ArrowDownRight 
 } from 'lucide-react';
 import { BrandLogo } from '@/components/common/BrandLogo';
+import { getAppBaseUrl } from '@/lib/utils';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 
@@ -18,29 +19,22 @@ interface StandeeClientProps {
 export const StandeeClient: React.FC<StandeeClientProps> = ({ shop }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [headline, setHeadline] = useState('BROWSE CATALOG & EXCITING OFFERS');
-  const [origin, setOrigin] = useState('');
   const [downloadingImage, setDownloadingImage] = useState(false);
   const standeeCardRef = useRef<HTMLDivElement>(null);
 
-  const storeUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/store/${shop.slug || shop.id}`
-    : `/store/${shop.slug || shop.id}`;
+  const storeUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}`;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setOrigin(window.location.origin);
-      const url = `${window.location.origin}/store/${shop.slug || shop.id}`;
-      QRCode.toDataURL(url, {
-        width: 700,
-        margin: 1.5,
-        color: {
-          dark: '#111827',
-          light: '#FFFFFF',
-        },
-        errorCorrectionLevel: 'H',
-      }).then(setQrDataUrl);
-    }
-  }, [shop.id, shop.slug]);
+    QRCode.toDataURL(storeUrl, {
+      width: 700,
+      margin: 1.5,
+      color: {
+        dark: '#111827',
+        light: '#FFFFFF',
+      },
+      errorCorrectionLevel: 'H',
+    }).then(setQrDataUrl);
+  }, [storeUrl]);
 
   const handlePrint = () => {
     window.print();

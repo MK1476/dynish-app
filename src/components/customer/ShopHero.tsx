@@ -20,7 +20,7 @@ interface ShopHeroProps {
   onSearchClick?: () => void;
 }
 
-import { copyTextToClipboard } from '@/lib/utils';
+import { copyTextToClipboard, getAppBaseUrl } from '@/lib/utils';
 
 export const ShopHero: React.FC<ShopHeroProps> = ({ 
   shop, 
@@ -31,9 +31,7 @@ export const ShopHero: React.FC<ShopHeroProps> = ({
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const shareUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/store/${shop.slug || shop.id}`
-      : `https://dynish.vercel.app/store/${shop.slug || shop.id}`;
+    const shareUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}`;
 
     const shareData = {
       title: `${shop.name} — Digital Catalog`,

@@ -17,12 +17,14 @@ interface StorefrontClientProps {
   shop: ShopRow;
   categories: CategoryRow[];
   items: ItemRow[];
+  initialItemId?: string | null;
 }
 
 export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   shop,
   categories: initialCategories,
   items: initialItems,
+  initialItemId,
 }) => {
   const [currentCategories, setCurrentCategories] = useState<CategoryRow[]>(initialCategories);
   const [currentItems, setCurrentItems] = useState<ItemRow[]>(initialItems);
@@ -40,7 +42,75 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchActive, setIsSearchActive] = useState<boolean>(false);
-  const [selectedProduct, setSelectedProduct] = useState<ItemRow | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ItemRow | null>(() => {
+    if (initialItemId) {
+      const match = initialItems.find((i) => i.id === initialItemId);
+      if (match) return match;
+    }
+    return null;
+  });
+
+  const openProductDetail = (prod: ItemRow) => {
+    setSelectedProduct(prod);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('item', prod.id);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      } catch (e) {}
+    }
+  };
+
+  const closeProductDetail = () => {
+    setSelectedProduct(null);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('item');
+        if (url.hash.startsWith('#item-')) {
+          url.hash = '';
+        }
+        const cleanUrl = url.pathname + (url.search ? url.search : '');
+        window.history.replaceState(null, '', cleanUrl);
+      } catch (e) {}
+    }
+  };
+
+  // Deep-linking URL detector & browser back/forward support
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkUrlForItem = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const itemParam = sp.get('item');
+      const hashMatch = window.location.hash.match(/^#item-(.+)$/);
+      const targetId = itemParam || (hashMatch ? hashMatch[1] : null) || initialItemId;
+
+      if (targetId && currentItems.length > 0) {
+        const found = currentItems.find((i) => i.id === targetId);
+        if (found) {
+          setSelectedProduct(found);
+        }
+      }
+    };
+
+    checkUrlForItem();
+
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const popItemId = sp.get('item');
+      if (popItemId) {
+        const found = currentItems.find((i) => i.id === popItemId);
+        if (found) setSelectedProduct(found);
+      } else {
+        setSelectedProduct(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentItems, initialItemId]);
+
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState<boolean>(false);
   const [savedItemIds, setSavedItemIds] = useState<string[]>([]);
   const [priceSort, setPriceSort] = useState<'default' | 'asc' | 'desc'>('default');
@@ -435,7 +505,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                   categoryName={categoryMap.get(prod.category_id)}
                   isSaved={savedItemIds.includes(prod.id)}
                   onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
-                  onOpenDetail={() => setSelectedProduct(prod)}
+                  onOpenDetail={() => openProductDetail(prod)}
                 />
               ))}
             </div>
@@ -480,7 +550,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                   categoryName={categoryMap.get(prod.category_id)}
                   isSaved={savedItemIds.includes(prod.id)}
                   onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
-                  onOpenDetail={() => setSelectedProduct(prod)}
+                  onOpenDetail={() => openProductDetail(prod)}
                 />
               ))}
             </div>
@@ -520,7 +590,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
                       categoryName={categoryMap.get(prod.category_id)}
                       isSaved={savedItemIds.includes(prod.id)}
                       onToggleSave={(e) => toggleSaveProduct(prod.id, e)}
-                      onOpenDetail={() => setSelectedProduct(prod)}
+                      onOpenDetail={() => openProductDetail(prod)}
                     />
                   ))}
                 </div>
@@ -663,7 +733,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         onToggleSave={() => {
           if (selectedProduct) toggleSaveProduct(selectedProduct.id);
         }}
-        onClose={() => setSelectedProduct(null)}
+        onClose={closeProductDetail}
       />
 
       <SavedItemsDrawer
@@ -672,7 +742,7 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
         shop={shop}
         savedProducts={savedProducts}
         onRemoveItem={(id) => toggleSaveProduct(id)}
-        onSelectProduct={(prod) => setSelectedProduct(prod)}
+        onSelectProduct={(prod) => openProductDetail(prod)}
       />
     </div>
   );
