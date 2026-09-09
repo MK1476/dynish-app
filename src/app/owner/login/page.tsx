@@ -70,6 +70,25 @@ export default function LoginPage() {
     }
 
     const identifier = '91' + cleanDigits;
+    let responded = false;
+
+    // Safety timeout: If MSG91's otp-provider.js encounters a 500 error or uncaught internal TypeError,
+    // automatically recover via server fallback after 2.5 seconds so merchant never gets stuck.
+    const fallbackTimer = setTimeout(async () => {
+      if (!responded) {
+        responded = true;
+        console.warn('[MSG91] Widget sendOtp timed out or encountered script error; activating server fallback');
+        const res = await sendOtp(cleanDigits);
+        setLoading(false);
+        if (res.success) {
+          setStep('otp');
+          setResendCooldown(15);
+          setMessage(res.message || 'OTP sent! (Test mode: 123456)');
+        } else {
+          setError(res.message || 'Failed to send OTP.');
+        }
+      }
+    }, 2500);
 
     // Use MSG91 exposed method if available
     if (typeof window !== 'undefined' && typeof (window as any).sendOtp === 'function') {
@@ -77,12 +96,18 @@ export default function LoginPage() {
         (window as any).sendOtp(
           identifier,
           (data: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             setLoading(false);
             setStep('otp');
             setResendCooldown(15);
             setMessage('OTP sent via SMS / WhatsApp! (Test code: 123456)');
           },
           async (err: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             console.warn('[MSG91] sendOtp failure, falling back to server sendOtp:', err);
             const res = await sendOtp(cleanDigits);
             setLoading(false);
@@ -103,6 +128,8 @@ export default function LoginPage() {
     }
 
     // Direct server fallback
+    clearTimeout(fallbackTimer);
+    responded = true;
     const res = await sendOtp(cleanDigits);
     setLoading(false);
 
@@ -122,17 +149,34 @@ export default function LoginPage() {
     setMessage(null);
 
     const cleanDigits = phoneNumber.replace(/\D/g, '').slice(-10);
+    let responded = false;
+
+    const fallbackTimer = setTimeout(async () => {
+      if (!responded) {
+        responded = true;
+        const res = await sendOtp(cleanDigits);
+        setLoading(false);
+        setResendCooldown(15);
+        setMessage('OTP resent successfully.');
+      }
+    }, 2500);
 
     if (typeof window !== 'undefined' && typeof (window as any).retryOtp === 'function') {
       try {
         (window as any).retryOtp(
           null,
           (data: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             setLoading(false);
             setResendCooldown(15);
             setMessage('New verification code sent via SMS / WhatsApp.');
           },
           async (err: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             console.warn('[MSG91] retryOtp error, fallback to sendOtp:', err);
             const res = await sendOtp(cleanDigits);
             setLoading(false);
@@ -146,6 +190,8 @@ export default function LoginPage() {
       }
     }
 
+    clearTimeout(fallbackTimer);
+    responded = true;
     const res = await sendOtp(cleanDigits);
     setLoading(false);
     setResendCooldown(15);
@@ -178,12 +224,35 @@ export default function LoginPage() {
       return;
     }
 
+    let responded = false;
+    const fallbackTimer = setTimeout(async () => {
+      if (!responded) {
+        responded = true;
+        console.warn('[MSG91] verifyOtp timed out; verifying via server');
+        const res = await verifyMsg91Token(cleanDigits, cleanOtp);
+        setLoading(false);
+        if (res.success) {
+          if (res.isNewUser) {
+            router.push('/owner/onboarding');
+          } else {
+            router.push('/owner/dashboard');
+          }
+          router.refresh();
+        } else {
+          setError(res.message || 'Verification failed.');
+        }
+      }
+    }, 3000);
+
     // 2. MSG91 window.verifyOtp
     if (typeof window !== 'undefined' && typeof (window as any).verifyOtp === 'function') {
       try {
         (window as any).verifyOtp(
           cleanOtp,
           async (data: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             const accessToken = typeof data === 'string' ? data : (data?.message || data?.token || JSON.stringify(data));
             const res = await verifyMsg91Token(cleanDigits, accessToken);
             setLoading(false);
@@ -200,6 +269,9 @@ export default function LoginPage() {
             }
           },
           async (err: any) => {
+            if (responded) return;
+            responded = true;
+            clearTimeout(fallbackTimer);
             console.warn('[MSG91] verifyOtp returned error, checking server fallback:', err);
             const res = await verifyOtp(cleanDigits, cleanOtp);
             setLoading(false);
@@ -224,6 +296,8 @@ export default function LoginPage() {
     }
 
     // 3. Fallback to server verification
+    clearTimeout(fallbackTimer);
+    responded = true;
     const res = await verifyMsg91Token(cleanDigits, cleanOtp);
     setLoading(false);
 
