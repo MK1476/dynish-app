@@ -33,6 +33,10 @@ export default function LoginPage() {
           },
           failure: (error: any) => {
             console.warn('[MSG91] Widget configuration note:', error);
+            const errStr = JSON.stringify(error || '');
+            if (errStr.includes('IPBlocked') || error?.message === 'IPBlocked' || error?.code === '408') {
+              setMessage('MSG91 rate throttle active on this IP. Use test code 123456 or unblock in MSG91 Token Settings.');
+            }
           },
         });
       } catch (err) {
@@ -72,7 +76,7 @@ export default function LoginPage() {
     const identifier = '91' + cleanDigits;
     let responded = false;
 
-    // Safety timeout: If MSG91's otp-provider.js encounters a 500 error or uncaught internal TypeError,
+    // Safety timeout: If MSG91's otp-provider.js encounters a 500/408 error or script error,
     // automatically recover via server fallback after 2.5 seconds so merchant never gets stuck.
     const fallbackTimer = setTimeout(async () => {
       if (!responded) {
@@ -109,12 +113,19 @@ export default function LoginPage() {
             responded = true;
             clearTimeout(fallbackTimer);
             console.warn('[MSG91] sendOtp failure, falling back to server sendOtp:', err);
+            const errStr = JSON.stringify(err || '');
+            const isIpBlocked = errStr.includes('IPBlocked') || err?.message === 'IPBlocked' || err?.code === '408';
+
             const res = await sendOtp(cleanDigits);
             setLoading(false);
             if (res.success) {
               setStep('otp');
               setResendCooldown(15);
-              setMessage(res.message || 'OTP sent successfully!');
+              if (isIpBlocked) {
+                setMessage('Notice: Your IP is throttled in MSG91. Use test code 123456 or unblock in MSG91 Token Settings.');
+              } else {
+                setMessage(res.message || 'OTP sent successfully!');
+              }
             } else {
               const errMsg = typeof err === 'string' ? err : (err?.message || res.message || 'Failed to send OTP.');
               setError(errMsg);
