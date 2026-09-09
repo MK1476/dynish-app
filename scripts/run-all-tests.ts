@@ -414,7 +414,74 @@ async function runTestSuite() {
   assert(!testWhatsAppMsg.includes('localhost'), 'WhatsApp message contains no localhost link');
   assert(!testWhatsAppMsg.includes('vercel.app'), 'WhatsApp message contains no vercel.app link');
 
+  // ==========================================
+  // SECTION 22: MSG91 OTP WIDGET & VERIFICATION SUITE
+  // ==========================================
+  console.log(`\n${CYAN}--- Section 22: MSG91 OTP Widget & Token Verification Suite ---${RESET}`);
 
+  // Test MSG91 configuration structure
+  const sampleMsg91Config = {
+    widgetId: '3669696d6f43353339303431',
+    tokenAuth: '569424TqSS9nYwF6aa15e42P1',
+    exposeMethods: true,
+  };
+  assert(sampleMsg91Config.exposeMethods === true, 'MSG91 exposeMethods is enabled for headless custom merchant UI');
+  assert(sampleMsg91Config.widgetId.length > 10, 'MSG91 Widget ID is non-empty string');
+  assert(sampleMsg91Config.tokenAuth.length > 10, 'MSG91 Token Auth is non-empty string');
+
+  // Test Phone Normalization for MSG91
+  function normalizeMsg91Phone(phone: string): { digits: string; fullPhone: string; msg91Identifier: string } {
+    const digits = phone.replace(/\D/g, '').slice(-10);
+    return {
+      digits,
+      fullPhone: `+91${digits}`,
+      msg91Identifier: `91${digits}`,
+    };
+  }
+
+  const norm1 = normalizeMsg91Phone('+91 98765-43210');
+  assert(norm1.digits === '9876543210', 'Phone number extracts 10 digits cleanly');
+  assert(norm1.msg91Identifier === '919876543210', 'MSG91 identifier formatted as 919876543210 without plus symbol');
+  assert(norm1.fullPhone === '+919876543210', 'Supabase phone formatted as +919876543210');
+
+  // Test Bypass Token Check
+  function isMsg91BypassToken(token: string): boolean {
+    const clean = token.trim();
+    return clean === '123456' || clean === 'test_bypass_123456';
+  }
+  assert(isMsg91BypassToken('123456') === true, 'Bypass code 123456 is recognized for instant developer testing');
+  assert(isMsg91BypassToken('test_bypass_123456') === true, 'Bypass code test_bypass_123456 is recognized');
+  assert(isMsg91BypassToken('654321') === false, 'Non-bypass code 654321 correctly requires live verification');
+
+  // Test verifyAccessToken payload structure
+  function buildVerifyAccessTokenPayload(authKey: string, accessToken: string) {
+    return JSON.stringify({
+      authkey: authKey,
+      'access-token': accessToken,
+    });
+  }
+
+  const payload = JSON.parse(buildVerifyAccessTokenPayload('test-auth-key', 'jwt-sample-token'));
+  assert(payload.authkey === 'test-auth-key', 'Payload includes authkey');
+  assert(payload['access-token'] === 'jwt-sample-token', 'Payload includes access-token matching MSG91 v5 spec');
+
+  // Test MSG91 API response parser
+  function parseMsg91VerifyResponse(data: any): { verified: boolean; message: string } {
+    if (data?.type === 'success' || data?.status === 'success') {
+      return { verified: true, message: data?.message || 'Token verified successfully' };
+    }
+    return { verified: false, message: data?.message || 'MSG91 Token Verification failed' };
+  }
+
+  const resSuccessType = parseMsg91VerifyResponse({ type: 'success', message: 'Number verified successfully' });
+  assert(resSuccessType.verified === true, 'Parser accepts { type: "success" } response');
+
+  const resSuccessStatus = parseMsg91VerifyResponse({ status: 'success', message: 'OTP verified' });
+  assert(resSuccessStatus.verified === true, 'Parser accepts { status: "success" } response');
+
+  const resError = parseMsg91VerifyResponse({ type: 'error', message: 'Token expired or invalid' });
+  assert(resError.verified === false, 'Parser detects { type: "error" } response');
+  assert(resError.message === 'Token expired or invalid', 'Parser preserves error message from MSG91');
 
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);

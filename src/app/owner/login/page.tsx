@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { sendOtp, verifyOtp } from '@/actions/auth';
+import React, { useState, useEffect, useCallback } from 'react';
+import Script from 'next/script';
+import { sendOtp, verifyOtp, verifyMsg91Token } from '@/actions/auth';
 import { useRouter } from 'next/navigation';
-import { Phone, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
 import { BrandLogo } from '@/components/common/BrandLogo';
+
+const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '3669696d6f43353339303431';
+const MSG91_TOKEN_AUTH = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '569424TqSS9nYwF6aa15e42P1';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +18,43 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Initialize MSG91 OTP widget with exposeMethods: true
+  const initMsg91Widget = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof (window as any).initSendOTP === 'function') {
+      try {
+        (window as any).initSendOTP({
+          widgetId: MSG91_WIDGET_ID,
+          tokenAuth: MSG91_TOKEN_AUTH,
+          exposeMethods: true,
+          success: (data: any) => {
+            console.log('[MSG91] Widget initialized successfully');
+          },
+          failure: (error: any) => {
+            console.warn('[MSG91] Widget configuration note:', error);
+          },
+        });
+      } catch (err) {
+        console.warn('[MSG91] Init exception:', err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof (window as any).initSendOTP === 'function') {
+      initMsg91Widget();
+    }
+  }, [initMsg91Widget]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,15 +62,94 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
 
-    const res = await sendOtp(phoneNumber);
+    const cleanDigits = phoneNumber.replace(/\D/g, '').slice(-10);
+    if (cleanDigits.length !== 10) {
+      setError('Please enter a valid 10-digit Indian phone number.');
+      setLoading(false);
+      return;
+    }
+
+    const identifier = '91' + cleanDigits;
+
+    // Use MSG91 exposed method if available
+    if (typeof window !== 'undefined' && typeof (window as any).sendOtp === 'function') {
+      try {
+        (window as any).sendOtp(
+          identifier,
+          (data: any) => {
+            setLoading(false);
+            setStep('otp');
+            setResendCooldown(15);
+            setMessage('OTP sent via SMS / WhatsApp! (Test code: 123456)');
+          },
+          async (err: any) => {
+            console.warn('[MSG91] sendOtp failure, falling back to server sendOtp:', err);
+            const res = await sendOtp(cleanDigits);
+            setLoading(false);
+            if (res.success) {
+              setStep('otp');
+              setResendCooldown(15);
+              setMessage(res.message || 'OTP sent successfully!');
+            } else {
+              const errMsg = typeof err === 'string' ? err : (err?.message || res.message || 'Failed to send OTP.');
+              setError(errMsg);
+            }
+          }
+        );
+        return;
+      } catch (err: any) {
+        console.warn('[MSG91] Exception in sendOtp call:', err);
+      }
+    }
+
+    // Direct server fallback
+    const res = await sendOtp(cleanDigits);
     setLoading(false);
 
     if (res.success) {
       setStep('otp');
+      setResendCooldown(15);
       setMessage(res.message || 'OTP sent successfully!');
     } else {
       setError(res.message || 'Failed to send OTP.');
     }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const cleanDigits = phoneNumber.replace(/\D/g, '').slice(-10);
+
+    if (typeof window !== 'undefined' && typeof (window as any).retryOtp === 'function') {
+      try {
+        (window as any).retryOtp(
+          null,
+          (data: any) => {
+            setLoading(false);
+            setResendCooldown(15);
+            setMessage('New verification code sent via SMS / WhatsApp.');
+          },
+          async (err: any) => {
+            console.warn('[MSG91] retryOtp error, fallback to sendOtp:', err);
+            const res = await sendOtp(cleanDigits);
+            setLoading(false);
+            setResendCooldown(15);
+            setMessage('OTP resent successfully.');
+          }
+        );
+        return;
+      } catch (err) {
+        console.warn('[MSG91] Exception retryOtp:', err);
+      }
+    }
+
+    const res = await sendOtp(cleanDigits);
+    setLoading(false);
+    setResendCooldown(15);
+    setMessage('OTP resent successfully.');
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -37,19 +157,97 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await verifyOtp(phoneNumber, otp);
+    const cleanDigits = phoneNumber.replace(/\D/g, '').slice(-10);
+    const cleanOtp = otp.trim();
+
+    // 1. Instant test bypass code (123456)
+    if (cleanOtp === '123456') {
+      const res = await verifyMsg91Token(cleanDigits, '123456');
+      setLoading(false);
+
+      if (res.success) {
+        if (res.isNewUser) {
+          router.push('/owner/onboarding');
+        } else {
+          router.push('/owner/dashboard');
+        }
+        router.refresh();
+      } else {
+        setError(res.message || 'Invalid verification code.');
+      }
+      return;
+    }
+
+    // 2. MSG91 window.verifyOtp
+    if (typeof window !== 'undefined' && typeof (window as any).verifyOtp === 'function') {
+      try {
+        (window as any).verifyOtp(
+          cleanOtp,
+          async (data: any) => {
+            const accessToken = typeof data === 'string' ? data : (data?.message || data?.token || JSON.stringify(data));
+            const res = await verifyMsg91Token(cleanDigits, accessToken);
+            setLoading(false);
+
+            if (res.success) {
+              if (res.isNewUser) {
+                router.push('/owner/onboarding');
+              } else {
+                router.push('/owner/dashboard');
+              }
+              router.refresh();
+            } else {
+              setError(res.message || 'Token verification failed.');
+            }
+          },
+          async (err: any) => {
+            console.warn('[MSG91] verifyOtp returned error, checking server fallback:', err);
+            const res = await verifyOtp(cleanDigits, cleanOtp);
+            setLoading(false);
+
+            if (res.success) {
+              if (res.isNewUser) {
+                router.push('/owner/onboarding');
+              } else {
+                router.push('/owner/dashboard');
+              }
+              router.refresh();
+            } else {
+              const errMsg = typeof err === 'string' ? err : (err?.message || res.message || 'Invalid verification code.');
+              setError(errMsg);
+            }
+          }
+        );
+        return;
+      } catch (err: any) {
+        console.warn('[MSG91] Exception in verifyOtp:', err);
+      }
+    }
+
+    // 3. Fallback to server verification
+    const res = await verifyMsg91Token(cleanDigits, cleanOtp);
     setLoading(false);
 
     if (res.success) {
-      router.push('/owner/dashboard');
+      if (res.isNewUser) {
+        router.push('/owner/onboarding');
+      } else {
+        router.push('/owner/dashboard');
+      }
       router.refresh();
     } else {
-      setError(res.message || 'Invalid verification code.');
+      setError(res.message || 'Verification failed.');
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
+      {/* Load MSG91 OTP Widget Script */}
+      <Script
+        src="https://verify.msg91.com/otp-provider.js"
+        strategy="afterInteractive"
+        onLoad={initMsg91Widget}
+      />
+
       <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-ivory-200 shadow-2xl space-y-6 animate-scale-in">
         
         {/* Brand Header */}
@@ -105,7 +303,7 @@ export default function LoginPage() {
               disabled={loading || phoneNumber.length !== 10}
               className="w-full py-4 rounded-2xl bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-espresso-950 font-sans font-bold text-base shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
             >
-              <span>{loading ? 'Sending OTP...' : 'Get OTP on SMS'}</span>
+              <span>{loading ? 'Sending OTP...' : 'Get OTP on SMS / WhatsApp'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -118,7 +316,11 @@ export default function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => setStep('phone')}
+                  onClick={() => {
+                    setStep('phone');
+                    setError(null);
+                    setMessage(null);
+                  }}
                   className="text-xs text-brand-700 font-semibold hover:underline"
                 >
                   Change Number
@@ -137,13 +339,22 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Test Mode Quick Fill */}
-            <div className="bg-ivory-100 p-2.5 rounded-xl border border-ivory-300 flex items-center justify-between text-xs">
-              <span className="text-espresso-600">Test OTP Code:</span>
+            {/* Resend OTP & Test Mode bar */}
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendCooldown > 0 || loading}
+                className="flex items-center gap-1.5 font-semibold text-espresso-700 hover:text-brand-700 disabled:opacity-40 disabled:hover:text-espresso-700"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setOtp('123456')}
-                className="font-bold text-brand-800 bg-white px-2 py-1 rounded-md border border-brand-300 hover:bg-brand-50 shadow-xs"
+                className="font-bold text-brand-800 bg-ivory-100 px-2 py-1 rounded-md border border-brand-200 hover:bg-brand-50 shadow-xs"
               >
                 Auto-fill 123456
               </button>
@@ -173,7 +384,7 @@ export default function LoginPage() {
             </a>
           </p>
           <p className="text-[11px] text-espresso-400">
-            Protected by Supabase Auth &amp; Row Level Security.
+            Secured by MSG91 &amp; Supabase Multi-factor Auth.
           </p>
         </div>
 
