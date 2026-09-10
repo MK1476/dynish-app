@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getRazorpayClient, verifyRazorpaySignature } from '@/lib/razorpay';
 import { revalidatePath } from 'next/cache';
 import { PLANS } from '@/lib/plans';
+import { isProductionEnvironment } from '@/lib/env';
 
 export async function createSubscriptionOrder(
   shopId: string,
@@ -120,6 +121,10 @@ export async function simulateSubscriptionDays(
   shopId: string,
   days: number
 ): Promise<{ success: boolean; error?: string }> {
+  if (isProductionEnvironment()) {
+    return { success: false, error: 'Subscription simulation is disabled in production.' };
+  }
+
   const admin = createAdminClient();
   const simulatedExpiry = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 

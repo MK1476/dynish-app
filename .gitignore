@@ -1,42 +1,62 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
 .yarn/cache
 
-# testing
+# Testing & Coverage
 /coverage
 
-# next.js
+# Next.js build output
 /.next/
 /out/
 
-# production
+# Production build artifacts
 /build
 dist
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
+# Environment variables (Never commit real credentials)
 .env
+.env*.local
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
 .env.production
+.env.production.local
+.env.preview
+!.env.example
 
-# vercel
+# Vercel deployment cache
 .vercel
 
-# typescript
+# TypeScript & Build Info
 *.tsbuildinfo
 next-env.d.ts
 
-# supabase
+# Logs & Debugging
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Supabase
 supabase/.temp/
+
+# IDE & Operating System
+.DS_Store
+*.pem
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Agent scratch & temporary storage
+scratch/
+.tempmediaStorage/

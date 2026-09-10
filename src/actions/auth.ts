@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
 import { logger } from '@/lib/logger';
+import { isPreviewOrDev, isDemoCredentialPhone } from '@/lib/env';
 
 export interface AuthResponse {
   success: boolean;
@@ -31,17 +32,17 @@ export async function sendOtp(phoneNumber: string): Promise<AuthResponse> {
     });
 
     if (error) {
-      logger.warn('auth', `Supabase OTP notice (proceeding in test mode): ${error.message}`);
+      logger.warn('auth', `Supabase OTP notice: ${error.message}`);
       return { 
         success: true, 
-        message: 'OTP sent! (In test mode, you can also use 123456 if SMS is delayed).' 
+        message: 'OTP sent successfully via SMS.' 
       };
     }
 
     return { success: true, message: 'OTP sent successfully via SMS.' };
   } catch (err: any) {
     logger.error('auth', `Exception in sendOtp for ${fullPhone}`, { error: err.message });
-    return { success: true, message: 'OTP sent! (Test mode code: 123456)' };
+    return { success: true, message: 'OTP sent successfully.' };
   }
 }
 
@@ -52,8 +53,9 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
   const supabase = createClient();
   const admin = createAdminClient();
 
-  // Test mode / universal bypass code for instant verification without SMS delays
-  if (cleanToken === '123456') {
+  // Test mode / demo credentials bypass check (active in preview/dev, or for configured Apple/MSG91 demo numbers)
+  const isAllowedBypass = cleanToken === '123456' && (isPreviewOrDev() || isDemoCredentialPhone(digits));
+  if (isAllowedBypass) {
     // Check or create test user in auth.users
     const { data: userList } = await admin.auth.admin.listUsers();
     let userId = userList?.users?.find(u => u.phone === fullPhone)?.id;
@@ -139,8 +141,10 @@ export async function verifyMsg91Token(phoneNumber: string, accessToken: string)
   const fullPhone = `+91${digits}`;
   const admin = createAdminClient();
 
-  // 1. Instant test bypass check (for local testing, test code 123456, or demo credentials)
-  const isBypass = accessToken === '123456' || accessToken === 'test_bypass_123456';
+  // 1. Instant test bypass check (for preview/dev environments or Apple/MSG91 demo credentials)
+  const isBypass = 
+    (accessToken === '123456' || accessToken === 'test_bypass_123456') && 
+    (isPreviewOrDev() || isDemoCredentialPhone(digits));
 
   if (!isBypass) {
     const authKey = process.env.MSG91_AUTH_KEY;

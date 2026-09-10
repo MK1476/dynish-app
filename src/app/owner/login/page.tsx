@@ -6,6 +6,7 @@ import { sendOtp, verifyOtp, verifyMsg91Token } from '@/actions/auth';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, CheckCircle2, RotateCcw } from 'lucide-react';
 import { BrandLogo } from '@/components/common/BrandLogo';
+import { isPreviewOrDev } from '@/lib/env';
 
 const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '3669696d6f43353339303431';
 const MSG91_TOKEN_AUTH = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH || '569424TqSS9nYwF6aa15e42P1';
@@ -35,7 +36,11 @@ export default function LoginPage() {
             console.warn('[MSG91] Widget configuration note:', error);
             const errStr = JSON.stringify(error || '');
             if (errStr.includes('IPBlocked') || error?.message === 'IPBlocked' || error?.code === '408') {
-              setMessage('MSG91 rate throttle active on this IP. Use test code 123456 or unblock in MSG91 Token Settings.');
+              if (isPreviewOrDev()) {
+                setMessage('MSG91 rate throttle active on this IP. Use test code 123456 or unblock in MSG91 Token Settings.');
+              } else {
+                setError('Service notice: Request rate limit reached. Please wait a few moments before trying again.');
+              }
             }
           },
         });
@@ -76,18 +81,18 @@ export default function LoginPage() {
     const identifier = '91' + cleanDigits;
     let responded = false;
 
-    // Safety timeout: If MSG91's otp-provider.js encounters a 500/408 error or script error,
+    // Safety timeout: If MSG91's otp-provider.js encounters an issue,
     // automatically recover via server fallback after 2.5 seconds so merchant never gets stuck.
     const fallbackTimer = setTimeout(async () => {
       if (!responded) {
         responded = true;
-        console.warn('[MSG91] Widget sendOtp timed out or encountered script error; activating server fallback');
+        console.warn('[MSG91] Widget sendOtp timed out; activating server fallback');
         const res = await sendOtp(cleanDigits);
         setLoading(false);
         if (res.success) {
           setStep('otp');
           setResendCooldown(15);
-          setMessage(res.message || 'OTP sent! (Test mode: 123456)');
+          setMessage('Verification code sent! Please check your phone.');
         } else {
           setError(res.message || 'Failed to send OTP.');
         }
@@ -106,7 +111,7 @@ export default function LoginPage() {
             setLoading(false);
             setStep('otp');
             setResendCooldown(15);
-            setMessage('OTP sent via SMS / WhatsApp! (Test code: 123456)');
+            setMessage('Verification code sent via SMS / WhatsApp!');
           },
           async (err: any) => {
             if (responded) return;
@@ -121,10 +126,10 @@ export default function LoginPage() {
             if (res.success) {
               setStep('otp');
               setResendCooldown(15);
-              if (isIpBlocked) {
-                setMessage('Notice: Your IP is throttled in MSG91. Use test code 123456 or unblock in MSG91 Token Settings.');
+              if (isIpBlocked && isPreviewOrDev()) {
+                setMessage('Notice: IP throttled in MSG91. Use test code 123456 or unblock in MSG91 Token Settings.');
               } else {
-                setMessage(res.message || 'OTP sent successfully!');
+                setMessage(res.message || 'Verification code sent successfully!');
               }
             } else {
               const errMsg = typeof err === 'string' ? err : (err?.message || res.message || 'Failed to send OTP.');
@@ -417,15 +422,15 @@ export default function LoginPage() {
                 maxLength={6}
                 required
                 autoFocus
-                placeholder="123456"
+                placeholder="• • • • • •"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="w-full px-4 py-3.5 rounded-2xl bg-ivory-50 border-2 border-ivory-300 text-espresso-950 font-sans text-2xl font-bold tracking-widest text-center focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100 transition-all shadow-inner"
               />
             </div>
 
-            {/* Resend OTP & Test Mode bar */}
-            <div className="flex items-center justify-between gap-2 text-xs">
+            {/* Resend OTP & Verification controls */}
+            <div className={`flex items-center text-xs ${isPreviewOrDev() ? 'justify-between gap-2' : 'justify-center'}`}>
               <button
                 type="button"
                 onClick={handleResendOtp}
@@ -436,13 +441,15 @@ export default function LoginPage() {
                 <span>{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setOtp('123456')}
-                className="font-bold text-brand-800 bg-ivory-100 px-2 py-1 rounded-md border border-brand-200 hover:bg-brand-50 shadow-xs"
-              >
-                Auto-fill 123456
-              </button>
+              {isPreviewOrDev() && (
+                <button
+                  type="button"
+                  onClick={() => setOtp('123456')}
+                  className="font-bold text-brand-800 bg-ivory-100 px-2 py-1 rounded-md border border-brand-200 hover:bg-brand-50 shadow-xs"
+                >
+                  Auto-fill 123456
+                </button>
+              )}
             </div>
 
             <button

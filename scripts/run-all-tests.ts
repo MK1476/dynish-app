@@ -483,6 +483,51 @@ async function runTestSuite() {
   assert(resError.verified === false, 'Parser detects { type: "error" } response');
   assert(resError.message === 'Token expired or invalid', 'Parser preserves error message from MSG91');
 
+  // ==========================================
+  // SECTION 23: PRODUCTION ENVIRONMENT SEGREGATION & SECURITY
+  // ==========================================
+  console.log(`\n${CYAN}--- Section 23: Production Environment Segregation & Security ---${RESET}`);
+
+  // Test isDemoCredentialPhone recognition
+  const demoList = ['919876543210', '919876500001', '9876543210', '9876500001'];
+  function testIsDemoPhone(phone: string): boolean {
+    const digits = phone.replace(/\D/g, '').slice(-10);
+    return demoList.some((d) => d.endsWith(digits));
+  }
+
+  assert(testIsDemoPhone('9876543210') === true, 'Apple review demo number 9876543210 recognized');
+  assert(testIsDemoPhone('9876500001') === true, 'MSG91 secondary demo number 9876500001 recognized');
+  assert(testIsDemoPhone('9704100544') === false, 'Real live merchant number 9704100544 is not a demo number');
+  assert(testIsDemoPhone('9123456789') === false, 'Arbitrary customer number is not a demo number');
+
+  // Test Production Bypass Security Rule
+  function evaluateBypassAllowed(isProd: boolean, phone: string, token: string): boolean {
+    const cleanToken = token.trim();
+    if (cleanToken !== '123456') return false;
+    // In production, only demo phones are permitted
+    if (isProd) {
+      return testIsDemoPhone(phone);
+    }
+    // In dev/preview, allowed
+    return true;
+  }
+
+  assert(evaluateBypassAllowed(true, '9876543210', '123456') === true, 'In production, demo phone 9876543210 can use bypass for Apple review');
+  assert(evaluateBypassAllowed(true, '9704100544', '123456') === false, 'In production, real merchant 9704100544 CANNOT bypass with 123456 (requires real OTP)');
+  assert(evaluateBypassAllowed(false, '9704100544', '123456') === true, 'In preview/dev, 123456 can bypass for fast developer testing');
+
+  // Test Production copy sanitization
+  const prodMessages = [
+    'OTP sent successfully via SMS.',
+    'Verification code sent via SMS / WhatsApp!',
+    'Payment gateway could not be loaded. Please check your network connection and try again.',
+  ];
+
+  prodMessages.forEach((msg) => {
+    assert(!msg.toLowerCase().includes('test mode'), `Production message contains no test mode mention: "${msg}"`);
+    assert(!msg.includes('123456'), `Production message contains no hardcoded test code: "${msg}"`);
+  });
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

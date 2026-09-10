@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import type { Database } from '@/types/database';
 import { createSubscriptionOrder, verifyPaymentAndRenew, simulateSubscriptionDays } from '@/actions/subscription';
 import confetti from 'canvas-confetti';
+import { isPreviewOrDev } from '@/lib/env';
 import { 
   CreditCard, Check, AlertTriangle, ShieldCheck, 
   Sparkles, Zap, Lock, RefreshCw, Calendar, Clock, ArrowRight
@@ -94,29 +95,30 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         setLoadingPlan(null);
         console.error('Razorpay Payment Failed:', response.error);
         const errDesc = response.error?.description || response.error?.reason || 'Payment could not be completed';
-        alert(
-          `${errDesc}\n\nNote: If your Razorpay merchant account is pending KYC or document verification, log into dashboard.razorpay.com to activate live payments.`
-        );
+        alert(errDesc);
       });
       rzp.open();
     } else {
-      // Direct instant simulation fallback for test/dev environments
-      if (confirm(`Test Environment: Simulate successful Razorpay payment of ${planType === 'monthly' ? '₹199' : '₹1,999'}?`)) {
-        const verifyRes = await verifyPaymentAndRenew(shop.id, {
-          orderId: orderRes.orderId,
-          paymentId: `pay_test_${Date.now()}`,
-          signature: 'test_signature',
-          planType,
-        });
-        if (verifyRes.success) {
-          confetti({
-            particleCount: 90,
-            spread: 90,
-            origin: { y: 0.6 },
+      if (isPreviewOrDev()) {
+        if (confirm(`Preview/Dev Environment: Simulate successful payment of ${planType === 'monthly' ? '₹199' : '₹1,999'}?`)) {
+          const verifyRes = await verifyPaymentAndRenew(shop.id, {
+            orderId: orderRes.orderId,
+            paymentId: `pay_test_${Date.now()}`,
+            signature: 'test_signature',
+            planType,
           });
-          setSuccessMessage(`Test payment confirmed! Valid until ${new Date(verifyRes.newExpiryDate!).toLocaleDateString('en-IN')}`);
-          setTimeout(() => window.location.reload(), 1500);
+          if (verifyRes.success) {
+            confetti({
+              particleCount: 90,
+              spread: 90,
+              origin: { y: 0.6 },
+            });
+            setSuccessMessage(`Payment confirmed! Valid until ${new Date(verifyRes.newExpiryDate!).toLocaleDateString('en-IN')}`);
+            setTimeout(() => window.location.reload(), 1500);
+          }
         }
+      } else {
+        alert('Payment gateway could not be loaded. Please check your network connection and try again.');
       }
       setLoadingPlan(null);
     }
@@ -328,47 +330,49 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
 
       </div>
 
-      {/* Demo Controls Section */}
-      <div className="bg-ivory-100 rounded-3xl p-5 border border-ivory-200">
-        <div className="flex items-center gap-2 mb-1">
-          <RefreshCw className={`w-4 h-4 text-brand-800 ${simulating ? 'animate-spin' : ''}`} />
-          <h4 className="font-sans text-sm font-bold text-espresso-900">
-            Demo & Presentation State Controls
-          </h4>
+      {/* Demo Controls Section (Visible only in preview and development environments) */}
+      {isPreviewOrDev() && (
+        <div className="bg-ivory-100 rounded-3xl p-5 border border-ivory-200">
+          <div className="flex items-center gap-2 mb-1">
+            <RefreshCw className={`w-4 h-4 text-brand-800 ${simulating ? 'animate-spin' : ''}`} />
+            <h4 className="font-sans text-sm font-bold text-espresso-900">
+              Demo &amp; Presentation State Controls
+            </h4>
+          </div>
+          <p className="text-xs text-espresso-500 mb-4">
+            Quickly simulate subscription edge cases live in front of merchants or during testing:
+          </p>
+
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={() => handleSimulate(2)}
+              disabled={simulating}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 shadow-2xs transition-all active:scale-95"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <span>Simulate 2 Days Left (Warning State)</span>
+            </button>
+
+            <button
+              onClick={() => handleSimulate(0)}
+              disabled={simulating}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-rose-400 bg-rose-950 text-white hover:bg-rose-900 shadow-2xs transition-all active:scale-95"
+            >
+              <Lock className="w-3.5 h-3.5 text-rose-300" />
+              <span>Simulate 0 Days Left (Expired Storefront)</span>
+            </button>
+
+            <button
+              onClick={() => handleSimulate(14)}
+              disabled={simulating}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-ivory-300 bg-white text-espresso-800 hover:bg-ivory-50 shadow-2xs transition-all active:scale-95"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-espresso-500" />
+              <span>Reset to 14 Days (Active Free Trial)</span>
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-espresso-500 mb-4">
-          Quickly simulate subscription edge cases live in front of merchants or during testing:
-        </p>
-
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            onClick={() => handleSimulate(2)}
-            disabled={simulating}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 shadow-2xs transition-all active:scale-95"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            <span>Simulate 2 Days Left (Warning State)</span>
-          </button>
-
-          <button
-            onClick={() => handleSimulate(0)}
-            disabled={simulating}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-rose-400 bg-rose-950 text-white hover:bg-rose-900 shadow-2xs transition-all active:scale-95"
-          >
-            <Lock className="w-3.5 h-3.5 text-rose-300" />
-            <span>Simulate 0 Days Left (Expired Storefront)</span>
-          </button>
-
-          <button
-            onClick={() => handleSimulate(14)}
-            disabled={simulating}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-ivory-300 bg-white text-espresso-800 hover:bg-ivory-50 shadow-2xs transition-all active:scale-95"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-espresso-500" />
-            <span>Reset to 14 Days (Active Free Trial)</span>
-          </button>
-        </div>
-      </div>
+      )}
 
     </div>
   );
