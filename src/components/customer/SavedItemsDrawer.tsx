@@ -3,7 +3,7 @@
 import React from 'react';
 import type { Database } from '@/types/database';
 import { X, Trash2, ArrowRight, Bookmark, Send } from 'lucide-react';
-import { formatINR } from '@/lib/utils';
+import { formatINR, getAppBaseUrl } from '@/lib/utils';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type ItemRow = Database['public']['Tables']['items']['Row'];
@@ -28,10 +28,9 @@ export const SavedItemsDrawer: React.FC<SavedItemsDrawerProps> = ({
   if (!isOpen) return null;
 
   const totalEstimate = savedProducts.reduce((sum, p) => sum + Number(p.price), 0);
-
-  const wishlistMessage = `Hello ${shop.name}, I have shortlisted ${savedProducts.length} items from your Dynish catalog (Estimated Total: ${formatINR(totalEstimate)}):\n` +
-    savedProducts.map((p, i) => `${i + 1}. ${p.name} — ${formatINR(p.price)}`).join('\n') +
-    `\n\nCould you please confirm if these are currently in stock? Thank you!`;
+  const storeUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}`;
+  const itemsList = savedProducts.map((p, i) => `${i + 1}. *${p.name}* — ${formatINR(p.price)}`).join('\n');
+  const wishlistMessage = `Hi ${shop.name}! I'd like to check on a few things I saved from your catalog:\n\n${itemsList}\nTotal: ${formatINR(totalEstimate)}\n${storeUrl}\n\nAre these available?`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-espresso-950/60 backdrop-blur-sm animate-fade-in flex justify-end">

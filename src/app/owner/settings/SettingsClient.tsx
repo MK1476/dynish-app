@@ -922,7 +922,7 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
           </div>
 
           <a
-            href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Team! I need support for my store: ${shop.name} (+91 ${shop.phone})`)}`}
+            href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Team! I need some help with my store — ${shop.name} (+91${shop.phone}).`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-sans font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"

@@ -635,7 +635,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           <span className="text-espresso-500">Need direct assistance from our team?</span>
           <a
             href={`https://wa.me/919704100544?text=${encodeURIComponent(
-              `Hi Dynish Support, I need help with payment verification for my store: ${shop.name} (+91${shop.phone}).`
+              `Hi Dynish Team! I need some help with my store — ${shop.name} (+91${shop.phone}).`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

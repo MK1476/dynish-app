@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { generateWhatsAppUrl } from '@/lib/utils';
+import { generateWhatsAppUrl, getAppBaseUrl } from '@/lib/utils';
 import type { Database } from '@/types/database';
 
 export interface CustomerVisitRecord {
@@ -199,11 +199,14 @@ export async function assignAndSendCustomerOffer(params: {
     }
 
     // 3. Format WhatsApp link
-    const cleanCustomerName = customer.name?.trim() || 'Valued Patron';
-    const storeLink = `https://dynish.com/${shop.slug || shop.id}`;
+    const cleanCustomerName = customer.name?.trim();
+    const greeting = cleanCustomerName && cleanCustomerName.toLowerCase() !== 'guest'
+      ? `Hi ${cleanCustomerName}! ✨`
+      : `Hi there! ✨`;
+    const storeLink = `${getAppBaseUrl()}/store/${shop.slug || shop.id}`;
     const cleanPhone = customer.phone_number.replace(/\D/g, '').slice(-10);
 
-    const message = `Hi ${cleanCustomerName}! ✨\n\nHere is an exclusive special offer for you from *${shop.name}*:\n🎁 *${offerTitle.trim()}*\n\nShow this message at the counter on your next visit to redeem your reward!\n\nBrowse our latest collection here: ${storeLink}`;
+    const message = `${greeting}\n${shop.name} has something special just for you:\n\n🎁 *${offerTitle.trim()}*\n\nJust show this message at the counter on your next visit to redeem it.\n\nHope to see you soon!\n👉 ${storeLink}`;
 
     const whatsappUrl = generateWhatsAppUrl(cleanPhone, message);
 

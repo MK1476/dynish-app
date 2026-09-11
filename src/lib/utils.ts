@@ -40,36 +40,109 @@ export interface WhatsAppBillPayload {
   customTemplate?: string | null;
 }
 
+export function getOrdinalSuffix(n: number): string {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) {
+    return `${n}st`;
+  }
+  if (j === 2 && k !== 12) {
+    return `${n}nd`;
+  }
+  if (j === 3 && k !== 13) {
+    return `${n}rd`;
+  }
+  return `${n}th`;
+}
+
+/**
+ * Resolves clean discount reward text from offer title and current bill amount.
+ * e.g., "10% Cashback" on a ₹450 bill becomes "₹45/- off"
+ * e.g., "₹50 OFF" becomes "₹50/- off"
+ */
+export function formatDiscountRewardText(
+  offerTitle: string | null | undefined,
+  billAmount?: number | null | undefined
+): string | null {
+  if (!offerTitle || !offerTitle.trim()) return null;
+  const raw = offerTitle.trim();
+
+  // If percentage-based, calculate dynamically if billAmount is provided
+  const pctMatch = raw.match(/(\d+(\.\d+)?)\s*%/);
+  if (pctMatch) {
+    const pct = parseFloat(pctMatch[1]);
+    if (!isNaN(pct) && pct > 0) {
+      if (billAmount && billAmount > 0) {
+        const calculatedDiscount = Math.round((billAmount * pct) / 100);
+        if (calculatedDiscount > 0) {
+          return `₹${calculatedDiscount} off`;
+        }
+      }
+      return `${pct}% off`;
+    }
+  }
+
+  // If already matches flat rupee format, e.g. "₹50 OFF", "Flat ₹100", "Rs 35"
+  const flatMatch = raw.match(/(?:₹|rs\.?|flat\s*)(\d+)(?:\s*(?:off|\/-|\/|discount))?/i);
+  if (flatMatch) {
+    const rupees = parseInt(flatMatch[1], 10);
+    if (!isNaN(rupees) && rupees > 0) {
+      return `₹${rupees} off`;
+    }
+  }
+
+  // Fallback to the raw offer title text if custom (e.g. "Free Dessert")
+  return raw;
+}
+
 export function generateWhatsAppBillMessage(payload: WhatsAppBillPayload): string {
   const appUrl = getAppBaseUrl();
   const storeUrl = `${appUrl}/store/${payload.shopSlug || payload.shopId}`;
-  const amountFormatted = payload.billAmount && payload.billAmount > 0 
-    ? formatINR(payload.billAmount) 
-    : 'Paid';
+  const hasBillAmount = payload.billAmount !== null && payload.billAmount !== undefined && Number(payload.billAmount) > 0;
+  const amountFormatted = hasBillAmount ? formatINR(payload.billAmount) : '';
+
+  const cleanCustomerName = payload.customerName?.trim();
+  const greeting = cleanCustomerName && cleanCustomerName.toLowerCase() !== 'guest'
+    ? `Hi ${cleanCustomerName}! 👋`
+    : `Hi! 👋`;
 
   // If shop owner customized their template
   if (payload.customTemplate && payload.customTemplate.trim()) {
     let templated = payload.customTemplate
-      .replace(/\{customer_name\}/g, payload.customerName || 'Valued Guest')
+      .replace(/\{customer_name\}/g, cleanCustomerName || 'Valued Guest')
       .replace(/\{shop_name\}/g, payload.shopName)
-      .replace(/\{bill_amount\}/g, amountFormatted)
-      .replace(/\{visit_count\}/g, String(payload.visitNumber))
+      .replace(/\{bill_amount\}/g, amountFormatted || 'Paid')
+      .replace(/\{visit_number\}/g, String(payload.visitNumber))
       .replace(/\{next_offer\}/g, payload.nextOfferTitle || '')
       .replace(/\{store_link\}/g, storeUrl);
 
     return templated.trim();
   }
 
-  // Friendly, clean standard default copy (without dramatic words or lengthy address)
-  const greetingName = payload.customerName ? ` ${payload.customerName}` : '';
-  let msg = `Hi${greetingName}! Thank you for visiting *${payload.shopName}* (Visit #${payload.visitNumber}).\n\nYour bill: *${amountFormatted}*`;
-
-  if (payload.nextOfferTitle) {
-    msg += `\n\n🎁 *Special offer for your next visit:* ${payload.nextOfferTitle}\nJust show this message at our counter on your next visit!`;
+  // Scenario 1: No bill amount entered (acknowledge visit warmly)
+  if (!hasBillAmount) {
+    return `${greeting}\nThank you for visiting ${payload.shopName} today ✨ It was wonderful having you — hope to see you again soon!\n\n👉 ${storeUrl}`;
   }
 
-  msg += `\n\nCheck out our catalog & new arrivals here: ${storeUrl}\n\nSee you again soon! ✨`;
-  return msg;
+  const discountText = formatDiscountRewardText(payload.nextOfferTitle, payload.billAmount);
+  const isFirstVisit = payload.visitNumber <= 1;
+  const visitOrdinal = getOrdinalSuffix(payload.visitNumber);
+
+  // Scenario 2: First-time visitor (don't say "1st visit")
+  if (isFirstVisit) {
+    if (discountText) {
+      return `${greeting}\nThank you for visiting ${payload.shopName} — it was wonderful having you for the first time ✨\n\n🧾 Your Bill: *${amountFormatted}*\n\n🎁 Here's *${discountText}* your next visit, as a small welcome gift — just show this message at the counter.\n\nWe loved having you today, and we'll be here whenever you're back!\n👉 ${storeUrl}`;
+    }
+    return `${greeting}\nThank you for visiting ${payload.shopName} — it was wonderful having you for the first time ✨\n\n🧾 Your Bill: *${amountFormatted}*\n\nWe loved having you today, and we'll be here whenever you're back!\n👉 ${storeUrl}`;
+  }
+
+  // Scenario 3: Repeat visit with offer
+  if (discountText) {
+    return `${greeting}\nThank you for visiting ${payload.shopName} — this was your *${visitOrdinal} visit* with us ✨\n\n🧾 Your Bill: *${amountFormatted}*\n\n🎁 As a thank-you, here's *${discountText}* your next visit — just show this message at the counter.\n\nWe loved having you today, and we'll be here whenever you're back!\n👉 ${storeUrl}`;
+  }
+
+  // Scenario 4: Repeat visit, no offer selected
+  return `${greeting}\nThank you for visiting ${payload.shopName} — this was your *${visitOrdinal} visit* with us ✨\n\n🧾 Your Bill: *${amountFormatted}*\n\nWe loved having you today, and we'll be here whenever you're back!\n👉 ${storeUrl}`;
 }
 
 export function generateWhatsAppUrl(phoneNumber: string, message: string): string {

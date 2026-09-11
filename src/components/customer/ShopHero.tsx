@@ -147,72 +147,87 @@ export const ShopHero: React.FC<ShopHeroProps> = ({
       </div>
 
       {/* SHOP BODY DETAILS & ACTION BUTTONS */}
-      <div className="px-4 py-4 max-w-4xl mx-auto space-y-4">
+      <div className="px-4 py-3 max-w-4xl mx-auto space-y-3">
         
-        {/* ACTION BUTTONS (ROW 1: WhatsApp + Socials | ROW 2: Directions + Share) */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <a
-              href={`https://wa.me/91${shop.whatsapp_number || shop.phone}?text=${encodeURIComponent(`Hi ${shop.name}, I am viewing your digital catalog on Dynish!`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#128C7E] hover:bg-[#0f7a6e] text-white text-xs font-bold shadow-sm active:scale-95 transition-all"
-            >
-              <MessageCircle className="w-4 h-4 fill-current" />
-              <span>WhatsApp</span>
-            </a>
+        {/* COMPACT ACTION BUTTONS RIBBON */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 sm:flex-wrap">
+          {/* WhatsApp / Chat */}
+          <a
+            href={`https://wa.me/91${shop.whatsapp_number || shop.phone}?text=${encodeURIComponent(`Hi ${shop.name}! I came across your shop on Dynish and wanted to know more 😊`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold shadow-xs active:scale-95 transition-all shrink-0"
+          >
+            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+            <span>WhatsApp</span>
+          </a>
 
+          {/* Call (if phone available) */}
+          {shop.phone && (
             <a
-              href={shop.instagram_handle ? `https://instagram.com/${shop.instagram_handle.replace('@', '')}` : `https://instagram.com`}
+              href={`tel:+91${shop.phone}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-900 text-xs font-semibold shadow-2xs active:scale-95 transition-all shrink-0"
+              title={`Call +91 ${shop.phone}`}
+            >
+              <Phone className="w-3.5 h-3.5 text-espresso-600" />
+              <span>Call</span>
+            </a>
+          )}
+
+          {/* Instagram (only if configured) */}
+          {shop.instagram_handle && shop.instagram_handle.trim() && (
+            <a
+              href={`https://instagram.com/${shop.instagram_handle.replace(/^@/, '').trim()}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2] flex items-center justify-center shadow-2xs transition-all shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] hover:opacity-95 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
               title="Instagram"
             >
-              <Instagram className="w-4 h-4" />
+              <Instagram className="w-3.5 h-3.5" />
+              <span>Instagram</span>
             </a>
+          )}
 
+          {/* YouTube (only if configured) */}
+          {shop.youtube_url && shop.youtube_url.trim() && (
             <a
-              href={shop.youtube_url || `https://youtube.com`}
+              href={shop.youtube_url.trim()}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-white border border-[#E5DDD0] text-espresso-800 hover:bg-[#FAF7F2] flex items-center justify-center shadow-2xs transition-all shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF0000] hover:bg-[#e60000] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
               title="YouTube"
             >
-              <Youtube className="w-4 h-4" />
+              <Youtube className="w-3.5 h-3.5" />
+              <span>YouTube</span>
             </a>
-          </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            {shop.maps_link ? (
-              <a
-                href={shop.maps_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white border border-[#E5DDD0] text-espresso-950 text-xs font-bold shadow-2xs hover:bg-[#FAF7F2] transition-all"
-              >
-                <MapPin className="w-3.5 h-3.5 text-espresso-700" />
-                <span>Get Directions</span>
-              </a>
-            ) : shop.address ? (
-              <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white border border-[#E5DDD0] text-espresso-950 text-xs font-bold shadow-2xs">
-                <MapPin className="w-3.5 h-3.5 text-espresso-700 shrink-0" />
-                <span className="truncate max-w-[160px]">{shop.address}</span>
-              </div>
-            ) : null}
-
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white text-xs font-bold shadow-sm active:scale-95 transition-all"
+          {/* Directions / Maps */}
+          {(shop.maps_link || shop.address) && (
+            <a
+              href={shop.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.name} ${shop.address}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-950 text-xs font-semibold shadow-2xs active:scale-95 transition-all shrink-0"
+              title={shop.address || 'Get Directions'}
             >
-              {copied ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              ) : (
-                <Share2 className="w-3.5 h-3.5 shrink-0" />
-              )}
-              <span>{copied ? 'Link Copied!' : 'Share Shop'}</span>
-            </button>
-          </div>
+              <MapPin className="w-3.5 h-3.5 text-espresso-700" />
+              <span>Directions</span>
+            </a>
+          )}
+
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
+          >
+            {copied ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            ) : (
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+            )}
+            <span>{copied ? 'Copied!' : 'Share'}</span>
+          </button>
         </div>
 
         {/* STORE BIO / DESCRIPTION CALLOUT */}

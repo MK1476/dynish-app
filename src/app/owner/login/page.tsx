@@ -484,7 +484,7 @@ export default function LoginPage() {
           <p className="text-xs text-espresso-600">
             Need help accessing your store?{' '}
             <a 
-              href="https://wa.me/919704100544?text=Hi%20Dynish%20Team!%20I%20need%20help%20logging%20into%20my%20store." 
+              href={`https://wa.me/919704100544?text=${encodeURIComponent("Hi Dynish Team! I'm having trouble logging into my store — could you help?")}`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="font-bold text-brand-800 hover:text-brand-900 underline hover:no-underline"

@@ -270,7 +270,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
           {/* Subtle Help & Sign Out Row */}
           <div className="flex items-center justify-between px-1 text-xs pt-2 border-t border-ivory-100">
             <a
-              href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+              href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Team! I need some help with my store — ${shop?.name || 'My Store'} (+91${shop?.phone || ''}).`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-espresso-400 hover:text-espresso-800 text-xs transition-colors py-1"
@@ -539,7 +539,7 @@ export const OwnerNavigation: React.FC<OwnerNavProps> = ({ shop, subscriptionSta
             {/* Subtle Help & Sign Out Row */}
             <div className="pt-3 border-t border-ivory-200/80 flex items-center justify-center gap-5 text-xs text-espresso-500">
               <a
-                href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Support! I need assistance with my store: ${shop?.name || 'My Store'} (+91 ${shop?.phone || ''})`)}`}
+                href={`https://wa.me/919704100544?text=${encodeURIComponent(`Hi Dynish Team! I need some help with my store — ${shop?.name || 'My Store'} (+91${shop?.phone || ''}).`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-espresso-400 hover:text-espresso-700 transition-colors py-1"

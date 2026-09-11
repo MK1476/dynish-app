@@ -107,10 +107,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   };
 
-  const promptText = customPrompt ? ` (${customPrompt})` : '';
-  const inquiryMsg = encodeURIComponent(
-    `Hello ${shop.name}! I am interested in purchasing "${product.name}" priced at ${formatINR(product.price)}${promptText}. Could you please confirm availability?`
-  );
+  const productUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}?item=${product.id}`;
+  const promptNote = customPrompt ? `\n\n(${customPrompt})` : '';
+  const inquiryText = `Hi ${shop.name}! I'm interested in this:\n\n*${product.name}* — ${formatINR(product.price)}\n${productUrl}${promptNote}\n\nIs it available?`;
+  const inquiryMsg = encodeURIComponent(inquiryText);
 
   const quickPrompts = [
     'Is trial available in-store?',

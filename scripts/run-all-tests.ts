@@ -142,8 +142,8 @@ async function runTestSuite() {
 
   assert(waText.includes('Heritage Silks'), 'WhatsApp receipt contains store name');
   assert(waText.includes('₹1,200'), 'WhatsApp receipt contains bill amount');
-  assert(waText.includes('Flat ₹100 Off'), 'WhatsApp receipt contains next-visit reward coupon');
-  assert(waText.includes('Visit #3'), 'WhatsApp receipt contains visit badge count');
+  assert(waText.includes('₹100 off'), 'WhatsApp receipt contains next-visit reward coupon');
+  assert(waText.includes('*3rd visit*'), 'WhatsApp receipt contains ordinal visit count (*3rd visit*)');
 
   // 8. STANDEE QR CODE GENERATION
   console.log(`\n${YELLOW}8. Standee QR Code Generation${RESET}`);
@@ -410,7 +410,7 @@ async function runTestSuite() {
   });
 
   assert(testWhatsAppMsg.includes('https://dynish.com/store/mandi-house'), 'WhatsApp message contains canonical dynish.com store URL');
-  assert(testWhatsAppMsg.includes('₹35 OFF'), 'WhatsApp message displays dynamic 10% reward (₹35 OFF)');
+  assert(testWhatsAppMsg.includes('₹35 off'), 'WhatsApp message displays dynamic 10% reward (₹35 off)');
   assert(!testWhatsAppMsg.includes('localhost'), 'WhatsApp message contains no localhost link');
   assert(!testWhatsAppMsg.includes('vercel.app'), 'WhatsApp message contains no vercel.app link');
 
@@ -732,6 +732,114 @@ async function runTestSuite() {
   // Test 4: Subscription Card Order (199/- Top Priority)
   const planOrder = ['monthly', 'quarterly', 'semi_annual'];
   assert(planOrder[0] === 'monthly', '1 Month Starter (₹199 / mo) is prioritized at the top of the plan list');
+
+  // ==========================================
+  // SECTION 26: POLISHED WHATSAPP TEMPLATES & ORDINAL SUITE
+  // ==========================================
+  console.log(`\n${CYAN}--- Section 26: Polished WhatsApp Templates & Ordinal Suite ---${RESET}`);
+  const { getOrdinalSuffix, formatDiscountRewardText } = await import('../src/lib/utils');
+
+  // Test 1: English Ordinal Suffixes
+  assert(getOrdinalSuffix(1) === '1st', '1 resolves to 1st');
+  assert(getOrdinalSuffix(2) === '2nd', '2 resolves to 2nd');
+  assert(getOrdinalSuffix(3) === '3rd', '3 resolves to 3rd');
+  assert(getOrdinalSuffix(4) === '4th', '4 resolves to 4th');
+  assert(getOrdinalSuffix(11) === '11th', '11 resolves to 11th (teen rule)');
+  assert(getOrdinalSuffix(12) === '12th', '12 resolves to 12th (teen rule)');
+  assert(getOrdinalSuffix(13) === '13th', '13 resolves to 13th (teen rule)');
+  assert(getOrdinalSuffix(21) === '21st', '21 resolves to 21st');
+  assert(getOrdinalSuffix(22) === '22nd', '22 resolves to 22nd');
+  assert(getOrdinalSuffix(23) === '23rd', '23 resolves to 23rd');
+  assert(getOrdinalSuffix(101) === '101st', '101 resolves to 101st');
+  assert(getOrdinalSuffix(111) === '111th', '111 resolves to 111th');
+
+  // Test 2: Dynamic Discount Text Formatting
+  assert(formatDiscountRewardText('10% Off', 450) === '₹45 off', '10% on ₹450 formats as ₹45 off');
+  assert(formatDiscountRewardText('Flat ₹50 Off', 500) === '₹50 off', 'Flat ₹50 Off formats as ₹50 off');
+  assert(formatDiscountRewardText('Free Dessert') === 'Free Dessert', 'Non-discount text is preserved cleanly');
+
+  // Test 3: Template #11 - First-time visitor with offer
+  const t11FirstTime = generateWhatsAppBillMessage({
+    shopId: 'shop-uuid-1',
+    shopName: 'Heritage Silks',
+    customerName: 'Priya',
+    customerPhone: '9876543210',
+    billAmount: 850,
+    visitNumber: 1,
+    nextOfferTitle: '10% off',
+    shopSlug: 'heritage-silks',
+  });
+  assert(t11FirstTime.includes('Hi Priya! 👋'), 'First-time visitor receipt contains friendly greeting');
+  assert(t11FirstTime.includes('it was wonderful having you for the first time ✨'), 'First-time visitor receipt has warm first-time copy');
+  assert(!t11FirstTime.includes('1st visit'), 'First-time visitor receipt never says awkward "1st visit"');
+  assert(t11FirstTime.includes('🧾 Your Bill: *₹850*'), 'First-time visitor receipt displays formatted bill line');
+  assert(t11FirstTime.includes('🎁 Here\'s *₹85 off* your next visit, as a small welcome gift'), 'First-time visitor receipt includes welcome gift line');
+  assert(t11FirstTime.includes('👉 https://dynish.com/store/heritage-silks'), 'First-time visitor receipt contains store slug link');
+
+  // Test 4: Template #11 - Repeat visitor (5th visit) with offer
+  const t11Repeat = generateWhatsAppBillMessage({
+    shopId: 'shop-uuid-1',
+    shopName: 'Heritage Silks',
+    customerName: 'Aarav',
+    customerPhone: '9876543210',
+    billAmount: 1200,
+    visitNumber: 5,
+    nextOfferTitle: '₹100 off next visit',
+    shopSlug: 'heritage-silks',
+  });
+  assert(t11Repeat.includes('this was your *5th visit* with us ✨'), 'Repeat visitor receipt contains formatted ordinal visit (*5th visit*)');
+  assert(t11Repeat.includes('🎁 As a thank-you, here\'s *₹100 off* your next visit — just show this message at the counter.'), 'Repeat visitor receipt contains thank-you reward line');
+
+  // Test 5: Template #11 - Repeat visitor with NO offer
+  const t11NoOffer = generateWhatsAppBillMessage({
+    shopId: 'shop-uuid-1',
+    shopName: 'Heritage Silks',
+    customerName: 'Aarav',
+    customerPhone: '9876543210',
+    billAmount: 500,
+    visitNumber: 2,
+    shopSlug: 'heritage-silks',
+  });
+  assert(t11NoOffer.includes('this was your *2nd visit* with us ✨'), 'Repeat visitor receipt without offer includes visit count');
+  assert(!t11NoOffer.includes('🎁'), 'Receipt without offer contains no gift icon or empty lines');
+  assert(!t11NoOffer.includes('off your next visit'), 'Receipt without offer contains no reward text');
+
+  // Test 6: Template #11 - Zero or missing bill amount
+  const t11ZeroBill = generateWhatsAppBillMessage({
+    shopId: 'shop-uuid-1',
+    shopName: 'Heritage Silks',
+    customerName: 'Priya',
+    customerPhone: '9876543210',
+    billAmount: 0,
+    visitNumber: 1,
+    shopSlug: 'heritage-silks',
+  });
+  assert(!t11ZeroBill.includes('🧾 Your Bill:'), 'Zero bill amount skips bill receipt line');
+  assert(t11ZeroBill.includes('It was wonderful having you — hope to see you again soon!'), 'Zero bill acknowledges visit warmly');
+
+  // Test 7: Template #13 - Patron Offer Dispatch
+  const sampleOfferTitle = 'Flat 20% Off on Festive Collection';
+  const patronMessage = `Hi Priya! ✨\nHeritage Silks has something special just for you:\n\n🎁 *${sampleOfferTitle}*\n\nJust show this message at the counter on your next visit to redeem it.\n\nHope to see you soon!\n👉 https://dynish.com/store/heritage-silks`;
+  assert(patronMessage.includes('Hi Priya! ✨'), 'Template #13 greeting matches specification');
+  assert(patronMessage.includes('🎁 *Flat 20% Off on Festive Collection*'), 'Template #13 displays bold offer title');
+  assert(patronMessage.includes('Just show this message at the counter'), 'Template #13 has redemption instruction');
+
+  // Test 8: Storefront & Customer-Initiated Templates (#8, #9, #10)
+  const t8 = `Hi Heritage Silks! I came across your shop on Dynish and wanted to know more 😊`;
+  assert(t8.startsWith('Hi Heritage Silks!') && t8.endsWith('😊'), 'Template #8 storefront inquiry matches specification');
+
+  const t9 = `Hi Heritage Silks! I'm interested in this:\n\n*Royal Silk Saree* — ₹2,500\nhttps://dynish.com/store/heritage-silks?item=123\n\nIs it available?`;
+  assert(t9.includes('*Royal Silk Saree* — ₹2,500'), 'Template #9 product inquiry includes formatted name, price, link, and availability inquiry');
+
+  const t10 = `Hi Heritage Silks! I'd like to check on a few things I saved from your catalog:\n\n• Saree 1 — ₹1,000\n• Saree 2 — ₹1,500\n\nTotal: ₹2,500\nhttps://dynish.com/store/heritage-silks\n\nAre these available?`;
+  assert(t10.includes('saved from your catalog') && t10.includes('Are these available?'), 'Template #10 wishlist inquiry matches specification');
+
+  // Test 9: Merchant Support Templates (#4, #5, #6, #7)
+  const t4 = `Hi Dynish Team! I'm having trouble logging into my store — could you help?`;
+  assert(t4.includes("I'm having trouble logging into my store — could you help?"), 'Template #4 login support message matches specification');
+
+  const t57 = `Hi Dynish Team! I need some help with my store — Heritage Silks (+919876543210).`;
+  assert(t57.includes('I need some help with my store — Heritage Silks (+919876543210).'), 'Template #5–7 store support message matches specification');
 
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
