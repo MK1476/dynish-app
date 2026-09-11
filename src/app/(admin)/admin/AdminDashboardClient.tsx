@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ShieldCheck, Store, Users, Receipt, ExternalLink, 
-  CalendarPlus, CheckCircle2, Search, LogOut, RefreshCw, AlertCircle 
+  CalendarPlus, CheckCircle2, Search, LogOut, RefreshCw, AlertCircle, Eye 
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 import { adminSignOut, extendShopSubscription } from '@/actions/admin';
@@ -19,12 +19,14 @@ interface AdminDashboardClientProps {
   initialShops: ShopRow[];
   transactions: TransactionRow[];
   customers: CustomerRow[];
+  viewsStats?: Record<string, { todayViews: number; totalViews: number }>;
 }
 
 export const AdminDashboardClient: React.FC<AdminDashboardClientProps> = ({
   initialShops,
   transactions,
   customers,
+  viewsStats = {},
 }) => {
   const router = useRouter();
   const [shops, setShops] = useState<ShopRow[]>(initialShops);
@@ -43,6 +45,15 @@ export const AdminDashboardClient: React.FC<AdminDashboardClientProps> = ({
   });
   const totalPlatformRevenue = transactions.reduce(
     (sum, t) => sum + (Number(t.bill_amount) || 0),
+    0
+  );
+
+  const totalViewsToday = Object.values(viewsStats).reduce(
+    (acc, s) => acc + (s.todayViews || 0),
+    0
+  );
+  const totalViewsAllTime = Object.values(viewsStats).reduce(
+    (acc, s) => acc + (s.totalViews || 0),
     0
   );
 
@@ -138,7 +149,7 @@ export const AdminDashboardClient: React.FC<AdminDashboardClientProps> = ({
       </div>
 
       {/* METRIC CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="bg-white p-5 rounded-3xl border border-ivory-200 shadow-soft">
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
             Active Stores
@@ -177,13 +188,25 @@ export const AdminDashboardClient: React.FC<AdminDashboardClientProps> = ({
 
         <div className="bg-white p-5 rounded-3xl border border-ivory-200 shadow-soft">
           <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
-            Platform GMV
+            Storefront Hits
           </span>
           <div className="font-sans text-3xl font-extrabold text-espresso-950">
+            {totalViewsToday} <span className="text-xs font-normal text-espresso-400">today</span>
+          </div>
+          <span className="text-[10px] text-amber-700 font-bold mt-1 block">
+            {totalViewsAllTime} total link views
+          </span>
+        </div>
+
+        <div className="bg-white p-5 rounded-3xl border border-ivory-200 shadow-soft col-span-2 lg:col-span-1">
+          <span className="text-[11px] font-bold text-espresso-500 uppercase tracking-wider block mb-1">
+            Platform GMV
+          </span>
+          <div className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 truncate">
             {formatINR(totalPlatformRevenue)}
           </div>
-          <span className="text-[10px] text-espresso-400 mt-1 block">
-            Offline counter transaction volume
+          <span className="text-[10px] text-espresso-400 mt-1 block truncate">
+            Offline counter GMV
           </span>
         </div>
       </div>
@@ -243,6 +266,14 @@ export const AdminDashboardClient: React.FC<AdminDashboardClientProps> = ({
                       </div>
                       <div className="text-espresso-500 text-[11px] mt-0.5 truncate">
                         Owner: +91 {s.owner_phone} • {s.address}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
+                          <Eye className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>{viewsStats[s.id]?.todayViews || 0} hits today</span>
+                          <span className="text-amber-400">•</span>
+                          <span>{viewsStats[s.id]?.totalViews || 0} total</span>
+                        </span>
                       </div>
                     </div>
                   </div>

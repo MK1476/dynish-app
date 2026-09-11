@@ -9,10 +9,18 @@ import { logger } from '@/lib/logger';
 export type CustomerRow = Database['public']['Tables']['customers']['Row'];
 export type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
+export interface AvailableOfferItem {
+  id: string;
+  title: string;
+  discountText: string;
+  isLatest: boolean;
+}
+
 export interface CustomerWithOffer extends CustomerRow {
   lastOfferAwarded?: string | null;
   lastBillDate?: string | null;
   availableLoyaltyDiscount?: number | null;
+  availableOffers?: AvailableOfferItem[];
 }
 
 export async function searchCustomers(
@@ -68,6 +76,15 @@ export async function getCustomerByPhone(
     .limit(1)
     .maybeSingle();
 
+  // Retrieve any custom assigned offers from customer_offers table
+  const { data: assignedOffers } = await admin
+    .from('customer_offers' as any)
+    .select('id, title, discount_type, discount_value, created_at')
+    .eq('shop_id', shopId)
+    .eq('customer_id', customer.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
   const rawOffer = lastTx?.next_visit_offer || null;
   let availableLoyaltyDiscount: number | null = null;
 
@@ -91,11 +108,48 @@ export async function getCustomerByPhone(
     availableLoyaltyDiscount = Math.round(Number(customer.last_bill_amount) * 0.10);
   }
 
+  // Compile full list of available offers for multi-offer resolution
+  const availableOffers: AvailableOfferItem[] = [];
+
+  if (rawOffer) {
+    availableOffers.push({
+      id: `loyalty-${lastTx?.created_at || 'latest'}`,
+      title: rawOffer,
+      discountText: rawOffer,
+      isLatest: true,
+    });
+  }
+
+  if (assignedOffers && Array.isArray(assignedOffers)) {
+    for (const ao of assignedOffers) {
+      if (!availableOffers.some((o) => o.title === ao.title)) {
+        availableOffers.push({
+          id: ao.id,
+          title: ao.title,
+          discountText: ao.title,
+          isLatest: availableOffers.length === 0,
+        });
+      }
+    }
+  }
+
+  if (availableOffers.length === 0 && availableLoyaltyDiscount && availableLoyaltyDiscount > 0) {
+    availableOffers.push({
+      id: 'default-10-loyalty',
+      title: `10% Next Visit Discount (₹${availableLoyaltyDiscount} OFF)`,
+      discountText: `₹${availableLoyaltyDiscount} OFF (10% Loyalty)`,
+      isLatest: true,
+    });
+  }
+
+  const primaryOfferText = availableOffers.length > 0 ? availableOffers[0].title : rawOffer;
+
   return {
     ...customer,
-    lastOfferAwarded: rawOffer,
+    lastOfferAwarded: primaryOfferText,
     lastBillDate: lastTx?.created_at || null,
     availableLoyaltyDiscount: availableLoyaltyDiscount && availableLoyaltyDiscount > 0 ? availableLoyaltyDiscount : null,
+    availableOffers,
   };
 }
 

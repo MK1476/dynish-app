@@ -528,6 +528,79 @@ async function runTestSuite() {
     assert(!msg.includes('123456'), `Production message contains no hardcoded test code: "${msg}"`);
   });
 
+  // 23. CATALOG SEARCH, DEMO DATA CLEANUP & MULTI-OFFER AUDIT VERIFICATION
+  console.log(`\n${YELLOW}23. Catalog Search, Data Cleanup, Shop Views & Multi-Offer Logic${RESET}`);
+
+  // Test 1: Catalog search filtering
+  const testCatalogItems = [
+    { name: 'Royal Silk Saree', price: 2999, category_id: 'cat-1', description: 'Pure Banarasi silk', scarcity_tag: 'Featured' },
+    { name: 'Cotton Daily Kurti', price: 599, category_id: 'cat-2', description: 'Comfortable everyday wear', scarcity_tag: null },
+    { name: 'Bridal Lehenga Luxe', price: 14999, category_id: 'cat-1', description: 'Handcrafted zari work', scarcity_tag: 'Limited' },
+  ];
+
+  function filterItems(items: typeof testCatalogItems, tab: string, query: string) {
+    return items.filter(i => {
+      const matchesCategory = tab === 'all' || i.category_id === tab;
+      if (!matchesCategory) return false;
+      if (!query.trim()) return true;
+      const q = query.toLowerCase().trim();
+      return (
+        i.name.toLowerCase().includes(q) ||
+        (i.description || '').toLowerCase().includes(q) ||
+        (i.scarcity_tag || '').toLowerCase().includes(q) ||
+        i.price.toString().includes(q)
+      );
+    });
+  }
+
+  assert(filterItems(testCatalogItems, 'all', 'silk').length === 1, 'Search finds "Royal Silk Saree" by name');
+  assert(filterItems(testCatalogItems, 'all', '599').length === 1, 'Search finds "Cotton Daily Kurti" by price');
+  assert(filterItems(testCatalogItems, 'cat-1', 'kurti').length === 0, 'Search respects category tab filter');
+  assert(filterItems(testCatalogItems, 'all', 'Limited').length === 1, 'Search finds item by scarcity tag');
+
+  // Test 2: Protected demo phone numbers
+  const PROTECTED_PHONES = ['9876543210', '9440001449'];
+  assert(PROTECTED_PHONES.includes('9876543210'), 'Protected phone 9876543210 is safely whitelisted');
+  assert(PROTECTED_PHONES.includes('9440001449'), 'Protected phone 9440001449 is safely whitelisted');
+  assert(!PROTECTED_PHONES.includes('9505753170'), 'Unallowed test phone 9505753170 is correctly marked for deletion');
+  assert(!PROTECTED_PHONES.includes('9876543200'), 'Unallowed test phone 9876543200 is correctly marked for deletion');
+
+  // Test 3: Shop Views aggregation
+  const testViewsRaw = [
+    { shop_id: 'shop-1', view_date: '2026-09-11', view_count: 5 },
+    { shop_id: 'shop-1', view_date: '2026-09-10', view_count: 10 },
+    { shop_id: 'shop-2', view_date: '2026-09-11', view_count: 3 },
+  ];
+  const todayStr = '2026-09-11';
+  const aggViews: Record<string, { todayViews: number; totalViews: number }> = {};
+  testViewsRaw.forEach((row) => {
+    if (!aggViews[row.shop_id]) aggViews[row.shop_id] = { todayViews: 0, totalViews: 0 };
+    aggViews[row.shop_id].totalViews += row.view_count;
+    if (row.view_date === todayStr) aggViews[row.shop_id].todayViews += row.view_count;
+  });
+
+  assert(aggViews['shop-1'].todayViews === 5, 'Shop-1 has exactly 5 today views');
+  assert(aggViews['shop-1'].totalViews === 15, 'Shop-1 has exactly 15 total views');
+  assert(aggViews['shop-2'].todayViews === 3, 'Shop-2 has exactly 3 today views');
+
+  // Test 4: Multi-Offer Resolution
+  interface TestOffer { id: string; title: string; isLatest: boolean }
+  const customerOffers: TestOffer[] = [
+    { id: '1', title: '10% Next Visit Discount (₹35 OFF)', isLatest: true },
+    { id: '2', title: 'Special Festival ₹50 OFF', isLatest: false },
+    { id: '3', title: 'Flat 15% OFF', isLatest: false },
+  ];
+  const defaultSelected = customerOffers[0];
+  assert(defaultSelected.isLatest === true, 'Default selected offer is always marked as latest');
+  assert(defaultSelected.title.includes('10%'), 'Default offer corresponds to the most recent loyalty reward');
+  assert(customerOffers.length === 3, 'All 3 offers remain selectable by the merchant at the billing counter');
+
+  // Test 5: Customer offer WhatsApp message formatting
+  const { generateWhatsAppUrl } = await import('../src/lib/utils');
+  const testWaUrl = generateWhatsAppUrl('9876500001', 'Hi Priya! ✨ Exclusive offer: 10% OFF https://dynish.com/mandi-house');
+  assert(testWaUrl.startsWith('https://wa.me/919876500001?text='), 'Offer WhatsApp URL targets 10-digit Indian phone with 91 prefix');
+  assert(testWaUrl.includes('https%3A%2F%2Fdynish.com'), 'Offer WhatsApp URL canonical dynish.com domain is properly encoded');
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

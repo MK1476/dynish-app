@@ -17,15 +17,26 @@ export default async function CustomersPage() {
   }
 
   const admin = createAdminClient();
-  const { data: customers } = await admin
-    .from('customers')
-    .select('*')
-    .eq('shop_id', shop.id)
-    .order('visit_count', { ascending: false });
+  const [customersRes, offersRes] = await Promise.all([
+    admin
+      .from('customers')
+      .select('*')
+      .eq('shop_id', shop.id)
+      .order('visit_count', { ascending: false }),
+    admin
+      .from('offers')
+      .select('*')
+      .eq('shop_id', shop.id)
+      .order('created_at', { ascending: false }),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto p-3.5 sm:p-6 pb-32 md:pb-24">
-      <CustomersClient shop={shop} initialCustomers={customers || []} />
+      <CustomersClient
+        shop={shop}
+        initialCustomers={customersRes.data || []}
+        initialOffers={offersRes.data || []}
+      />
     </div>
   );
 }

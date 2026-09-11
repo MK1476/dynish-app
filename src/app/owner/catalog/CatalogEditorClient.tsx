@@ -10,7 +10,7 @@ import { compressImage } from '@/lib/image-compressor';
 import { parseCatalogExcel, generateCatalogTemplate } from '@/lib/excel-parser';
 import { 
   Plus, Edit, Trash2, Check, X, Upload, FileSpreadsheet, 
-  Sparkles, Eye, Download, Image as ImageIcon, ChevronLeft, ChevronRight 
+  Sparkles, Eye, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Search 
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
@@ -32,6 +32,7 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
   const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
   const [items, setItems] = useState<ItemRow[]>(initialItems);
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Inline Category Creator
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -275,8 +276,15 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
   };
 
   const filteredItems = items.filter(i => {
-    if (activeTab === 'all') return true;
-    return i.category_id === activeTab;
+    const matchesCategory = activeTab === 'all' || i.category_id === activeTab;
+    if (!matchesCategory) return false;
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesName = i.name.toLowerCase().includes(query);
+    const matchesDesc = (i.description || '').toLowerCase().includes(query);
+    const matchesTag = (i.scarcity_tag || '').toLowerCase().includes(query);
+    const matchesPrice = i.price.toString().includes(query);
+    return matchesName || matchesDesc || matchesTag || matchesPrice;
   });
 
   return (
@@ -311,6 +319,28 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
             <span>Add Item</span>
           </button>
         </div>
+      </div>
+
+      {/* SEARCH BAR */}
+      <div className="relative w-full">
+        <Search className="w-4 h-4 text-espresso-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search products by title, price, tag, or description..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-ivory-300 text-xs sm:text-sm font-medium text-espresso-950 placeholder:text-espresso-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 shadow-2xs transition-all"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-espresso-400 hover:text-espresso-800 hover:bg-black/5 transition-colors"
+            title="Clear search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* CATEGORY BAR (+ Add Category First, All Items Tab, Reorderable Chips) */}
@@ -409,18 +439,39 @@ export const CatalogEditorClient: React.FC<CatalogEditorProps> = ({
 
       {/* ITEMS GRID */}
       {filteredItems.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200 p-6">
-          <ImageIcon className="w-10 h-10 text-espresso-300 mx-auto mb-2" />
+        <div className="text-center py-16 bg-white rounded-3xl border border-ivory-200 p-6 shadow-soft">
+          {searchQuery ? (
+            <Search className="w-10 h-10 text-espresso-300 mx-auto mb-2" />
+          ) : (
+            <ImageIcon className="w-10 h-10 text-espresso-300 mx-auto mb-2" />
+          )}
           <h3 className="font-sans text-base font-bold text-espresso-950">
-            {activeTab === 'all' ? 'No items in your catalog yet' : 'No items in this category'}
+            {searchQuery
+              ? `No items found matching "${searchQuery}"`
+              : activeTab === 'all'
+              ? 'No items in your catalog yet'
+              : 'No items in this category'}
           </h3>
-          <p className="text-xs text-espresso-500 mt-1 mb-4">Add your first product to display on your digital storefront.</p>
-          <button
-            onClick={handleOpenAddItem}
-            className="px-4 py-2 rounded-xl bg-brand-500 text-espresso-950 font-bold text-xs shadow-xs"
-          >
-            + Add Product
-          </button>
+          <p className="text-xs text-espresso-500 mt-1 mb-4">
+            {searchQuery
+              ? 'Try searching with different keywords or clear your search query.'
+              : 'Add your first product to display on your digital storefront.'}
+          </p>
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="px-4 py-2 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-espresso-800 font-bold text-xs border border-ivory-300 transition-colors"
+            >
+              Clear Search Query
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenAddItem}
+              className="px-4 py-2 rounded-xl bg-brand-500 text-espresso-950 font-bold text-xs shadow-xs"
+            >
+              + Add Product
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

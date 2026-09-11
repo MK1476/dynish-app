@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/customer/ProductCard';
 import { ProductDetailModal } from '@/components/customer/ProductDetailModal';
 import { SavedItemsDrawer } from '@/components/customer/SavedItemsDrawer';
 import { Search, X, Sparkles, ArrowDownUp, LayoutGrid, Check, Bookmark } from 'lucide-react';
+import { recordShopView } from '@/actions/views';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
@@ -118,6 +119,19 @@ export const StorefrontClient: React.FC<StorefrontClientProps> = ({
 
   const isClickScrollingRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Track storefront link hit (once per day per browser session to prevent artificial inflation)
+  useEffect(() => {
+    if (!shop?.id) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const sessionKey = `dynish_v_${shop.id}_${today}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, '1');
+        recordShopView(shop.id).catch(() => {});
+      }
+    } catch (e) {}
+  }, [shop?.id]);
 
   // REALTIME SYNCHRONIZATION: Sub-second Supabase channel + focus sync + fallback poll
   useEffect(() => {
