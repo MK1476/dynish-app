@@ -45,8 +45,10 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
   const [verifyingManual, setVerifyingManual] = useState(false);
   const [manualStatus, setManualStatus] = useState<{ success: boolean; text: string } | null>(null);
 
-  // Check if owner is authorized tester (9440001449)
-  const isTester = (shop as any)?.phone === '9440001449' || (shop as any)?.owner_phone === '9440001449';
+  // Check if owner is authorized tester (9440001449 or 9876543210)
+  const isTester = 
+    (shop as any)?.phone === '9440001449' || (shop as any)?.owner_phone === '9440001449' ||
+    (shop as any)?.phone === '9876543210' || (shop as any)?.owner_phone === '9876543210';
   const isLowDays = status.daysRemaining <= 3 || status.isExpired;
 
   // Handle URL callback redirect parameters on mount
@@ -328,7 +330,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         </div>
       </div>
 
-      {/* VIP TESTER PACK (EXCLUSIVE TO PHONE 9440001449) */}
+      {/* VIP TESTER PACK (EXCLUSIVE TO AUTHORIZED TESTERS) */}
       {isTester && (
         <div className="bg-amber-50/70 rounded-3xl p-5 sm:p-6 border-2 border-dashed border-amber-500/70 shadow-xs space-y-4 relative overflow-hidden">
           <div className="flex items-center justify-between">
@@ -336,7 +338,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-espresso-950 flex items-center gap-1">
                 <Zap className="w-3 h-3 fill-current" /> Tester Pack
               </span>
-              <span className="text-xs font-bold text-amber-900">Authorized Tester (9440001449)</span>
+              <span className="text-xs font-bold text-amber-900">Authorized Tester (9440001449 / 9876543210)</span>
             </div>
             <span className="text-[11px] font-mono font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-md">LIVE RAZORPAY</span>
           </div>

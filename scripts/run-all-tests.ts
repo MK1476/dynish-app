@@ -613,10 +613,10 @@ async function runTestSuite() {
   assert(PLANS.monthly.price === 199, 'Monthly plan is ₹199');
   assert(PLANS.yearly.price === 1999, 'Yearly plan is ₹1999');
 
-  // Test 2: Exclusive Tester Phone Gate (9440001449)
-  const isAuthorizedTester = (phone: string) => phone === '9440001449';
+  // Test 2: Exclusive Tester Phone Gate (9440001449 & 9876543210)
+  const isAuthorizedTester = (phone: string) => phone === '9440001449' || phone === '9876543210';
   assert(isAuthorizedTester('9440001449') === true, 'Phone 9440001449 is authorized for tester pack');
-  assert(isAuthorizedTester('9876543210') === false, 'Other phone numbers cannot access tester pack');
+  assert(isAuthorizedTester('9876543210') === true, 'Phone 9876543210 is authorized for tester pack');
   assert(isAuthorizedTester('9505753170') === false, 'Random merchant numbers cannot access tester pack');
 
   // Test 3: Plan resolution from payment amount in paise

@@ -34,9 +34,11 @@ export async function createSubscriptionOrder(
       .eq('id', shopId)
       .single();
 
-    // Tester plan gate: exclusive for 9440001449
+    // Tester plan gate: exclusive for 9440001449 and 9876543210
     if (planType === 'test_7days') {
-      const isTester = shop?.owner_phone === '9440001449' || shop?.phone === '9440001449';
+      const isTester = 
+        shop?.owner_phone === '9440001449' || shop?.phone === '9440001449' ||
+        shop?.owner_phone === '9876543210' || shop?.phone === '9876543210';
       if (!isTester) {
         return { success: false, error: 'The ₹10 Tester Pack is restricted to authorized tester accounts.' };
       }

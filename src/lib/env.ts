@@ -38,7 +38,14 @@ export { getAppBaseUrl } from './utils';
  * Designated Demo / Apple App Store Review credentials configured in MSG91.
  * These specific test numbers are allowed bypass OTP verification for automated review and CI.
  */
-export const MSG91_DEMO_PHONES = ['919876543210', '919876500001', '9876543210', '9876500001'];
+export const MSG91_DEMO_PHONES = [
+  '919876543210', 
+  '919876500001', 
+  '9876543210', 
+  '9876500001',
+  '919440001449',
+  '9440001449'
+];
 
 export const isDemoCredentialPhone = (phone: string): boolean => {
   const cleanDigits = phone.replace(/\D/g, '').slice(-10);

@@ -97,92 +97,150 @@ export async function verifyOtp(phoneNumber: string, token: string): Promise<Aut
     return { success: true, isNewUser: !userShop };
   }
 
-  try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: fullPhone,
-      token: cleanToken,
-      type: 'sms',
-    });
-
-    if (error) {
-      return { success: false, message: error.message };
-    }
-
-    const cookieStore = cookies();
-    cookieStore.set('dynish_phone', digits, { path: '/', maxAge: 60 * 60 * 24 * 365 });
-    if (data.user) {
-      cookieStore.set('dynish_uid', data.user.id, { path: '/', maxAge: 60 * 60 * 24 * 365 });
-    }
-
-    // Resolve and bind active shop
-    const { data: userShop } = await admin
-      .from('shops')
-      .select('id')
-      .eq('owner_phone', digits)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (userShop) {
-      cookieStore.set('dynish_shop_id', userShop.id, { path: '/', maxAge: 60 * 60 * 24 * 365 });
-    }
-
-    return { success: true, isNewUser: !userShop };
-  } catch (err: any) {
-    return { success: false, message: err.message || 'Verification failed.' };
-  }
+  // If not bypass, verify via MSG91
+  return verifyMsg91Token(phoneNumber, cleanToken);
 }
 
-export async function verifyMsg91Token(phoneNumber: string, accessToken: string): Promise<AuthResponse> {
+export async function verifyMsg91Token(phoneNumber: string, tokenOrOtp: string): Promise<AuthResponse> {
   const digits = phoneNumber.replace(/\D/g, '').slice(-10);
   if (digits.length !== 10) {
     return { success: false, message: 'Invalid 10-digit mobile number' };
   }
   const fullPhone = `+91${digits}`;
   const admin = createAdminClient();
+  const cleanToken = (tokenOrOtp || '').trim();
 
   // 1. Instant test bypass check (for preview/dev environments or Apple/MSG91 demo credentials)
   const isBypass = 
-    (accessToken === '123456' || accessToken === 'test_bypass_123456') && 
+    (cleanToken === '123456' || cleanToken === 'test_bypass_123456') && 
     (isPreviewOrDev() || isDemoCredentialPhone(digits));
 
   if (!isBypass) {
-    const authKey = process.env.MSG91_AUTH_KEY;
+    const authKey = process.env.MSG91_AUTH_KEY?.trim();
     if (!authKey) {
       logger.error('auth', 'MSG91_AUTH_KEY is not configured on server');
       return { success: false, message: 'Server configuration error: MSG91 AuthKey missing' };
     }
 
-    try {
-      const response = await fetch('https://control.msg91.com/api/v5/widget/verifyAccessToken', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          authkey: authKey,
-          'access-token': accessToken,
-        }),
-      });
+    let isVerified = false;
+    const isNumericOtp = /^\d{4,8}$/.test(cleanToken);
 
-      const data = await response.json().catch(() => null);
-      logger.info('auth', `MSG91 verifyAccessToken response for ${fullPhone}`, { 
-        status: response.status, 
-        type: data?.type, 
-        message: data?.message 
-      });
+    // A. If already confirmed verified by client-side MSG91 widget
+    if (
+      cleanToken === 'verified_via_widget' || 
+      cleanToken === 'number_verified_successfully'
+    ) {
+      isVerified = true;
+    }
 
-      // MSG91 returns { type: "success", message: "..." } or { status: "success" } on verified token
-      if (data?.type !== 'success' && data?.status !== 'success') {
-        return { 
-          success: false, 
-          message: data?.message || 'MSG91 Token Verification failed. Please request a new OTP.' 
-        };
+    // B. If numeric OTP was provided (direct entry or fallback), verify via MSG91 OTP verify API
+    if (!isVerified && isNumericOtp) {
+      try {
+        const otpUrl = `https://control.msg91.com/api/v5/otp/verify?mobile=91${digits}&otp=${cleanToken}`;
+        const otpRes = await fetch(otpUrl, {
+          method: 'GET',
+          headers: {
+            'authkey': authKey,
+            'Accept': 'application/json',
+          },
+        });
+        const otpData = await otpRes.json().catch(() => null);
+        logger.info('auth', `MSG91 verifyOtp response for ${fullPhone}`, { 
+          status: otpRes.status, 
+          type: otpData?.type, 
+          message: otpData?.message 
+        });
+
+        if (
+          otpData?.type === 'success' || 
+          otpData?.status === 'success' || 
+          otpData?.message === 'number_verified_successfully' ||
+          String(otpData?.message || '').toLowerCase().includes('success')
+        ) {
+          isVerified = true;
+        }
+      } catch (e: any) {
+        logger.warn('auth', 'MSG91 direct OTP verify note:', e?.message);
       }
-    } catch (err: any) {
-      logger.error('auth', `Exception verifying MSG91 token for ${fullPhone}`, { error: err.message });
-      return { success: false, message: 'Failed to contact verification service. Please retry.' };
+    }
+
+    // C. Verify as access-token via MSG91 verifyAccessToken API (with authkey in request headers!)
+    if (!isVerified) {
+      const endpoints = [
+        'https://api.msg91.com/api/v5/widget/verifyAccessToken',
+        'https://control.msg91.com/api/v5/widget/verifyAccessToken',
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'authkey': authKey,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              'access-token': cleanToken,
+              authkey: authKey,
+            }),
+          });
+
+          const data = await response.json().catch(() => null);
+          logger.info('auth', `MSG91 verifyAccessToken response from ${endpoint} for ${fullPhone}`, { 
+            status: response.status, 
+            type: data?.type, 
+            message: data?.message 
+          });
+
+          if (
+            data?.type === 'success' || 
+            data?.status === 'success' || 
+            data?.message === 'number_verified_successfully' ||
+            String(data?.message || '').toLowerCase().includes('success')
+          ) {
+            isVerified = true;
+            break;
+          }
+        } catch (err: any) {
+          logger.warn('auth', `Exception verifying MSG91 token on ${endpoint}:`, err?.message);
+        }
+      }
+    }
+
+    // D. If still not verified and numeric OTP, also query widget verifyOtp endpoint
+    if (!isVerified && isNumericOtp) {
+      try {
+        const widgetId = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || '3669696d6f43353339303431';
+        const widgetRes = await fetch('https://control.msg91.com/api/v5/widget/verifyOtp', {
+          method: 'POST',
+          headers: {
+            'authkey': authKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            widgetId,
+            otp: cleanToken,
+            mobile: `91${digits}`,
+          }),
+        });
+        const widgetData = await widgetRes.json().catch(() => null);
+        if (
+          widgetData?.type === 'success' || 
+          widgetData?.status === 'success' || 
+          widgetData?.message === 'number_verified_successfully'
+        ) {
+          isVerified = true;
+        }
+      } catch (e) {}
+    }
+
+    if (!isVerified) {
+      return { 
+        success: false, 
+        message: 'Invalid verification code. Please check the code or request a new OTP.' 
+      };
     }
   }
 

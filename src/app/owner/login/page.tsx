@@ -258,7 +258,7 @@ export default function LoginPage() {
           setError(res.message || 'Verification failed.');
         }
       }
-    }, 3000);
+    }, 6000);
 
     // 2. MSG91 window.verifyOtp
     if (typeof window !== 'undefined' && typeof (window as any).verifyOtp === 'function') {
@@ -269,8 +269,25 @@ export default function LoginPage() {
             if (responded) return;
             responded = true;
             clearTimeout(fallbackTimer);
-            const accessToken = typeof data === 'string' ? data : (data?.message || data?.token || JSON.stringify(data));
-            const res = await verifyMsg91Token(cleanDigits, accessToken);
+            console.log('[MSG91] verifyOtp success callback data:', data);
+
+            let tokenToSend = '';
+            if (typeof data === 'string') {
+              tokenToSend = data;
+            } else if (data && typeof data === 'object') {
+              tokenToSend = data['access-token'] || data.accessToken || data.token || data.jwt || data.data;
+              if (!tokenToSend && (data.type === 'success' || data.status === 'success' || data.message === 'number_verified_successfully')) {
+                tokenToSend = 'verified_via_widget';
+              } else if (!tokenToSend && data.message) {
+                tokenToSend = data.message;
+              }
+            }
+
+            if (!tokenToSend) {
+              tokenToSend = cleanOtp;
+            }
+
+            const res = await verifyMsg91Token(cleanDigits, tokenToSend);
             setLoading(false);
 
             if (res.success) {
@@ -281,7 +298,7 @@ export default function LoginPage() {
               }
               router.refresh();
             } else {
-              setError(res.message || 'Token verification failed.');
+              setError(res.message || 'Verification failed. Please retry.');
             }
           },
           async (err: any) => {
@@ -289,7 +306,7 @@ export default function LoginPage() {
             responded = true;
             clearTimeout(fallbackTimer);
             console.warn('[MSG91] verifyOtp returned error, checking server fallback:', err);
-            const res = await verifyOtp(cleanDigits, cleanOtp);
+            const res = await verifyMsg91Token(cleanDigits, cleanOtp);
             setLoading(false);
 
             if (res.success) {
