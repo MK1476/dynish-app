@@ -1,31 +1,52 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Database } from '@/types/database';
-import { searchCustomers, getCustomerByPhone, recordBill } from '@/actions/billing';
+import { 
+  searchCustomers, 
+  getCustomerByPhone, 
+  recordBill, 
+  getShopBillingCustomers,
+  type CustomerWithOffer,
+  type RecordBillInput 
+} from '@/actions/billing';
 import confetti from 'canvas-confetti';
 import { 
   Phone, User, Calendar, CreditCard, Gift, Check, ArrowRight, 
-  MessageCircle, Copy, CheckCircle2, Zap, X, Award, Sparkles, Printer, Bluetooth 
+  MessageCircle, Copy, CheckCircle2, Zap, X, Award, Sparkles, Printer, Bluetooth,
+  RefreshCw
 } from 'lucide-react';
-import { formatINR } from '@/lib/utils';
+import { formatINR, generateWhatsAppBillMessage, generateWhatsAppUrl } from '@/lib/utils';
 import { formatPlainTextReceipt, printViaBluetooth, type ReceiptData } from '@/lib/thermal-printer';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 type OfferRow = Database['public']['Tables']['offers']['Row'];
 type CustomerRow = Database['public']['Tables']['customers']['Row'];
-type MatchedCustomerType = CustomerRow & {
-  lastOfferAwarded?: string | null;
-  availableLoyaltyDiscount?: number | null;
-  availableOffers?: { id: string; title: string; discountText: string; isLatest: boolean }[];
-};
+type MatchedCustomerType = CustomerWithOffer;
+
+interface BillingJob {
+  id: string;
+  shopId: string;
+  phoneNumber: string;
+  customerName?: string;
+  billAmount?: number | null;
+  appliedOffer?: string;
+  nextVisitOffer?: string;
+  createdAt: number;
+  retries: number;
+}
 
 interface BillingFormProps {
   shop: ShopRow;
   initialOffers: OfferRow[];
+  initialCustomers?: CustomerWithOffer[];
 }
 
-export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOffers }) => {
+export const BillingFormClient: React.FC<BillingFormProps> = ({ 
+  shop, 
+  initialOffers,
+  initialCustomers = [],
+}) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [billAmount, setBillAmount] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -34,11 +55,12 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   );
 
   const [matchedCustomer, setMatchedCustomer] = useState<MatchedCustomerType | null>(null);
-  const [suggestions, setSuggestions] = useState<CustomerRow[]>([]);
+  const [suggestions, setSuggestions] = useState<CustomerWithOffer[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [appliedOfferText, setAppliedOfferText] = useState<string>('');
   const [isOfferDismissed, setIsOfferDismissed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [queueCount, setQueueCount] = useState(0);
 
   // Success / WhatsApp Modal
   const [completedDetails, setCompletedDetails] = useState<{
@@ -96,25 +118,150 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
   const latestPhoneQuery = useRef('');
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
-  const customerCacheRef = useRef<Map<string, MatchedCustomerType>>(new Map());
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const customerCacheRef = useRef<Map<string, CustomerWithOffer>>(new Map());
+  const isDrainingRef = useRef(false);
+
+  // Storage keys unique to this shop
+  const CUSTOMERS_KEY = `dynish_customers_${shop.id}`;
+  const QUEUE_KEY = `dynish_billing_queue_${shop.id}`;
+
+  // Synchronous LocalStorage helper for zero-latency retrieval
+  const getStoredCustomers = useCallback((): CustomerWithOffer[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(CUSTOMERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }, [CUSTOMERS_KEY]);
+
+  const persistCustomersToStorage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const list = Array.from(customerCacheRef.current.values()).slice(0, 500);
+      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list));
+    } catch {}
+  }, [CUSTOMERS_KEY]);
+
+  const getStoredQueue = useCallback((): BillingJob[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(QUEUE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }, [QUEUE_KEY]);
+
+  const saveStoredQueue = useCallback((queue: BillingJob[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      setQueueCount(queue.length);
+    } catch {}
+  }, [QUEUE_KEY]);
+
+  // Background pipeline queue processor (non-blocking)
+  const drainPipeline = useCallback(async () => {
+    if (isDrainingRef.current) return;
+    const queue = getStoredQueue();
+    if (queue.length === 0) {
+      setQueueCount(0);
+      return;
+    }
+
+    isDrainingRef.current = true;
+    setQueueCount(queue.length);
+
+    try {
+      const currentQueue = [...queue];
+      while (currentQueue.length > 0) {
+        const job = currentQueue[0];
+        try {
+          const res = await recordBill({
+            shopId: job.shopId,
+            phoneNumber: job.phoneNumber,
+            customerName: job.customerName,
+            billAmount: job.billAmount,
+            appliedOffer: job.appliedOffer,
+            nextVisitOffer: job.nextVisitOffer,
+          });
+
+          if (res.success) {
+            currentQueue.shift();
+            saveStoredQueue(currentQueue);
+          } else {
+            job.retries = (job.retries || 0) + 1;
+            if (job.retries >= 5) {
+              currentQueue.shift();
+              saveStoredQueue(currentQueue);
+            } else {
+              saveStoredQueue(currentQueue);
+              break;
+            }
+          }
+        } catch {
+          // Network failure or slow connection: keep in pipeline queue and stop draining
+          break;
+        }
+      }
+    } finally {
+      isDrainingRef.current = false;
+      const remaining = getStoredQueue();
+      setQueueCount(remaining.length);
+    }
+  }, [getStoredQueue, saveStoredQueue]);
 
   useEffect(() => {
     phoneInputRef.current?.focus();
-    // Warm client cache with recent customers for zero-latency lookups
-    searchCustomers(shop.id, '').then((custs) => {
-      if (custs && custs.length > 0) {
-        custs.forEach((c) => {
+
+    // 1. Instantly populate memory cache from localStorage (0ms!)
+    const stored = getStoredCustomers();
+    if (stored && stored.length > 0) {
+      stored.forEach((c) => {
+        const digits = c.phone_number.replace(/\D/g, '').slice(-10);
+        customerCacheRef.current.set(digits, c);
+      });
+    }
+
+    // 2. Hydrate from server-prefetched initialCustomers if present
+    if (initialCustomers && initialCustomers.length > 0) {
+      initialCustomers.forEach((c) => {
+        const digits = c.phone_number.replace(/\D/g, '').slice(-10);
+        customerCacheRef.current.set(digits, c);
+      });
+      persistCustomersToStorage();
+    }
+
+    // 3. Silent background refresh to keep cache fresh without blocking UI
+    getShopBillingCustomers(shop.id).then((fresh) => {
+      if (fresh && fresh.length > 0) {
+        fresh.forEach((c) => {
           const digits = c.phone_number.replace(/\D/g, '').slice(-10);
           customerCacheRef.current.set(digits, c);
         });
+        persistCustomersToStorage();
       }
     }).catch(() => {});
 
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    // 4. Check and drain any offline/background queued bills
+    const initialQueue = getStoredQueue();
+    setQueueCount(initialQueue.length);
+    if (initialQueue.length > 0) {
+      drainPipeline();
+    }
+
+    // 5. Retry pipeline immediately when network comes back online
+    const handleOnline = () => {
+      drainPipeline();
     };
-  }, [shop.id]);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [shop.id, initialCustomers, getStoredCustomers, persistCustomersToStorage, getStoredQueue, drainPipeline]);
 
   const calculateDiscountBreakdown = (offerText: string | null | undefined, amount: number | null) => {
     if (!offerText || !amount || amount <= 0) return null;
@@ -179,31 +326,31 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
     setIsOfferDismissed(false);
     latestPhoneQuery.current = numeric;
 
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-
     if (numeric.length === 10) {
       setShowSuggestions(false);
 
-      // Instant 0ms cache check
+      // Instant 0ms synchronous cache check
       const cached = customerCacheRef.current.get(numeric);
       if (cached) {
         setMatchedCustomer(cached);
         if (cached.name) setCustomerName(cached.name);
         if (cached.lastOfferAwarded) setAppliedOfferText(cached.lastOfferAwarded);
+        setLoadingCustomer(false);
+        return;
       }
 
-      setLoadingCustomer(!cached);
+      // If not in local cache (new customer on another device), silently query server in background
+      setLoadingCustomer(true);
       getCustomerByPhone(shop.id, numeric).then((existing) => {
         if (latestPhoneQuery.current === numeric) {
           setLoadingCustomer(false);
           if (existing) {
             customerCacheRef.current.set(numeric, existing);
+            persistCustomersToStorage();
             setMatchedCustomer(existing);
             if (existing.name) setCustomerName(existing.name);
             if (existing.lastOfferAwarded) setAppliedOfferText(existing.lastOfferAwarded);
-          } else if (!cached) {
+          } else {
             setMatchedCustomer(null);
             setAppliedOfferText('');
           }
@@ -214,112 +361,144 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       return;
     }
 
-    // Under 10 digits
+    // Under 10 digits: Instant in-memory search in 0ms!
     setLoadingCustomer(false);
     setMatchedCustomer(null);
     setAppliedOfferText('');
 
-    if (numeric.length >= 3) {
-      // Check local cache first (instant!)
-      const localMatches: CustomerRow[] = [];
+    if (numeric.length >= 2) {
+      const localMatches: CustomerWithOffer[] = [];
+      const queryLower = numeric.toLowerCase();
+
       customerCacheRef.current.forEach((cust, digits) => {
-        if (localMatches.length < 4 && digits.includes(numeric)) {
+        if (localMatches.length >= 8) return;
+        const nameMatch = cust.name && cust.name.toLowerCase().includes(queryLower);
+        const phoneMatch = digits.includes(numeric);
+
+        if (phoneMatch || nameMatch) {
           localMatches.push(cust);
         }
       });
-      if (localMatches.length > 0) {
-        setSuggestions(localMatches);
-        setShowSuggestions(true);
-      }
 
-      searchDebounceRef.current = setTimeout(async () => {
-        if (latestPhoneQuery.current === numeric) {
-          const matches = await searchCustomers(shop.id, numeric);
-          if (latestPhoneQuery.current === numeric) {
-            matches.forEach((c) => {
-              const digits = c.phone_number.replace(/\D/g, '').slice(-10);
-              customerCacheRef.current.set(digits, c);
-            });
-            setSuggestions(matches);
-            setShowSuggestions(matches.length > 0);
-          }
-        }
-      }, 250);
+      // Sort: Numbers that start with query come first, then sorted by visit count
+      localMatches.sort((a, b) => {
+        const aDigits = a.phone_number.replace(/\D/g, '').slice(-10);
+        const bDigits = b.phone_number.replace(/\D/g, '').slice(-10);
+        const aStarts = aDigits.startsWith(numeric) ? 1 : 0;
+        const bStarts = bDigits.startsWith(numeric) ? 1 : 0;
+        if (aStarts !== bStarts) return bStarts - aStarts;
+        return (b.visit_count || 0) - (a.visit_count || 0);
+      });
+
+      setSuggestions(localMatches);
+      setShowSuggestions(localMatches.length > 0);
     } else {
       setShowSuggestions(false);
       setSuggestions([]);
     }
   };
 
-  const handleSelectSuggestion = (cust: CustomerRow) => {
+  const handleSelectSuggestion = (cust: CustomerWithOffer) => {
     const cleanDigits = cust.phone_number.replace(/\D/g, '').slice(-10);
     setPhoneNumber(cleanDigits);
     setCustomerName(cust.name || '');
     setShowSuggestions(false);
+    setMatchedCustomer(cust);
+    if (cust.lastOfferAwarded) setAppliedOfferText(cust.lastOfferAwarded);
     amountInputRef.current?.focus();
-
-    const cached = customerCacheRef.current.get(cleanDigits);
-    if (cached) {
-      setMatchedCustomer(cached);
-      if (cached.lastOfferAwarded) setAppliedOfferText(cached.lastOfferAwarded);
-    } else {
-      setMatchedCustomer(cust);
-    }
-
-    getCustomerByPhone(shop.id, cleanDigits).then((existing) => {
-      if (existing) {
-        customerCacheRef.current.set(cleanDigits, existing);
-        setMatchedCustomer(existing);
-        if (existing.lastOfferAwarded) setAppliedOfferText(existing.lastOfferAwarded);
-      }
-    }).catch(() => {});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneNumber.length !== 10) return;
 
-    setSubmitting(true);
     const rawAmountVal = billAmount ? parseFloat(billAmount) : null;
     const discountRupees = discountInfo ? discountInfo.discountRupees : 0;
     const finalAmountToRecord = discountInfo ? discountInfo.finalAmount : rawAmountVal;
 
-    const result = await recordBill({
+    const currentVisitCount = matchedCustomer?.visit_count || 0;
+    const nextVisitNumber = currentVisitCount + 1;
+
+    // 1. Instantly calculate WhatsApp bill copy & URL client-side (0ms!)
+    const waMessage = generateWhatsAppBillMessage({
+      shopName: shop.name,
+      shopAddress: shop.address,
+      shopId: shop.id,
+      shopSlug: (shop as any).slug || null,
+      customerName: customerName.trim() || undefined,
+      customerPhone: phoneNumber,
+      billAmount: finalAmountToRecord,
+      visitNumber: nextVisitNumber,
+      nextOfferTitle: selectedOffer,
+    });
+    const waUrl = generateWhatsAppUrl(phoneNumber, waMessage);
+
+    // 2. Optimistic local cache update immediately so next search is instant
+    const updatedCustomer: CustomerWithOffer = {
+      ...(matchedCustomer || {
+        id: `cust_${phoneNumber}`,
+        shop_id: shop.id,
+        phone_number: phoneNumber,
+        first_seen_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      }),
+      name: customerName.trim() || matchedCustomer?.name || null,
+      visit_count: nextVisitNumber,
+      last_visit_at: new Date().toISOString(),
+      last_bill_amount: finalAmountToRecord,
+      total_spent: ((matchedCustomer?.total_spent as number) || 0) + (finalAmountToRecord || 0),
+      lastOfferAwarded: selectedOffer,
+    } as CustomerWithOffer;
+
+    customerCacheRef.current.set(phoneNumber, updatedCustomer);
+    persistCustomersToStorage();
+
+    // 3. Synchronously launch WhatsApp in direct click handler (never blocked by popup blocker)
+    window.open(waUrl, '_blank');
+
+    confetti({
+      particleCount: 65,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
+    });
+
+    // 4. Instant UI confirmation modal (0ms latency!)
+    setCompletedDetails({
+      phone: phoneNumber,
+      name: customerName.trim() || 'Guest',
+      amount: rawAmountVal,
+      discountApplied: discountRupees,
+      finalAmount: finalAmountToRecord,
+      nextOffer: selectedOffer,
+      visitNumber: nextVisitNumber,
+      rawText: waMessage,
+      waUrl,
+    });
+
+    // 5. Enqueue into background sync pipeline
+    const jobPayload: RecordBillInput = {
       shopId: shop.id,
       phoneNumber,
       customerName: customerName.trim() || undefined,
       billAmount: finalAmountToRecord,
       appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
       nextVisitOffer: selectedOffer,
-    });
+    };
 
-    setSubmitting(false);
+    const newJob: BillingJob = {
+      ...jobPayload,
+      id: `bill_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: Date.now(),
+      retries: 0,
+    };
 
-    if (result.success && result.customer && result.whatsAppUrl) {
-      // 1-Click direct WhatsApp launch
-      window.open(result.whatsAppUrl, '_blank');
+    const currentQueue = getStoredQueue();
+    currentQueue.push(newJob);
+    saveStoredQueue(currentQueue);
 
-      confetti({
-        particleCount: 65,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
-      });
-
-      setCompletedDetails({
-        phone: phoneNumber,
-        name: result.customer.name || 'Guest',
-        amount: rawAmountVal,
-        discountApplied: discountRupees,
-        finalAmount: finalAmountToRecord,
-        nextOffer: (result.transaction as any)?.next_visit_offer || selectedOffer,
-        visitNumber: result.customer.visit_count,
-        rawText: result.whatsAppText || '',
-        waUrl: result.whatsAppUrl,
-      });
-    } else {
-      alert(result.error || 'Failed to record bill.');
-    }
+    // Asynchronously drain pipeline in background
+    drainPipeline();
   };
 
   const handleReset = () => {
@@ -362,11 +541,24 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({ shop, initialOff
       {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
-            Billing
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-sans text-2xl sm:text-3xl font-extrabold text-espresso-950 tracking-tight">
+              Billing
+            </h1>
+            {queueCount > 0 ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-300 animate-pulse">
+                <RefreshCw className="w-2.5 h-2.5 animate-spin text-amber-600" />
+                <span>Syncing {queueCount} in background...</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <Zap className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                <span>Zapp 0ms Fast</span>
+              </span>
+            )}
+          </div>
           <p className="text-espresso-500 text-xs sm:text-sm mt-0.5 font-normal">
-            Number first, then amount — that's it
+            Number first, then amount — instant 0ms billing
           </p>
         </div>
 

@@ -153,6 +153,66 @@ export async function getCustomerByPhone(
   };
 }
 
+/**
+ * Fast bulk fetch of shop customers for offline/instant local caching.
+ * Preloads up to 500 customers with their visit counts, spend, and offers.
+ */
+export async function getShopBillingCustomers(
+  shopId: string
+): Promise<CustomerWithOffer[]> {
+  try {
+    const admin = createAdminClient();
+    const { data: customers, error } = await admin
+      .from('customers')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('last_visit_at', { ascending: false })
+      .limit(500);
+
+    if (error || !customers || customers.length === 0) return [];
+
+    const customerIds = customers.map(c => c.id);
+    const txMap = new Map<string, string>();
+    if (customerIds.length > 0) {
+      const { data: txs } = await admin
+        .from('transactions')
+        .select('customer_id, next_visit_offer, created_at')
+        .eq('shop_id', shopId)
+        .in('customer_id', customerIds)
+        .order('created_at', { ascending: false });
+
+      if (txs) {
+        for (const tx of txs) {
+          if (tx.customer_id && !txMap.has(tx.customer_id) && tx.next_visit_offer) {
+            txMap.set(tx.customer_id, tx.next_visit_offer);
+          }
+        }
+      }
+    }
+
+    return customers.map(c => {
+      const offer = txMap.get(c.id) || null;
+      let loyaltyDiscount: number | null = null;
+      if (offer) {
+        const flat = offer.match(/(?:₹|rs\.?|flat\s*)(\d+)/i);
+        if (flat) loyaltyDiscount = parseInt(flat[1], 10);
+      }
+      if (!loyaltyDiscount && c.last_bill_amount && Number(c.last_bill_amount) > 0) {
+        loyaltyDiscount = Math.round(Number(c.last_bill_amount) * 0.10);
+      }
+
+      return {
+        ...c,
+        lastOfferAwarded: offer || (loyaltyDiscount ? `10% Next Visit Discount (₹${loyaltyDiscount} OFF)` : null),
+        availableLoyaltyDiscount: loyaltyDiscount,
+      };
+    });
+  } catch (err) {
+    console.error('getShopBillingCustomers error:', err);
+    return [];
+  }
+}
+
 export interface RecordBillInput {
   shopId: string;
   phoneNumber: string;

@@ -2,6 +2,7 @@ import React from 'react';
 import { getCurrentVendorSession } from '@/actions/auth';
 import { getOwnerShop } from '@/actions/shop';
 import { getShopOffers } from '@/actions/offers';
+import { getShopBillingCustomers } from '@/actions/billing';
 import { BillingFormClient } from './BillingFormClient';
 import { redirect } from 'next/navigation';
 
@@ -16,11 +17,14 @@ export default async function BillingPage() {
     redirect('/owner/onboarding');
   }
 
-  const offers = await getShopOffers(shop.id);
+  const [offers, customers] = await Promise.all([
+    getShopOffers(shop.id),
+    getShopBillingCustomers(shop.id),
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto p-3.5 sm:p-6 pb-32 md:pb-24">
-      <BillingFormClient shop={shop} initialOffers={offers} />
+      <BillingFormClient shop={shop} initialOffers={offers} initialCustomers={customers} />
     </div>
   );
 }

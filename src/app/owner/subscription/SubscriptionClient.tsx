@@ -393,7 +393,50 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       {/* PLAN COMPARISON CARDS - SALES FUNNEL */}
       <div className="space-y-4">
         
-        {/* Tier 1: 3 Months Pro Plan (MOST POPULAR / RECOMMENDED ANCHOR) */}
+        {/* Tier 1: 1 Month Starter (FLEXIBLE - AT TOP) */}
+        <div className="bg-white rounded-3xl p-6 border-2 border-[#EBE5DA] shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-espresso-500">Flexible Monthly</span>
+              <h3 className="font-sans text-xl font-extrabold text-espresso-950">
+                1 Month Starter
+              </h3>
+            </div>
+            <div className="text-right">
+              <div className="flex items-baseline gap-1 justify-end">
+                <span className="font-sans text-4xl font-black text-espresso-950">₹199</span>
+                <span className="text-espresso-500 text-xs font-semibold">/ mo</span>
+              </div>
+              <span className="text-[11px] text-espresso-400">Billed monthly (30 days access)</span>
+            </div>
+          </div>
+
+          <ul className="space-y-2.5 text-xs text-espresso-700 pt-1">
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Full storefront, fast counter billing & unlimited items</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>WhatsApp offer generator & customer loyalty rewards</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
+              <span>Zero transaction commission on any orders</span>
+            </li>
+          </ul>
+
+          <button
+            onClick={() => handleCheckout('monthly')}
+            disabled={loadingPlan === 'monthly'}
+            className="w-full py-3.5 rounded-2xl bg-espresso-950 hover:bg-espresso-900 text-white font-extrabold text-sm shadow-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4 text-amber-400" />
+            <span>{loadingPlan === 'monthly' ? 'Opening Gateway...' : 'Recharge 1 Month for ₹199'}</span>
+          </button>
+        </div>
+
+        {/* Tier 2: 3 Months Pro Plan (MOST POPULAR / RECOMMENDED ANCHOR) */}
         <div className="bg-white rounded-3xl p-6 border-2 border-[#C27835] shadow-md space-y-5 relative overflow-hidden">
           <div className="absolute top-0 right-0">
             <div className="bg-[#C27835] text-white text-[10px] font-extrabold px-4 py-1 rounded-bl-2xl shadow-xs flex items-center gap-1 tracking-wider uppercase">
@@ -458,7 +501,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           </button>
         </div>
 
-        {/* Tier 2: 6 Months Super Saver (BEST VALUE / MAXIMUM SAVINGS) */}
+        {/* Tier 3: 6 Months Super Saver (BEST VALUE / MAXIMUM SAVINGS) */}
         <div className="bg-white rounded-3xl p-6 border border-emerald-300 shadow-sm space-y-5 relative overflow-hidden">
           <div className="absolute top-0 right-0">
             <div className="bg-emerald-700 text-white text-[10px] font-extrabold px-4 py-1 rounded-bl-2xl shadow-xs flex items-center gap-1 tracking-wider uppercase">
@@ -514,45 +557,6 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           >
             <CreditCard className="w-4 h-4 text-amber-400" />
             <span>{loadingPlan === 'semi_annual' ? 'Opening Payment Gateway...' : 'Recharge 6 Months for ₹900'}</span>
-          </button>
-        </div>
-
-        {/* Tier 3: 1 Month Starter (FLEXIBLE) */}
-        <div className="bg-white rounded-3xl p-6 border border-[#EBE5DA] shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-espresso-500">Flexible</span>
-              <h3 className="font-sans text-lg font-bold text-espresso-950">
-                1 Month Starter
-              </h3>
-            </div>
-            <div className="text-right">
-              <div className="flex items-baseline gap-1">
-                <span className="font-sans text-3xl font-extrabold text-espresso-950">₹199</span>
-                <span className="text-espresso-500 text-xs font-medium">/ mo</span>
-              </div>
-              <span className="text-[11px] text-espresso-400">Billed monthly (30 days)</span>
-            </div>
-          </div>
-
-          <ul className="space-y-2 text-xs text-espresso-700 pt-1">
-            <li className="flex items-center gap-2">
-              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Full storefront, counter billing & unlimited items</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>WhatsApp offer generator & customer directory</span>
-            </li>
-          </ul>
-
-          <button
-            onClick={() => handleCheckout('monthly')}
-            disabled={loadingPlan === 'monthly'}
-            className="w-full py-3 rounded-2xl bg-white hover:bg-[#FAF7F2] text-espresso-950 font-bold text-xs sm:text-sm border border-[#E5DDD0] shadow-2xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-          >
-            <CreditCard className="w-4 h-4 text-espresso-600" />
-            <span>{loadingPlan === 'monthly' ? 'Opening Gateway...' : 'Recharge 1 Month for ₹199'}</span>
           </button>
         </div>
 
