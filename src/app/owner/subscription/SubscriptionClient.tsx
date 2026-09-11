@@ -1,13 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Database } from '@/types/database';
-import { createSubscriptionOrder, verifyPaymentAndRenew, simulateSubscriptionDays } from '@/actions/subscription';
+import { 
+  createSubscriptionOrder, 
+  verifyPaymentAndRenew, 
+  verifyPaymentByPaymentId, 
+  simulateSubscriptionDays, 
+  type SubscriptionRecord 
+} from '@/actions/subscription';
 import confetti from 'canvas-confetti';
 import { isPreviewOrDev } from '@/lib/env';
 import { 
   CreditCard, Check, AlertTriangle, ShieldCheck, 
-  Sparkles, Zap, Lock, RefreshCw, Calendar, Clock, ArrowRight
+  Sparkles, Zap, Lock, RefreshCw, Calendar, Clock, 
+  History, HelpCircle, Copy, MessageSquare, CheckCircle2, Receipt
 } from 'lucide-react';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
@@ -20,21 +27,66 @@ interface SubscriptionClientProps {
     daysRemaining: number;
     expiryDateFormatted: string;
   };
+  subscriptionHistory?: SubscriptionRecord[];
 }
 
 export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
   shop,
   status,
+  subscriptionHistory = [],
 }) => {
-  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | 'test_7days' | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
 
+  // Self-serve payment recovery state
+  const [manualPaymentId, setManualPaymentId] = useState('');
+  const [verifyingManual, setVerifyingManual] = useState(false);
+  const [manualStatus, setManualStatus] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Check if owner is authorized tester (9440001449)
+  const isTester = (shop as any)?.phone === '9440001449' || (shop as any)?.owner_phone === '9440001449';
   const isLowDays = status.daysRemaining <= 3 || status.isExpired;
 
-  const handleCheckout = async (planType: 'monthly' | 'yearly') => {
+  // Handle URL callback redirect parameters on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    const paymentId = params.get('id') || params.get('payment_id');
+
+    if (paymentStatus === 'success') {
+      confetti({
+        particleCount: 90,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
+      });
+      setSuccessMessage('Payment successful! Your store subscription is activated.');
+    } else if (paymentId) {
+      setManualPaymentId(paymentId);
+    }
+  }, []);
+
+  // Dynamically load Razorpay checkout script if not present
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleCheckout = async (planType: 'monthly' | 'yearly' | 'test_7days') => {
     setLoadingPlan(planType);
+
+    await loadRazorpayScript();
 
     const orderRes = await createSubscriptionOrder(shop.id, planType);
     if (!orderRes.success || !orderRes.orderId) {
@@ -43,14 +95,23 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
       return;
     }
 
-    // Razorpay standard client modal
+    const planDescription = 
+      planType === 'test_7days'
+        ? '₹10 Tester Pack (7 Days)'
+        : planType === 'monthly' 
+        ? '₹199 / Month Plan (30 Days)' 
+        : '₹1,999 / Year Plan (365 Days)';
+
+    // Razorpay client modal options
     const options = {
       key: orderRes.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: orderRes.amount,
       currency: 'INR',
       name: 'Dynish Subscriptions',
-      description: planType === 'monthly' ? '₹199 / Month Plan (30 Days)' : '₹1,999 / Year Plan (365 Days)',
+      description: planDescription,
       order_id: orderRes.orderId,
+      callback_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/api/razorpay/callback`,
+      redirect: false,
       prefill: {
         contact: `+91${shop.phone}`,
       },
@@ -58,28 +119,35 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         color: '#D97706',
       },
       handler: async function (response: any) {
-        const verifyRes = await verifyPaymentAndRenew(shop.id, {
-          orderId: response.razorpay_order_id,
-          paymentId: response.razorpay_payment_id,
-          signature: response.razorpay_signature,
-          planType,
-        });
-
-        setLoadingPlan(null);
-
-        if (verifyRes.success) {
-          confetti({
-            particleCount: 90,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
+        try {
+          const verifyRes = await verifyPaymentAndRenew(shop.id, {
+            orderId: response.razorpay_order_id || orderRes.orderId,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+            planType,
           });
-          setSuccessMessage(`Subscription activated! Your shop is valid until ${new Date(verifyRes.newExpiryDate!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`);
-          setTimeout(() => {
-            window.location.reload();
-          }, 2200);
-        } else {
-          alert('Payment verification failed. Please check with your bank.');
+
+          setLoadingPlan(null);
+
+          if (verifyRes.success) {
+            confetti({
+              particleCount: 90,
+              spread: 90,
+              origin: { y: 0.6 },
+              colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
+            });
+            setSuccessMessage(`Subscription activated! Your shop is valid until ${new Date(verifyRes.newExpiryDate!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`);
+            setTimeout(() => {
+              window.location.href = '/owner/subscription';
+            }, 2000);
+          } else {
+            setManualPaymentId(response.razorpay_payment_id || '');
+            alert(verifyRes.error || 'Payment completed on gateway. If not reflected immediately, enter your Payment ID in the verification box below.');
+          }
+        } catch (e: any) {
+          console.error('Payment handler verification error:', e);
+          setManualPaymentId(response?.razorpay_payment_id || '');
+          setLoadingPlan(null);
         }
       },
       modal: {
@@ -95,12 +163,12 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         setLoadingPlan(null);
         console.error('Razorpay Payment Failed:', response.error);
         const errDesc = response.error?.description || response.error?.reason || 'Payment could not be completed';
-        alert(errDesc);
+        alert(`Payment notice: ${errDesc}`);
       });
       rzp.open();
     } else {
       if (isPreviewOrDev()) {
-        if (confirm(`Preview/Dev Environment: Simulate successful payment of ${planType === 'monthly' ? '₹199' : '₹1,999'}?`)) {
+        if (confirm(`Preview/Dev Environment: Simulate successful payment for ${planDescription}?`)) {
           const verifyRes = await verifyPaymentAndRenew(shop.id, {
             orderId: orderRes.orderId,
             paymentId: `pay_test_${Date.now()}`,
@@ -121,6 +189,32 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         alert('Payment gateway could not be loaded. Please check your network connection and try again.');
       }
       setLoadingPlan(null);
+    }
+  };
+
+  const handleManualVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualPaymentId.trim()) return;
+
+    setVerifyingManual(true);
+    setManualStatus(null);
+
+    const res = await verifyPaymentByPaymentId(shop.id, manualPaymentId.trim());
+    setVerifyingManual(false);
+
+    if (res.success) {
+      setManualStatus({ success: true, text: res.message || 'Payment successfully verified and store credited!' });
+      confetti({
+        particleCount: 90,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#D97706', '#F59E0B', '#10B981', '#241E1C'],
+      });
+      setTimeout(() => {
+        window.location.href = '/owner/subscription';
+      }, 1800);
+    } else {
+      setManualStatus({ success: false, text: res.error || 'Failed to verify this payment ID with Razorpay.' });
     }
   };
 
@@ -224,7 +318,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           <span>Auto-renew reminder is active</span>
           <button
             onClick={() => setAutoRenew(!autoRenew)}
-            className="font-semibold text-espresso-800 hover:text-espresso-950 flex items-center gap-1"
+            className="font-semibold text-espresso-800 hover:text-espresso-950 flex items-center gap-1 cursor-pointer"
           >
             <span>SMS/WhatsApp:</span>
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${autoRenew ? 'bg-emerald-100 text-emerald-800' : 'bg-ivory-200 text-espresso-600'}`}>
@@ -234,7 +328,41 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
         </div>
       </div>
 
-      {/* PLAN COMPARISON CARDS (MATCHING IMAGE 3) */}
+      {/* VIP TESTER PACK (EXCLUSIVE TO PHONE 9440001449) */}
+      {isTester && (
+        <div className="bg-amber-50/70 rounded-3xl p-5 sm:p-6 border-2 border-dashed border-amber-500/70 shadow-xs space-y-4 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-espresso-950 flex items-center gap-1">
+                <Zap className="w-3 h-3 fill-current" /> Tester Pack
+              </span>
+              <span className="text-xs font-bold text-amber-900">Authorized Tester (9440001449)</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-md">LIVE RAZORPAY</span>
+          </div>
+
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-sans text-3xl font-extrabold text-espresso-950">₹10</span>
+              <span className="text-espresso-600 text-xs font-medium">for 7 days access</span>
+            </div>
+            <p className="text-xs text-espresso-600 mt-1">
+              Sample micro-transaction plan for testing full live payment flows multiple times on real accounts.
+            </p>
+          </div>
+
+          <button
+            onClick={() => handleCheckout('test_7days')}
+            disabled={loadingPlan === 'test_7days'}
+            className="w-full py-3.5 rounded-2xl bg-espresso-950 hover:bg-espresso-900 active:scale-[0.98] text-white font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <CreditCard className="w-4 h-4 text-amber-400" />
+            <span>{loadingPlan === 'test_7days' ? 'Opening Payment Gateway...' : 'Recharge ₹10 Tester Pack (7 Days)'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* PLAN COMPARISON CARDS */}
       <div className="space-y-4">
         
         {/* Card 1: Monthly Plan */}
@@ -268,16 +396,15 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           <button
             onClick={() => handleCheckout('monthly')}
             disabled={loadingPlan === 'monthly'}
-            className="w-full py-3.5 rounded-full bg-white hover:bg-[#FAF7F2] text-espresso-950 font-bold text-xs sm:text-sm border border-[#E5DDD0] shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="w-full py-3.5 rounded-full bg-white hover:bg-[#FAF7F2] text-espresso-950 font-bold text-xs sm:text-sm border border-[#E5DDD0] shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             <CreditCard className="w-4 h-4 text-espresso-700" />
-            <span>{loadingPlan === 'monthly' ? 'Preparing Gateway...' : 'Recharge Now'}</span>
+            <span>{loadingPlan === 'monthly' ? 'Opening Gateway...' : 'Recharge Now'}</span>
           </button>
         </div>
 
-        {/* Card 2: 6 Months Plan (Save 16%) */}
+        {/* Card 2: 12 Months Plan (Save 16%) */}
         <div className="bg-white rounded-3xl p-6 border-2 border-[#C27835] shadow-sm space-y-5 relative">
-          {/* Top-left Save 16% Badge */}
           <div className="absolute -top-3.5 left-6 bg-[#C27835] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-xs flex items-center gap-1">
             <Sparkles className="w-3 h-3 fill-white" />
             <span>Save 16%</span>
@@ -285,12 +412,12 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
 
           <div>
             <h3 className="font-sans text-xl font-bold text-espresso-950 mt-1">
-              6 Months
+              Yearly Super Saver
             </h3>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-sans text-4xl font-extrabold text-espresso-950">₹999</span>
+              <span className="font-sans text-4xl font-extrabold text-espresso-950">₹1,999</span>
             </div>
-            <span className="text-espresso-500 text-xs font-medium block mt-0.5">for 6 months</span>
+            <span className="text-espresso-500 text-xs font-medium block mt-0.5">for 12 months (365 days)</span>
           </div>
 
           <ul className="space-y-3 text-xs text-espresso-700">
@@ -315,10 +442,10 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           <button
             onClick={() => handleCheckout('yearly')}
             disabled={loadingPlan === 'yearly'}
-            className="w-full py-3.5 rounded-full bg-[#C27835] hover:bg-[#b06a2c] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50"
+            className="w-full py-3.5 rounded-full bg-[#C27835] hover:bg-[#b06a2c] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             <CreditCard className="w-4 h-4" />
-            <span>{loadingPlan === 'yearly' ? 'Preparing Gateway...' : 'Recharge Now'}</span>
+            <span>{loadingPlan === 'yearly' ? 'Opening Gateway...' : 'Recharge Now'}</span>
           </button>
         </div>
 
@@ -328,6 +455,140 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
           <span>First-time shops get a 14-day free trial</span>
         </div>
 
+      </div>
+
+      {/* SELF-SERVE PAYMENT VERIFICATION & HELP */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#EBE5DA] shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+            <HelpCircle className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="font-sans text-sm font-bold text-espresso-950">
+              Payment Help &amp; Missing Verification
+            </h3>
+            <p className="text-[11px] text-espresso-500">
+              If your money was debited but the plan hasn't updated, enter your Razorpay Payment ID.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleManualVerify} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={manualPaymentId}
+            onChange={(e) => setManualPaymentId(e.target.value)}
+            placeholder="e.g. pay_P2Kxxxxxxxxxxx"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-[#E8E2D8] bg-[#FAF7F2] text-xs font-mono text-espresso-950 focus:outline-none focus:ring-2 focus:ring-[#C27835]"
+          />
+          <button
+            type="submit"
+            disabled={verifyingManual || !manualPaymentId.trim()}
+            className="px-4 py-2.5 rounded-xl bg-espresso-950 hover:bg-espresso-900 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${verifyingManual ? 'animate-spin' : ''}`} />
+            <span>{verifyingManual ? 'Verifying...' : 'Verify & Activate'}</span>
+          </button>
+        </form>
+
+        {manualStatus && (
+          <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 animate-fade-in ${
+            manualStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+          }`}>
+            {manualStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />}
+            <span>{manualStatus.text}</span>
+          </div>
+        )}
+
+        {/* WhatsApp concierge support */}
+        <div className="pt-2 border-t border-[#F0EBE1] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <span className="text-espresso-500">Need direct assistance from our team?</span>
+          <a
+            href={`https://wa.me/919704100544?text=${encodeURIComponent(
+              `Hi Dynish Support, I need help with payment verification for my store: ${shop.name} (+91${shop.phone}).`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-800"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Chat with Support on WhatsApp</span>
+          </a>
+        </div>
+      </div>
+
+      {/* SUBSCRIPTION TRANSACTION & PAYMENT HISTORY */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#EBE5DA] shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-espresso-700" />
+            <h3 className="font-sans text-sm font-bold text-espresso-950">
+              Transaction History &amp; Receipts
+            </h3>
+          </div>
+          <span className="text-[11px] text-espresso-400">
+            {subscriptionHistory.length} {subscriptionHistory.length === 1 ? 'record' : 'records'}
+          </span>
+        </div>
+
+        {subscriptionHistory.length === 0 ? (
+          <div className="text-center py-6 px-4 bg-[#FAF7F2] rounded-2xl border border-dashed border-[#E8E2D8]">
+            <Receipt className="w-7 h-7 text-espresso-300 mx-auto mb-1.5" />
+            <p className="text-xs font-semibold text-espresso-700">No payment transactions yet</p>
+            <p className="text-[11px] text-espresso-400 mt-0.5">
+              When you recharge or renew, your payment records and Razorpay IDs will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#F0EBE1] -mx-2 sm:mx-0">
+            {subscriptionHistory.map((item) => (
+              <div key={item.id} className="py-3 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-[#FAF7F2]/60 rounded-xl transition-colors">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-espresso-950">
+                      {item.plan_type === 'test_7days' 
+                        ? '⚡ Tester Pack (7 Days)' 
+                        : item.plan_type === 'yearly' 
+                        ? 'Yearly Super Saver' 
+                        : 'Monthly Pro Plan'}
+                    </span>
+                    <span className="px-2 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 uppercase">
+                      {item.status || 'PAID'}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-espresso-400 mt-0.5">
+                    <span>{new Date(item.created_at || item.starts_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    {item.razorpay_payment_id && (
+                      <span className="font-mono text-espresso-600 flex items-center gap-1">
+                        ID: {item.razorpay_payment_id}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.razorpay_payment_id || '');
+                            alert('Payment ID copied!');
+                          }}
+                          className="text-espresso-400 hover:text-espresso-800 cursor-pointer"
+                          title="Copy ID"
+                        >
+                          <Copy className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right shrink-0">
+                  <span className="font-sans font-extrabold text-sm text-espresso-950 block">
+                    ₹{item.amount}
+                  </span>
+                  <span className="text-[10px] text-espresso-400">
+                    Valid till {new Date(item.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Demo Controls Section (Visible only in preview and development environments) */}
@@ -347,7 +608,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
             <button
               onClick={() => handleSimulate(2)}
               disabled={simulating}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 shadow-2xs transition-all active:scale-95"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               <span>Simulate 2 Days Left (Warning State)</span>
@@ -356,7 +617,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
             <button
               onClick={() => handleSimulate(0)}
               disabled={simulating}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-rose-400 bg-rose-950 text-white hover:bg-rose-900 shadow-2xs transition-all active:scale-95"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-rose-400 bg-rose-950 text-white hover:bg-rose-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-rose-300" />
               <span>Simulate 0 Days Left (Expired Storefront)</span>
@@ -365,7 +626,7 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
             <button
               onClick={() => handleSimulate(14)}
               disabled={simulating}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-ivory-300 bg-white text-espresso-800 hover:bg-ivory-50 shadow-2xs transition-all active:scale-95"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-ivory-300 bg-white text-espresso-800 hover:bg-ivory-50 shadow-2xs transition-all active:scale-95 cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5 text-espresso-500" />
               <span>Reset to 14 Days (Active Free Trial)</span>
@@ -377,3 +638,4 @@ export const SubscriptionClient: React.FC<SubscriptionClientProps> = ({
     </div>
   );
 };
+

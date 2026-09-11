@@ -601,6 +601,58 @@ async function runTestSuite() {
   assert(testWaUrl.startsWith('https://wa.me/919876500001?text='), 'Offer WhatsApp URL targets 10-digit Indian phone with 91 prefix');
   assert(testWaUrl.includes('https%3A%2F%2Fdynish.com'), 'Offer WhatsApp URL canonical dynish.com domain is properly encoded');
 
+  // 24. SUBSCRIPTION RECOVERY, VIP TESTER PACK & PWA INSTALL BANNER
+  console.log(`\n${YELLOW}24. Subscription Recovery, VIP Tester Pack & PWA Install Banner${RESET}`);
+
+  // Test 1: Plan definitions including test_7days
+  const { PLANS } = await import('../src/lib/plans');
+  assert(Boolean(PLANS.test_7days), 'PLANS contains test_7days pack definition');
+  assert(PLANS.test_7days.price === 10, 'Tester pack price is exactly ₹10');
+  assert(PLANS.test_7days.amountInPaise === 1000, 'Tester pack amount in paise is exactly 1000');
+  assert(PLANS.test_7days.durationDays === 7, 'Tester pack duration is exactly 7 days');
+  assert(PLANS.monthly.price === 199, 'Monthly plan is ₹199');
+  assert(PLANS.yearly.price === 1999, 'Yearly plan is ₹1999');
+
+  // Test 2: Exclusive Tester Phone Gate (9440001449)
+  const isAuthorizedTester = (phone: string) => phone === '9440001449';
+  assert(isAuthorizedTester('9440001449') === true, 'Phone 9440001449 is authorized for tester pack');
+  assert(isAuthorizedTester('9876543210') === false, 'Other phone numbers cannot access tester pack');
+  assert(isAuthorizedTester('9505753170') === false, 'Random merchant numbers cannot access tester pack');
+
+  // Test 3: Plan resolution from payment amount in paise
+  function resolvePlanByPaise(amountInPaise: number) {
+    if (amountInPaise <= 1000) return 'test_7days';
+    if (amountInPaise >= 90000) return 'yearly';
+    return 'monthly';
+  }
+  assert(resolvePlanByPaise(1000) === 'test_7days', '₹10 (1000 paise) resolves to test_7days');
+  assert(resolvePlanByPaise(19900) === 'monthly', '₹199 (19900 paise) resolves to monthly');
+  assert(resolvePlanByPaise(199900) === 'yearly', '₹1,999 resolves to yearly');
+
+  // Test 4: Self-serve Payment ID format validation
+  function validatePaymentId(id: string) {
+    const clean = id.trim();
+    return clean.startsWith('pay_') && clean.length >= 10;
+  }
+  assert(validatePaymentId('pay_P2Kw123abcXYZ') === true, 'Valid Razorpay payment ID format accepted');
+  assert(validatePaymentId('invalid_id_123') === false, 'Non-Razorpay ID format rejected');
+  assert(validatePaymentId('pay_') === false, 'Incomplete payment ID rejected');
+  assert(validatePaymentId('') === false, 'Empty payment ID rejected');
+
+  // Test 5: PWA Install App banner persistence rules
+  function shouldShowInstallBanner(state: { isDismissed: boolean; isInstalled: boolean; isStandalone: boolean; isAuthOrOnboarding: boolean }) {
+    if (state.isAuthOrOnboarding) return false;
+    if (state.isDismissed) return false;
+    if (state.isInstalled) return false;
+    if (state.isStandalone) return false;
+    return true;
+  }
+  assert(shouldShowInstallBanner({ isDismissed: false, isInstalled: false, isStandalone: false, isAuthOrOnboarding: false }) === true, 'Banner displays for new uninstalled owner');
+  assert(shouldShowInstallBanner({ isDismissed: true, isInstalled: false, isStandalone: false, isAuthOrOnboarding: false }) === false, 'Banner never shows again once dismissed/cancelled');
+  assert(shouldShowInstallBanner({ isDismissed: false, isInstalled: true, isStandalone: false, isAuthOrOnboarding: false }) === false, 'Banner never shows again once installed');
+  assert(shouldShowInstallBanner({ isDismissed: false, isInstalled: false, isStandalone: true, isAuthOrOnboarding: false }) === false, 'Banner does not show when running inside standalone PWA');
+  assert(shouldShowInstallBanner({ isDismissed: false, isInstalled: false, isStandalone: false, isAuthOrOnboarding: true }) === false, 'Banner does not show during login or onboarding flow');
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);

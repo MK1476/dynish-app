@@ -1,6 +1,7 @@
 import React from 'react';
 import { getCurrentVendorSession } from '@/actions/auth';
 import { getOwnerShop } from '@/actions/shop';
+import { getShopSubscriptionHistory } from '@/actions/subscription';
 import { calculateSubscriptionStatus } from '@/lib/utils';
 import { redirect } from 'next/navigation';
 import { SubscriptionClient } from './SubscriptionClient';
@@ -16,11 +17,14 @@ export default async function SubscriptionPage() {
     redirect('/owner/onboarding');
   }
 
-  const status = calculateSubscriptionStatus(shop.expires_at);
+  const [status, subscriptionHistory] = await Promise.all([
+    calculateSubscriptionStatus(shop.expires_at),
+    getShopSubscriptionHistory(shop.id),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto p-3.5 sm:p-6 pb-32 md:pb-24">
-      <SubscriptionClient shop={shop} status={status} />
+      <SubscriptionClient shop={shop} status={status} subscriptionHistory={subscriptionHistory} />
     </div>
   );
 }

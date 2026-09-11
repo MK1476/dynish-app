@@ -6,6 +6,7 @@ import { OwnerNavigation } from './OwnerNavigation';
 import { AlertTriangle, Lock } from 'lucide-react';
 import Link from 'next/link';
 import type { Database } from '@/types/database';
+import { InstallAppBanner } from '@/components/owner/InstallAppBanner';
 
 type ShopRow = Database['public']['Tables']['shops']['Row'];
 
@@ -85,6 +86,7 @@ export function OwnerLayoutClient({
 
       {/* MAIN CONTENT AREA */}
       <main className={`flex-1 min-w-0 ${subscriptionStatus?.isWarning ? 'pt-10' : ''}`}>
+        <InstallAppBanner />
         {children}
       </main>
     </div>

@@ -32,6 +32,8 @@ export const isPreviewOrDev = (): boolean => {
   return !isProductionEnvironment();
 };
 
+export { getAppBaseUrl } from './utils';
+
 /**
  * Designated Demo / Apple App Store Review credentials configured in MSG91.
  * These specific test numbers are allowed bypass OTP verification for automated review and CI.

@@ -1,4 +1,12 @@
 export const PLANS = {
+  test_7days: {
+    id: 'test_7days',
+    name: 'Tester Pack',
+    price: 10,
+    amountInPaise: 10 * 100,
+    durationDays: 7,
+    description: 'Special ₹10 tester pack (valid for 7 days). Exclusive for live testing.',
+  },
   monthly: {
     id: 'monthly',
     name: 'Monthly Pro',
