@@ -236,9 +236,15 @@ export async function verifyPaymentByPaymentId(
     if (amountInPaise <= 1000) {
       resolvedPlan = PLANS.test_7days;
       planKey = 'test_7days';
-    } else if (amountInPaise >= 150000) {
-      resolvedPlan = PLANS.yearly;
-      planKey = 'yearly';
+    } else if (amountInPaise >= 70000) { // e.g. ₹900 (90000 paise)
+      resolvedPlan = PLANS.semi_annual;
+      planKey = 'semi_annual';
+    } else if (amountInPaise >= 35000) { // e.g. ₹498 (49800 paise)
+      resolvedPlan = PLANS.quarterly;
+      planKey = 'quarterly';
+    } else { // e.g. ₹199 (19900 paise)
+      resolvedPlan = PLANS.monthly;
+      planKey = 'monthly';
     }
 
     // Auto-capture if authorized

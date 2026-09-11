@@ -25,7 +25,7 @@ export interface Database {
           logo_url: string | null
           banner_url: string | null
           theme: 'heritage' | 'minimal' | 'artisanal'
-          plan_type: 'trial' | 'monthly' | 'yearly'
+          plan_type: 'trial' | 'monthly' | 'quarterly' | 'semi_annual' | 'yearly' | string
           trial_ends_at: string
           expires_at: string
           razorpay_subscription_id: string | null
@@ -50,7 +50,7 @@ export interface Database {
           logo_url?: string | null
           banner_url?: string | null
           theme?: 'heritage' | 'minimal' | 'artisanal'
-          plan_type?: 'trial' | 'monthly' | 'yearly'
+          plan_type?: 'trial' | 'monthly' | 'quarterly' | 'semi_annual' | 'yearly' | string
           trial_ends_at?: string
           expires_at?: string
           razorpay_subscription_id?: string | null
@@ -265,7 +265,7 @@ export interface Database {
         Row: {
           id: string
           shop_id: string
-          plan_type: 'monthly' | 'yearly'
+          plan_type: 'monthly' | 'quarterly' | 'semi_annual' | 'yearly' | string
           amount: number
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
@@ -278,7 +278,7 @@ export interface Database {
         Insert: {
           id?: string
           shop_id: string
-          plan_type: 'monthly' | 'yearly'
+          plan_type: 'monthly' | 'quarterly' | 'semi_annual' | 'yearly' | string
           amount: number
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null

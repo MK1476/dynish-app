@@ -604,14 +604,20 @@ async function runTestSuite() {
   // 24. SUBSCRIPTION RECOVERY, VIP TESTER PACK & PWA INSTALL BANNER
   console.log(`\n${YELLOW}24. Subscription Recovery, VIP Tester Pack & PWA Install Banner${RESET}`);
 
-  // Test 1: Plan definitions including test_7days
+  // Test 1: Plan definitions including test_7days, monthly, quarterly, semi_annual
   const { PLANS } = await import('../src/lib/plans');
   assert(Boolean(PLANS.test_7days), 'PLANS contains test_7days pack definition');
   assert(PLANS.test_7days.price === 10, 'Tester pack price is exactly ₹10');
   assert(PLANS.test_7days.amountInPaise === 1000, 'Tester pack amount in paise is exactly 1000');
   assert(PLANS.test_7days.durationDays === 7, 'Tester pack duration is exactly 7 days');
-  assert(PLANS.monthly.price === 199, 'Monthly plan is ₹199');
-  assert(PLANS.yearly.price === 1999, 'Yearly plan is ₹1999');
+  assert(PLANS.monthly.price === 199, 'Monthly plan is ₹199 (30 days)');
+  assert(PLANS.monthly.durationDays === 30, 'Monthly plan duration is 30 days');
+  assert(PLANS.quarterly.price === 498, 'Quarterly plan is ₹498 (90 days, ₹166/mo)');
+  assert(PLANS.quarterly.durationDays === 90, 'Quarterly plan duration is 90 days');
+  assert(PLANS.quarterly.perMonth === 166, 'Quarterly per month rate is ₹166');
+  assert(PLANS.semi_annual.price === 900, 'Semi-annual plan is ₹900 (180 days, ₹150/mo)');
+  assert(PLANS.semi_annual.durationDays === 180, 'Semi-annual plan duration is 180 days');
+  assert(PLANS.semi_annual.perMonth === 150, 'Semi-annual per month rate is ₹150');
 
   // Test 2: Exclusive Tester Phone Gate (9440001449 & 9876543210)
   const isAuthorizedTester = (phone: string) => phone === '9440001449' || phone === '9876543210';
@@ -622,12 +628,14 @@ async function runTestSuite() {
   // Test 3: Plan resolution from payment amount in paise
   function resolvePlanByPaise(amountInPaise: number) {
     if (amountInPaise <= 1000) return 'test_7days';
-    if (amountInPaise >= 90000) return 'yearly';
+    if (amountInPaise >= 70000) return 'semi_annual';
+    if (amountInPaise >= 35000) return 'quarterly';
     return 'monthly';
   }
   assert(resolvePlanByPaise(1000) === 'test_7days', '₹10 (1000 paise) resolves to test_7days');
   assert(resolvePlanByPaise(19900) === 'monthly', '₹199 (19900 paise) resolves to monthly');
-  assert(resolvePlanByPaise(199900) === 'yearly', '₹1,999 resolves to yearly');
+  assert(resolvePlanByPaise(49800) === 'quarterly', '₹498 (49800 paise) resolves to quarterly');
+  assert(resolvePlanByPaise(90000) === 'semi_annual', '₹900 (90000 paise) resolves to semi_annual');
 
   // Test 4: Self-serve Payment ID format validation
   function validatePaymentId(id: string) {
