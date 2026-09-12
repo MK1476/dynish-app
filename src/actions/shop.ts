@@ -225,7 +225,7 @@ export async function createShop(formData: {
 export async function updateShop(
   shopId: string,
   updateData: Partial<Database['public']['Tables']['shops']['Update']>
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; socialMigrationRequired?: boolean }> {
   const admin = createAdminClient();
   let payload = { ...updateData, updated_at: new Date().toISOString() };
 
@@ -234,8 +234,16 @@ export async function updateShop(
     .update(payload)
     .eq('id', shopId);
 
+  let socialMigrationRequired = false;
+
   // If column doesn't exist yet (e.g. migration not run yet on remote DB), retry without those columns
   if (error && (error.message.includes('slug') || error.message.includes('whatsapp_template') || error.message.includes('instagram_handle') || error.message.includes('youtube_url') || error.code === '42703')) {
+    if (
+      (updateData.instagram_handle || updateData.youtube_url) &&
+      (error.message.includes('instagram_handle') || error.message.includes('youtube_url') || error.code === '42703')
+    ) {
+      socialMigrationRequired = true;
+    }
     delete (payload as any).slug;
     delete (payload as any).whatsapp_template;
     delete (payload as any).instagram_handle;
@@ -246,7 +254,7 @@ export async function updateShop(
 
   if (error) {
     logger.error('shop', `Failed to update settings for shop ${shopId}`, { error: error.message }, shopId);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, socialMigrationRequired };
   }
 
   logger.info('shop', `Shop settings updated for shop ${shopId}`, { updatedFields: Object.keys(updateData) }, shopId);
@@ -257,7 +265,7 @@ export async function updateShop(
   revalidatePath(`/store/${shopId}`);
   revalidatePath('/store/[shopId]', 'page');
   revalidatePath('/owner/settings');
-  return { success: true };
+  return { success: true, socialMigrationRequired };
 }
 
 const RESERVED_SLUGS = new Set([

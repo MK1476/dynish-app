@@ -67,6 +67,10 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const [slugSaving, setSlugSaving] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
+  // Social Links DB Migration banner
+  const [socialMigrationError, setSocialMigrationError] = useState(false);
+  const [copiedSocialSql, setCopiedSocialSql] = useState(false);
+
   // Custom WhatsApp Template
   const [whatsappTemplate, setWhatsappTemplate] = useState(shop.whatsapp_template || '');
 
@@ -216,6 +220,12 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
     });
 
     setSaving(false);
+
+    if (res.socialMigrationRequired) {
+      setSocialMigrationError(true);
+    } else {
+      setSocialMigrationError(false);
+    }
 
     if (res.success) {
       setSuccess(true);
@@ -732,6 +742,36 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               </p>
             </div>
           </div>
+
+          {/* Database Setup Banner if columns not migrated yet */}
+          {socialMigrationError && (
+            <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2.5 animate-scale-in">
+              <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>One-Time Supabase Setup Required for Social Links</span>
+              </div>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                The <code>instagram_handle</code> and <code>youtube_url</code> columns need to be enabled in your database. Copy and run this command in your <strong>Supabase Dashboard → SQL Editor</strong>:
+              </p>
+              <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-amber-200 font-sans text-xs overflow-x-auto">
+                <code className="text-espresso-950 font-bold whitespace-nowrap">
+                  ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS instagram_handle TEXT; ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS youtube_url TEXT; NOTIFY pgrst, &apos;reload schema&apos;;
+                </code>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await copyTextToClipboard("ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS instagram_handle TEXT;\nALTER TABLE public.shops ADD COLUMN IF NOT EXISTS youtube_url TEXT;\nNOTIFY pgrst, 'reload schema';");
+                    setCopiedSocialSql(true);
+                    setTimeout(() => setCopiedSocialSql(false), 2000);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 shadow-xs"
+                >
+                  {copiedSocialSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedSocialSql ? 'Copied!' : 'Copy SQL'}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Instagram Handle */}
