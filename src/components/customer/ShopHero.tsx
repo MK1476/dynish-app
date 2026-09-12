@@ -30,6 +30,26 @@ export const ShopHero: React.FC<ShopHeroProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
 
+  const cleanInstagram = shop.instagram_handle
+    ? shop.instagram_handle
+        .replace(/^@/, '')
+        .replace(/https?:\/\/(www\.)?instagram\.com\//, '')
+        .replace(/\/$/, '')
+        .trim()
+    : null;
+
+  const cleanYoutube = shop.youtube_url?.trim()
+    ? shop.youtube_url.trim().startsWith('http')
+      ? shop.youtube_url.trim()
+      : `https://${shop.youtube_url.trim()}`
+    : null;
+
+  const directionsUrl = shop.maps_link
+    ? shop.maps_link
+    : shop.address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.name} ${shop.address}`)}`
+    : null;
+
   const handleShare = async () => {
     const shareUrl = `${getAppBaseUrl()}/store/${shop.slug || shop.id}`;
 
@@ -147,86 +167,123 @@ export const ShopHero: React.FC<ShopHeroProps> = ({
       </div>
 
       {/* SHOP BODY DETAILS & ACTION BUTTONS */}
-      <div className="px-4 py-3 max-w-4xl mx-auto space-y-3">
+      <div className="px-4 py-2.5 max-w-4xl mx-auto space-y-2.5">
         
-        {/* COMPACT ACTION BUTTONS RIBBON */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 sm:flex-wrap">
-          {/* WhatsApp / Chat */}
+        {/* COMPACT BENTO GRID ACTION CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          {/* WhatsApp Card */}
           <a
             href={`https://wa.me/91${shop.whatsapp_number || shop.phone}?text=${encodeURIComponent(`Hi ${shop.name}! I came across your shop on Dynish and wanted to know more 😊`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold shadow-xs active:scale-95 transition-all shrink-0"
+            className="flex items-center gap-2.5 p-2 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#075E54] active:scale-[0.98] transition-all group shadow-2xs"
           >
-            <MessageCircle className="w-3.5 h-3.5 fill-current" />
-            <span>WhatsApp</span>
+            <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+              <MessageCircle className="w-4 h-4 fill-current" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-extrabold text-[#075E54] leading-tight truncate">WhatsApp</div>
+              <div className="text-[9px] text-emerald-800/80 font-medium truncate">Chat &amp; Orders</div>
+            </div>
           </a>
 
-          {/* Call (if phone available) */}
+          {/* Instagram Card (Follower Conversion Focus) */}
+          {cleanInstagram && (
+            <a
+              href={`https://instagram.com/${cleanInstagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-1.5 p-2 rounded-2xl bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 hover:from-pink-500/20 hover:via-purple-500/20 hover:to-amber-500/20 border border-pink-300/40 text-espresso-950 active:scale-[0.98] transition-all group shadow-2xs"
+              title={`Follow @${cleanInstagram} on Instagram`}
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#FD1D1D] via-[#E1306C] to-[#833AB4] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  <Instagram className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-extrabold text-espresso-950 leading-tight truncate">@{cleanInstagram}</div>
+                  <div className="text-[9px] text-pink-700 font-semibold truncate">Instagram</div>
+                </div>
+              </div>
+              <span className="shrink-0 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-[#E1306C] to-[#833AB4] text-white shadow-2xs">
+                Follow
+              </span>
+            </a>
+          )}
+
+          {/* YouTube Card (when configured) */}
+          {cleanYoutube && (
+            <a
+              href={cleanYoutube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-1.5 p-2 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-200 text-espresso-950 active:scale-[0.98] transition-all group shadow-2xs"
+              title="Watch on YouTube"
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-[#FF0000] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  <Youtube className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-extrabold text-espresso-950 leading-tight truncate">YouTube</div>
+                  <div className="text-[9px] text-red-700 font-semibold truncate">Videos</div>
+                </div>
+              </div>
+              <span className="shrink-0 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#FF0000] text-white shadow-2xs">
+                Watch
+              </span>
+            </a>
+          )}
+
+          {/* Directions / Maps Card */}
+          {directionsUrl && (
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 p-2 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-950 shadow-2xs active:scale-[0.98] transition-all group"
+              title={shop.address || 'Get Directions'}
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F2] border border-[#E5DDD0] text-amber-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <MapPin className="w-4 h-4 text-amber-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold text-espresso-900 leading-tight truncate">Directions</div>
+                <div className="text-[9px] text-espresso-500 truncate">{shop.address || 'Find Store'}</div>
+              </div>
+            </a>
+          )}
+
+          {/* Call Card */}
           {shop.phone && (
             <a
               href={`tel:+91${shop.phone}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-900 text-xs font-semibold shadow-2xs active:scale-95 transition-all shrink-0"
+              className="flex items-center gap-2.5 p-2 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-950 shadow-2xs active:scale-[0.98] transition-all group"
               title={`Call +91 ${shop.phone}`}
             >
-              <Phone className="w-3.5 h-3.5 text-espresso-600" />
-              <span>Call</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FAF7F2] border border-[#E5DDD0] text-emerald-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Phone className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold text-espresso-900 leading-tight truncate">Call Store</div>
+                <div className="text-[9px] text-espresso-500 truncate">+91 {shop.phone}</div>
+              </div>
             </a>
           )}
 
-          {/* Instagram (only if configured) */}
-          {shop.instagram_handle && shop.instagram_handle.trim() && (
-            <a
-              href={`https://instagram.com/${shop.instagram_handle.replace(/^@/, '').trim()}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] hover:opacity-95 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
-              title="Instagram"
-            >
-              <Instagram className="w-3.5 h-3.5" />
-              <span>Instagram</span>
-            </a>
-          )}
-
-          {/* YouTube (only if configured) */}
-          {shop.youtube_url && shop.youtube_url.trim() && (
-            <a
-              href={shop.youtube_url.trim()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF0000] hover:bg-[#e60000] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
-              title="YouTube"
-            >
-              <Youtube className="w-3.5 h-3.5" />
-              <span>YouTube</span>
-            </a>
-          )}
-
-          {/* Directions / Maps */}
-          {(shop.maps_link || shop.address) && (
-            <a
-              href={shop.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.name} ${shop.address}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E5DDD0] text-espresso-950 text-xs font-semibold shadow-2xs active:scale-95 transition-all shrink-0"
-              title={shop.address || 'Get Directions'}
-            >
-              <MapPin className="w-3.5 h-3.5 text-espresso-700" />
-              <span>Directions</span>
-            </a>
-          )}
-
-          {/* Share Button */}
+          {/* Share Card */}
           <button
+            type="button"
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#241E1C] hover:bg-[#342B28] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all shrink-0"
+            className="flex items-center gap-2.5 p-2 rounded-2xl bg-[#241E1C] hover:bg-[#342B28] text-white shadow-xs active:scale-[0.98] transition-all group text-left"
           >
-            {copied ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            ) : (
-              <Share2 className="w-3.5 h-3.5 shrink-0" />
-            )}
-            <span>{copied ? 'Copied!' : 'Share'}</span>
+            <div className="w-8 h-8 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-bold text-white leading-tight truncate">{copied ? 'Copied!' : 'Share Shop'}</div>
+              <div className="text-[9px] text-white/70 truncate">Send to Friends</div>
+            </div>
           </button>
         </div>
 

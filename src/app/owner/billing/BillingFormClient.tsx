@@ -318,7 +318,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
   );
 
   const effectiveBillAmount = discountInfo ? discountInfo.finalAmount : billNum;
-  const isTenPercentSelected = selectedOffer.includes('10%') || selectedOffer.toLowerCase().includes('cashback');
+  const isTenPercentSelected = Boolean(selectedOffer) && (selectedOffer.includes('10%') || selectedOffer.toLowerCase().includes('cashback'));
 
   const handlePhoneChange = (val: string) => {
     const numeric = val.replace(/\D/g, '').slice(0, 10);
@@ -429,7 +429,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
       customerPhone: phoneNumber,
       billAmount: finalAmountToRecord,
       visitNumber: nextVisitNumber,
-      nextOfferTitle: selectedOffer,
+      nextOfferTitle: selectedOffer || undefined,
     });
     const waUrl = generateWhatsAppUrl(phoneNumber, waMessage);
 
@@ -447,7 +447,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
       last_visit_at: new Date().toISOString(),
       last_bill_amount: finalAmountToRecord,
       total_spent: ((matchedCustomer?.total_spent as number) || 0) + (finalAmountToRecord || 0),
-      lastOfferAwarded: selectedOffer,
+      lastOfferAwarded: selectedOffer || null,
     } as CustomerWithOffer;
 
     customerCacheRef.current.set(phoneNumber, updatedCustomer);
@@ -470,7 +470,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
       amount: rawAmountVal,
       discountApplied: discountRupees,
       finalAmount: finalAmountToRecord,
-      nextOffer: selectedOffer,
+      nextOffer: selectedOffer || 'None (Sale Recorded Only)',
       visitNumber: nextVisitNumber,
       rawText: waMessage,
       waUrl,
@@ -483,7 +483,7 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
       customerName: customerName.trim() || undefined,
       billAmount: finalAmountToRecord,
       appliedOffer: isOfferDismissed ? undefined : (appliedOfferText || undefined),
-      nextVisitOffer: selectedOffer,
+      nextVisitOffer: selectedOffer || undefined,
     };
 
     const newJob: BillingJob = {
@@ -754,6 +754,19 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
                       <span className="text-[10px] text-amber-700 font-semibold">Latest pre-selected</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedOfferText('');
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          !appliedOfferText
+                            ? 'bg-[#241E1C] text-white shadow-xs ring-2 ring-espresso-950/20'
+                            : 'bg-white text-espresso-600 border border-amber-300 hover:bg-amber-50'
+                        }`}
+                      >
+                        <span>🚫 Don't Apply Offer</span>
+                      </button>
                       {matchedCustomer.availableOffers.map((off) => {
                         const isSelected = appliedOfferText === off.title;
                         return (
@@ -785,6 +798,19 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {isOfferDismissed && (availableReward || matchedCustomer?.lastOfferAwarded) && (
+              <div className="mt-2.5 flex items-center justify-between text-xs text-espresso-600 bg-ivory-100 border border-ivory-200 px-3.5 py-2 rounded-xl animate-fade-in">
+                <span>Offer skipped for this visit</span>
+                <button
+                  type="button"
+                  onClick={() => setIsOfferDismissed(false)}
+                  className="text-brand-700 font-bold hover:underline"
+                >
+                  Re-apply offer
+                </button>
               </div>
             )}
           </div>
@@ -839,6 +865,17 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
             )}
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedOffer('')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                !selectedOffer
+                  ? 'bg-[#241E1C] text-white shadow-xs ring-2 ring-espresso-950/20'
+                  : 'bg-white border border-[#E8E2D8] text-espresso-600 hover:border-espresso-400 hover:bg-[#FAF7F2]'
+              }`}
+            >
+              🚫 No Offer (Sale Only)
+            </button>
             {initialOffers.map((off) => {
               const isSelected = selectedOffer === off.title;
               return (
@@ -857,6 +894,13 @@ export const BillingFormClient: React.FC<BillingFormProps> = ({
               );
             })}
           </div>
+
+          {!selectedOffer && (
+            <div className="mt-3.5 px-3.5 py-2.5 rounded-2xl bg-ivory-100 border border-ivory-200 flex items-center gap-2 text-xs text-espresso-700 animate-fade-in">
+              <Check className="w-3.5 h-3.5 text-espresso-500 shrink-0" />
+              <span>Recording sale only — no next-visit discount will be added to the customer receipt.</span>
+            </div>
+          )}
 
           {/* Dynamic 10% next-visit loyalty reward calculation preview */}
           {isTenPercentSelected && effectiveBillAmount > 0 && (

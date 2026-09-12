@@ -234,10 +234,12 @@ export async function updateShop(
     .update(payload)
     .eq('id', shopId);
 
-  // If column doesn't exist yet (e.g. migration 005 not run yet on remote DB), retry without those columns
-  if (error && (error.message.includes('slug') || error.message.includes('whatsapp_template') || error.code === '42703')) {
+  // If column doesn't exist yet (e.g. migration not run yet on remote DB), retry without those columns
+  if (error && (error.message.includes('slug') || error.message.includes('whatsapp_template') || error.message.includes('instagram_handle') || error.message.includes('youtube_url') || error.code === '42703')) {
     delete (payload as any).slug;
     delete (payload as any).whatsapp_template;
+    delete (payload as any).instagram_handle;
+    delete (payload as any).youtube_url;
     const retry = await admin.from('shops').update(payload).eq('id', shopId);
     error = retry.error;
   }

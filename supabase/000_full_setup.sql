@@ -28,6 +28,8 @@ create table if not exists public.shops (
     razorpay_subscription_id text,
     slug text unique,
     whatsapp_template text,
+    instagram_handle text,
+    youtube_url text,
     is_active boolean not null default true,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()

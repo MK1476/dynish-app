@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Script from 'next/script';
+import { RegisterSW } from '@/components/common/RegisterSW';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -45,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={jakarta.variable}>
       <body className="min-h-screen bg-[#FDFBF7] text-espresso-950 font-sans antialiased">
+        <RegisterSW />
         {children}
         {/* Load Razorpay script for subscription checkouts */}
         <Script

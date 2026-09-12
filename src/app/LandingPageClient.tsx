@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Zap, ShoppingBag, ShieldCheck, ArrowRight, Sparkles, 
   CheckCircle2, MessageCircle, ChevronDown, ChevronUp, 
@@ -19,6 +20,18 @@ interface LandingPageClientProps {
 }
 
 export const LandingPageClient: React.FC<LandingPageClientProps> = ({ showcaseShops }) => {
+  const router = useRouter();
+
+  // Instant redirect if running inside standalone PWA
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      if (isStandalone) {
+        router.replace('/owner/billing');
+      }
+    }
+  }, [router]);
+
   // Interactive 5s Simulator state
   const [simAmount, setSimAmount] = useState('1450');
   const [simPhone, setSimPhone] = useState('9876543210');

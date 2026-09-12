@@ -32,6 +32,8 @@ export interface Database {
           is_active: boolean
           slug?: string | null
           whatsapp_template?: string | null
+          instagram_handle?: string | null
+          youtube_url?: string | null
           created_at: string
           updated_at: string
         }
@@ -57,6 +59,8 @@ export interface Database {
           is_active?: boolean
           slug?: string | null
           whatsapp_template?: string | null
+          instagram_handle?: string | null
+          youtube_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -82,6 +86,8 @@ export interface Database {
           is_active?: boolean
           slug?: string | null
           whatsapp_template?: string | null
+          instagram_handle?: string | null
+          youtube_url?: string | null
           created_at?: string
           updated_at?: string
         }

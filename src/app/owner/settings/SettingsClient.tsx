@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation';
 import { 
   Store, Phone, MapPin, Image as ImageIcon, Save, 
   Check, LogOut, Sparkles, ExternalLink, Palette, 
-  UploadCloud, AlertCircle, RefreshCw, Lock, Link as LinkIcon, ShieldCheck, Copy, MessageCircle 
+  UploadCloud, AlertCircle, RefreshCw, Lock, Link as LinkIcon, ShieldCheck, Copy, MessageCircle,
+  Instagram, Youtube
 } from 'lucide-react';
 import { compressImage } from '@/lib/image-compressor';
 import { copyTextToClipboard } from '@/lib/utils';
@@ -49,6 +50,8 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
   const [whatsapp, setWhatsapp] = useState(shop.whatsapp_number);
   const [address, setAddress] = useState(shop.address);
   const [mapsLink, setMapsLink] = useState(shop.maps_link || '');
+  const [instagramHandle, setInstagramHandle] = useState(shop.instagram_handle || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(shop.youtube_url || '');
   const [logoUrl, setLogoUrl] = useState(shop.logo_url || '');
   const [bannerUrl, setBannerUrl] = useState(shop.banner_url || '');
   const [theme, setTheme] = useState<'heritage' | 'minimal' | 'artisanal'>((shop.theme as any) || 'heritage');
@@ -204,6 +207,8 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
       whatsapp_number: whatsapp.replace(/\D/g, '').slice(-10),
       address: address.trim(),
       maps_link: mapsLink.trim() || null,
+      instagram_handle: instagramHandle.replace(/^@/, '').trim() || null,
+      youtube_url: youtubeUrl.trim() || null,
       logo_url: logoUrl || null,
       banner_url: bannerUrl || null,
       theme,
@@ -709,6 +714,92 @@ export const SettingsClient: React.FC<SettingsClientProps> = ({ shop }) => {
               onChange={(e) => setMapsLink(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-sm text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white"
             />
+          </div>
+        </div>
+
+        {/* SOCIAL MEDIA & COMMUNITY LINKS (OPTIONAL) */}
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-ivory-200 shadow-card space-y-4">
+          <div className="flex items-center gap-2 border-b border-ivory-100 pb-3">
+            <span className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
+              <Instagram className="w-4 h-4" />
+            </span>
+            <div>
+              <h2 className="font-sans font-bold text-lg text-espresso-950">
+                Social Media &amp; Community Links (Optional)
+              </h2>
+              <p className="text-xs text-espresso-500">
+                Showcase your Instagram and YouTube channels on your storefront to gain followers and build customer trust.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Instagram Handle */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-espresso-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                  <span>Instagram Profile / Handle</span>
+                </label>
+                {instagramHandle && (
+                  <a
+                    href={`https://instagram.com/${instagramHandle.replace(/^@/, '').replace(/https?:\/\/(www\.)?instagram\.com\//, '').trim()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-brand-700 hover:underline font-semibold flex items-center gap-1"
+                  >
+                    <span>Preview</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+              <div className="flex items-center rounded-xl bg-ivory-50 border border-ivory-300 focus-within:border-brand-500 focus-within:bg-white overflow-hidden">
+                <span className="px-3 py-2.5 text-espresso-500 font-sans text-xs font-bold border-r border-ivory-300 bg-ivory-100 select-none">
+                  @
+                </span>
+                <input
+                  type="text"
+                  placeholder="yourstore or instagram.com/yourstore"
+                  value={instagramHandle}
+                  onChange={(e) => setInstagramHandle(e.target.value.replace(/^@/, ''))}
+                  className="w-full px-3 py-2.5 bg-transparent text-sm font-sans font-medium text-espresso-950 focus:outline-none placeholder:text-espresso-300"
+                />
+              </div>
+              <p className="text-[11px] text-espresso-500 mt-1">
+                Converts visitors into followers directly from your catalog.
+              </p>
+            </div>
+
+            {/* YouTube Channel / Video Link */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-espresso-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Youtube className="w-3.5 h-3.5 text-red-600" />
+                  <span>YouTube Channel or Video URL</span>
+                </label>
+                {youtubeUrl && (
+                  <a
+                    href={youtubeUrl.startsWith('http') ? youtubeUrl : `https://${youtubeUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-brand-700 hover:underline font-semibold flex items-center gap-1"
+                  >
+                    <span>Preview</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+              <input
+                type="url"
+                placeholder="https://youtube.com/@yourstore or video link"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-ivory-50 border border-ivory-300 text-sm font-medium text-espresso-950 focus:outline-none focus:border-brand-500 focus:bg-white placeholder:text-espresso-300"
+              />
+              <p className="text-[11px] text-espresso-500 mt-1">
+                Showcase your store walkthroughs, reels, or video catalogs.
+              </p>
+            </div>
           </div>
         </div>
 

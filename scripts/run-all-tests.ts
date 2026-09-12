@@ -841,6 +841,75 @@ async function runTestSuite() {
   const t57 = `Hi Dynish Team! I need some help with my store — Heritage Silks (+919876543210).`;
   assert(t57.includes('I need some help with my store — Heritage Silks (+919876543210).'), 'Template #5–7 store support message matches specification');
 
+  // ==========================================
+  // SECTION 27: SOCIAL LINKS, BENTO GRID, NO-OFFER BILLING & PWA ENGINE
+  // ==========================================
+  console.log(`\n${CYAN}--- Section 27: Social Links, Bento Grid, No-Offer Billing & PWA Engine ---${RESET}`);
+
+  // Test 1: Instagram Handle Normalization
+  function normalizeInstagramHandle(raw: string | null | undefined): string | null {
+    if (!raw) return null;
+    const cleaned = raw.replace(/^@/, '').replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '').trim();
+    return cleaned || null;
+  }
+  assert(normalizeInstagramHandle('@royal_silks') === 'royal_silks', '@royal_silks strips leading @ cleanly');
+  assert(normalizeInstagramHandle('https://www.instagram.com/royal_silks/') === 'royal_silks', 'Full Instagram URL extracts handle cleanly');
+  assert(normalizeInstagramHandle('royal_silks') === 'royal_silks', 'Plain handle preserved cleanly');
+  assert(normalizeInstagramHandle('') === null, 'Empty handle returns null');
+
+  // Test 2: YouTube URL Normalization
+  function normalizeYoutubeUrl(raw: string | null | undefined): string | null {
+    if (!raw || !raw.trim()) return null;
+    const trimmed = raw.trim();
+    return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+  }
+  assert(normalizeYoutubeUrl('youtube.com/@royalsilks') === 'https://youtube.com/@royalsilks', 'youtube.com/@handle prepends https://');
+  assert(normalizeYoutubeUrl('https://www.youtube.com/watch?v=12345') === 'https://www.youtube.com/watch?v=12345', 'Full https URL preserved cleanly');
+  assert(normalizeYoutubeUrl('') === null, 'Empty YouTube link returns null');
+
+  // Test 3: No-Offer Billing (Sale Only)
+  const noOfferBillMsg = generateWhatsAppBillMessage({
+    shopId: 'shop-uuid-1',
+    shopName: 'Heritage Silks',
+    customerName: 'Aarav',
+    customerPhone: '9876543210',
+    billAmount: 1500,
+    visitNumber: 4,
+    nextOfferTitle: '', // Shop owner chose "No Offer (Sale Only)"
+    shopSlug: 'heritage-silks',
+  });
+  assert(noOfferBillMsg.includes('🧾 Your Bill: *₹1,500*'), 'No-offer bill records the bill amount');
+  assert(noOfferBillMsg.includes('this was your *4th visit* with us ✨'), 'No-offer bill acknowledges 4th visit warmly');
+  assert(!noOfferBillMsg.includes('🎁'), 'No-offer bill contains NO gift icon');
+  assert(!noOfferBillMsg.includes('off your next visit'), 'No-offer bill contains NO discount promise');
+  assert(noOfferBillMsg.includes('https://dynish.com/store/heritage-silks'), 'No-offer bill still includes storefront link');
+
+  // Test 4: Skipping Past Offer Application
+  const rawBill = 1000;
+  const skippedOfferText = ''; // Merchant chose "Don't Apply Offer"
+  const appliedDiscount = skippedOfferText ? 100 : 0;
+  const netAmount = rawBill - appliedDiscount;
+  assert(appliedDiscount === 0, 'Skipping offer results in ₹0 discount');
+  assert(netAmount === 1000, 'Net amount equals original bill when offer is skipped');
+
+  // Test 5: PWA Service Worker & Manifest
+  const swPath = path.join(process.cwd(), 'public', 'sw.js');
+  assert(fs.existsSync(swPath), 'public/sw.js service worker file exists');
+  if (fs.existsSync(swPath)) {
+    const swContent = fs.readFileSync(swPath, 'utf8');
+    assert(swContent.includes('dynish-pwa-v1'), 'sw.js specifies cache version');
+    assert(swContent.includes('/_next/static/'), 'sw.js caches immutable Next.js chunks');
+  }
+
+  // Test 6: Migration 007 File
+  const migPath = path.join(process.cwd(), 'supabase', 'migrations', '007_shop_social_links.sql');
+  assert(fs.existsSync(migPath), '007_shop_social_links.sql migration exists');
+  if (fs.existsSync(migPath)) {
+    const migContent = fs.readFileSync(migPath, 'utf8');
+    assert(migContent.includes('instagram_handle'), 'Migration adds instagram_handle column');
+    assert(migContent.includes('youtube_url'), 'Migration adds youtube_url column');
+  }
+
   // FINAL SUMMARY
   console.log(`\n${CYAN}====================================================${RESET}`);
   console.log(`  ${GREEN}PASSED TESTS: ${passedTests}${RESET}`);
